@@ -1,3 +1,4 @@
+use crate::records::{CreateRecord, RecordWriter};
 use clap::{Args, Subcommand};
 use pagurus::{
     event::{Event, Key, KeyEvent},
@@ -6,8 +7,6 @@ use pagurus::{
 };
 use pagurus_tui::TuiSystem;
 use std::path::PathBuf;
-
-use crate::records::{self, CreateRecord};
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -38,7 +37,7 @@ impl NewCommand {
             .or_fail()?;
 
         let record = CreateRecord::new().or_fail()?;
-        records::append_record(file, &record).or_fail()?;
+        RecordWriter::new(file).append(&record).or_fail()?;
 
         println!("Created: {}", self.name.display());
         Ok(())
