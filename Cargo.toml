@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
-pagurus = { version = "0.7.0", features = ["image", "serde", "serde_json"] }
+pagurus = { version = "0.7.0", features = ["image"] }
 pagurus_tui = "0.7.0"
 png = "0.17.9"

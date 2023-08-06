@@ -40,5 +40,8 @@ fn is_quit_key(event: &Event) -> bool {
     let Event::Key(KeyEvent { key, ctrl,.. }) = event else {
         return false;
     };
-    matches!((key, ctrl), (Key::Esc, _) | (Key::Char('c'), true))
+    matches!(
+        (key, ctrl),
+        (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
+    )
 }
