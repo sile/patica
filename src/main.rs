@@ -17,15 +17,7 @@ fn main() -> pagurus::Result<()> {
     let mut game = dotedit::game::Game::default();
     game.initialize(&mut system).or_fail()?;
     while let Ok(event) = system.next_event() {
-        if matches!(
-            event,
-            Event::Key(KeyEvent { key: Key::Esc, .. })
-                | Event::Key(KeyEvent {
-                    ctrl: true,
-                    key: Key::Char('c'),
-                    ..
-                })
-        ) {
+        if is_quit_key(&event) {
             break;
         }
         if !game.handle_event(&mut system, event).or_fail()? {
@@ -42,4 +34,11 @@ fn file_println(msg: &str) {
         .append(true)
         .open("dotedit.log")
         .and_then(|mut file| writeln!(file, "{}", msg));
+}
+
+fn is_quit_key(event: &Event) -> bool {
+    let Event::Key(KeyEvent { key, ctrl,.. }) = event else {
+        return false;
+    };
+    matches!((key, ctrl), (Key::Esc, _) | (Key::Char('c'), true))
 }
