@@ -1,4 +1,5 @@
 use clap::Parser;
+use dotedit::commands::Command;
 use pagurus::event::{Event, Key, KeyEvent};
 use pagurus::failure::OrFail;
 use pagurus::Game;
@@ -7,7 +8,11 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 #[derive(Parser)]
-struct Args {}
+#[clap(version, about)]
+struct Args {
+    #[clap(subcommand)]
+    command: Command,
+}
 
 fn main() -> pagurus::Result<()> {
     let _args = Args::parse();
