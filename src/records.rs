@@ -82,6 +82,7 @@ pub struct OpenRecord {
     pub timestamp: UnixTimestamp,
     pub version: String,
     pub port: u16,
+    // TODO: uuid
 }
 
 impl OpenRecord {
