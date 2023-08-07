@@ -1,6 +1,7 @@
 use crate::{
     constants::{COLOR_BG0, COLOR_BG1},
     model::Model,
+    view::View,
 };
 use pagurus::{event::Event, image::Canvas, video::VideoFrame, Result, System};
 
@@ -8,6 +9,7 @@ use pagurus::{event::Event, image::Canvas, video::VideoFrame, Result, System};
 pub struct Game {
     video_frame: VideoFrame,
     model: Model,
+    view: View,
 }
 
 impl<S: System> pagurus::Game<S> for Game {
