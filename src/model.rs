@@ -25,8 +25,8 @@ pub enum ModelCommand {}
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PixelPosition {
-    pub y: u16,
-    pub x: u16,
+    pub y: i16,
+    pub x: i16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
