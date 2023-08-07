@@ -264,8 +264,6 @@ checksum = "63693524dde8ee60c934b171cad39f5c6b0351504f31ce2966bcc9e481e1d4c3"
 [[package]]
 name = "pagurus"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f1c55f37c9dd26c4f37d726a4f4f5b65ed53a5278d594cf385c99abbf0c9e74"
 dependencies = [
  "orfail",
 ]
@@ -273,8 +271,6 @@ dependencies = [
 [[package]]
 name = "pagurus_tui"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35ef690a7fae29e8fd74170585e3d34803326e4ca79e00c4105d8ae94288bf50"
 dependencies = [
  "pagurus",
  "termion",
