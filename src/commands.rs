@@ -50,6 +50,25 @@ impl OpenCommand {
         let mut game = crate::game::Game::default();
         game.initialize(&mut system).or_fail()?;
         while let Ok(event) = system.next_event() {
+            let mut updated = false;
+            while journal
+                .with_next_proposed_command(|command| {
+                    let data = serde_json::to_vec(&command).or_fail()?;
+                    game.command(&mut system, "model.apply_command", &data)
+                        .or_fail()?;
+                    Ok(())
+                })
+                .or_fail()?
+            {
+                updated = true;
+            }
+            if updated {
+                let _ = game
+                    .query(&mut system, "model.take_applied_commands")
+                    .or_fail()?;
+                system.request_redraw().or_fail()?;
+            }
+
             if is_quit_key(&event) {
                 break;
             }

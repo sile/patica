@@ -4,7 +4,7 @@ use pagurus::failure::OrFail;
 use std::fs::OpenOptions;
 use std::io::Write;
 
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[clap(version, about)]
 struct Args {
     #[clap(subcommand)]
@@ -15,9 +15,12 @@ fn main() -> pagurus::Result<()> {
     pagurus::io::set_println_fn(file_println).or_fail()?;
 
     let args = Args::parse();
-    args.command.run()?;
-
-    Ok(())
+    let result = args.command.run().or_fail();
+    if let Err(e) = &result {
+        pagurus::println!("Args: {args:?}");
+        pagurus::println!("Error: {e}");
+    }
+    result
 }
 
 fn file_println(msg: &str) {

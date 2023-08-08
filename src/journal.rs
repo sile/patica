@@ -4,6 +4,7 @@ use crate::{
 };
 use pagurus::failure::OrFail;
 use std::{
+    collections::VecDeque,
     fs::File,
     io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
@@ -13,7 +14,7 @@ use std::{
 pub struct JournalHttpServer {
     writer: JournalWriter,
     socket: std::net::TcpListener,
-    external_comamnds: Vec<ModelCommand>,
+    proposed_commands: VecDeque<ModelCommand>,
 }
 
 impl JournalHttpServer {
@@ -26,13 +27,16 @@ impl JournalHttpServer {
             .or_fail()?;
 
         let mut port = 0;
+        let mut proposed_commands = VecDeque::new();
         for record in JournalRecords::new(BufReader::new(&mut file)) {
             let record = record.or_fail()?;
             match record {
                 Record::Open(x) => {
                     port = x.port;
                 }
-                _ => {}
+                Record::Model(x) => {
+                    proposed_commands.push_back(x);
+                }
             }
         }
 
@@ -48,7 +52,7 @@ impl JournalHttpServer {
         Ok(Self {
             writer,
             socket,
-            external_comamnds: Vec::new(),
+            proposed_commands,
         })
     }
 
@@ -59,8 +63,15 @@ impl JournalHttpServer {
         Ok(())
     }
 
-    pub fn take_external_commands(&mut self) -> Vec<ModelCommand> {
-        std::mem::take(&mut self.external_comamnds)
+    pub fn with_next_proposed_command<F>(&mut self, mut f: F) -> pagurus::Result<bool>
+    where
+        F: FnMut(ModelCommand) -> pagurus::Result<()>,
+    {
+        if let Some(command) = self.proposed_commands.pop_front() {
+            // TODO: Handle error.
+            f(command).or_fail()?;
+        }
+        Ok(!self.proposed_commands.is_empty())
     }
 }
 

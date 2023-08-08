@@ -75,7 +75,18 @@ impl<S: System> pagurus::Game<S> for Game {
                 let data = serde_json::to_vec(&commands).or_fail()?;
                 Ok(data)
             }
-            _ => Err(Failure::new().message(format!("unknown query: {}", name))),
+            _ => Err(Failure::new().message(format!("unknown query: {name:?}"))),
+        }
+    }
+
+    fn command(&mut self, _system: &mut S, name: &str, data: &[u8]) -> Result<()> {
+        match name {
+            "model.apply_command" => {
+                let command = serde_json::from_slice(data).or_fail()?;
+                self.model.as_mut().or_fail()?.apply(command).or_fail()?;
+                Ok(())
+            }
+            _ => Err(Failure::new().message(format!("unknown command: {name:?}"))),
         }
     }
 }
