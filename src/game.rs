@@ -1,15 +1,15 @@
-use std::time::Duration;
-
 use crate::{
     model::Model,
     view::{View, ViewContext},
 };
 use pagurus::{
     event::{Event, TimeoutTag},
+    failure::OrFail,
     image::Canvas,
     video::VideoFrame,
     Result, System,
 };
+use std::time::Duration;
 
 const FPS: u32 = 30;
 const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
@@ -46,9 +46,14 @@ impl<S: System> pagurus::Game<S> for Game {
             Event::Timeout(RENDER_TIMEOUT_TAG) => {
                 self.render(system);
                 system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
+                return Ok(true);
             }
             _ => {}
         }
+
+        let ctx = ViewContext::new(self.video_frame.spec().resolution, system.clock_game_time());
+        self.view.handle_event(&ctx, event).or_fail()?;
+
         Ok(true)
     }
 }
