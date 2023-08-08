@@ -1,5 +1,5 @@
 use crate::{
-    model_actor::ModelActorHandle,
+    model::Model,
     view::{View, ViewContext},
 };
 use pagurus::{
@@ -17,22 +17,32 @@ const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
 #[derive(Debug, Default)]
 pub struct Game {
     video_frame: VideoFrame,
-    model: ModelActorHandle,
     view: View,
+    model: Option<Model>,
 }
 
 impl Game {
-    fn render<S: System>(&mut self, system: &mut S) {
-        let size = self.video_frame.spec().resolution;
+    fn render<S: System>(&mut self, system: &mut S) -> pagurus::Result<()> {
+        let ctx = self.make_view_context(system).or_fail()?;
         let mut canvas = Canvas::new(&mut self.video_frame);
-        let ctx = ViewContext::new(size, system.clock_game_time(), self.model.clone());
         self.view.render(&ctx, &mut canvas);
         system.video_draw(self.video_frame.as_ref());
+        self.model = Some(ctx.model);
+        Ok(())
+    }
+
+    fn make_view_context<S: System>(&mut self, system: &S) -> pagurus::Result<ViewContext> {
+        Ok(ViewContext {
+            window_size: self.video_frame.spec().resolution,
+            now: system.clock_game_time(),
+            model: self.model.take().or_fail()?,
+        })
     }
 }
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> Result<()> {
+        self.model = Some(Model::default());
         system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
         Ok(())
     }
@@ -41,22 +51,19 @@ impl<S: System> pagurus::Game<S> for Game {
         match event {
             Event::WindowResized(size) => {
                 self.video_frame = VideoFrame::new(system.video_init(size));
-                self.render(system);
+                self.render(system).or_fail()?;
             }
             Event::Timeout(RENDER_TIMEOUT_TAG) => {
-                self.render(system);
+                self.render(system).or_fail()?;
                 system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
                 return Ok(true);
             }
             _ => {}
         }
 
-        let ctx = ViewContext::new(
-            self.video_frame.spec().resolution,
-            system.clock_game_time(),
-            self.model.clone(),
-        );
-        self.view.handle_event(&ctx, event).or_fail()?;
+        let mut ctx = self.make_view_context(system).or_fail()?;
+        self.view.handle_event(&mut ctx, event).or_fail()?;
+        self.model = Some(ctx.model);
 
         Ok(true)
     }

@@ -1,4 +1,4 @@
-use crate::{model::PixelPosition, model_actor::ModelActorHandle};
+use crate::model::{Model, PixelPosition};
 use pagurus::{
     event::{Event, Key, KeyEvent, MouseEvent},
     failure::OrFail,
@@ -17,17 +17,7 @@ const COLOR_CURSOR: Color = Color::rgba(255, 0, 0, 100);
 pub struct ViewContext {
     pub window_size: Size,
     pub now: Duration,
-    pub model: ModelActorHandle,
-}
-
-impl ViewContext {
-    pub fn new(window_size: Size, now: Duration, model: ModelActorHandle) -> Self {
-        Self {
-            window_size,
-            now,
-            model,
-        }
-    }
+    pub model: Model,
 }
 
 #[derive(Debug, Default)]
@@ -52,7 +42,7 @@ impl View {
         }
     }
 
-    pub fn handle_event(&mut self, ctx: &ViewContext, event: Event) -> pagurus::Result<()> {
+    pub fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
         self.canvas.handle_event(ctx, event).or_fail()?;
         Ok(())
     }
@@ -65,21 +55,20 @@ pub struct PixelCanvas {
 }
 
 impl PixelCanvas {
-    fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) -> pagurus::Result<()> {
+    fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         if ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0 {
-            canvas.draw_pixel(self.cursor_position(ctx), COLOR_CURSOR)
+            canvas.draw_pixel(self.cursor_position(ctx), COLOR_CURSOR);
         }
-        Ok(())
     }
 
-    fn cursor_position(&self, ctx: &ViewContext) -> pagurus::Result<Position> {
+    fn cursor_position(&self, ctx: &ViewContext) -> Position {
         let mut position = ctx.window_size.to_region().center();
-        position.x += self.cursor.x as i32;
-        position.y += self.cursor.y as i32;
+        position.x += ctx.model.cursor().x() as i32;
+        position.y += ctx.model.cursor().y() as i32;
         position
     }
 
-    fn handle_event(&mut self, ctx: &ViewContext, event: Event) -> pagurus::Result<()> {
+    fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
         match event {
             Event::Key(event) => self.handle_key_event(ctx, event).or_fail()?,
             Event::Mouse(event) => self.handle_mouse_event(ctx, event).or_fail()?,
@@ -90,25 +79,29 @@ impl PixelCanvas {
 
     fn handle_key_event(
         &mut self,
-        ctx: &ViewContext,
+        ctx: &mut ViewContext,
         KeyEvent { key, .. }: KeyEvent,
     ) -> pagurus::Result<()> {
         // TODO: max / min
         match key {
             Key::Up => {
-                self.cursor.y -= 1;
+                let command = ctx.model.move_cursor_command((0, -1).into());
+                ctx.model.apply(command).or_fail()?;
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
             Key::Down => {
-                self.cursor.y += 1;
+                let command = ctx.model.move_cursor_command((0, 1).into());
+                ctx.model.apply(command).or_fail()?;
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
             Key::Left => {
-                self.cursor.x -= 1;
+                let command = ctx.model.move_cursor_command((-1, 0).into());
+                ctx.model.apply(command).or_fail()?;
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
             Key::Right => {
-                self.cursor.x += 1;
+                let command = ctx.model.move_cursor_command((1, 0).into());
+                ctx.model.apply(command).or_fail()?;
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
             _ => {}
@@ -116,13 +109,11 @@ impl PixelCanvas {
         Ok(())
     }
 
-    fn handle_mouse_event(&mut self, ctx: &ViewContext, event: MouseEvent) -> pagurus::Result<()> {
-        // TODO:
-        self.cursor = PixelPosition {
-            x: event.position().x as i16,
-            y: event.position().y as i16,
-        };
-        self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+    fn handle_mouse_event(
+        &mut self,
+        _ctx: &mut ViewContext,
+        _event: MouseEvent,
+    ) -> pagurus::Result<()> {
         Ok(())
     }
 }

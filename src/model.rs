@@ -4,13 +4,19 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Default)]
 pub struct Model {
+    version: ModelVersion,
     cursor: Cursor,
     camera: Camera,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
+    applied_commands: Vec<ModelCommand>,
 }
 
 impl Model {
+    pub fn version(&self) -> ModelVersion {
+        self.version
+    }
+
     pub fn cursor(&self) -> Cursor {
         self.cursor
     }
@@ -23,22 +29,51 @@ impl Model {
         &self.palette
     }
 
-    pub fn handle_command(&mut self, command: ModelCommand) -> pagurus::Result<()> {
-        match command {
-            ModelCommand::MoveCursor { delta } => self.handle_move_cursor_command(delta).or_fail(),
-        }
+    pub fn take_applied_commands(&mut self) -> Vec<ModelCommand> {
+        // TODO: compaction
+        std::mem::take(&mut self.applied_commands)
     }
 
-    fn handle_move_cursor_command(&mut self, delta: PixelPosition) -> pagurus::Result<()> {
-        self.cursor.position.x += delta.x;
-        self.cursor.position.y += delta.y;
+    pub fn apply(&mut self, command: ModelCommand) -> pagurus::Result<()> {
+        (self.version == command.version()).or_fail()?;
+
+        match &command {
+            ModelCommand::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
+        }
+
+        self.applied_commands.push(command);
+        self.version.0 += 1;
+
         Ok(())
+    }
+
+    pub fn move_cursor_command(&self, delta: PixelPosition) -> ModelCommand {
+        ModelCommand::MoveCursor {
+            version: self.version,
+            delta,
+        }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
+pub struct ModelVersion(pub u64);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ModelCommand {
-    MoveCursor { delta: PixelPosition },
+    MoveCursor {
+        version: ModelVersion,
+        delta: PixelPosition,
+    },
+}
+
+impl ModelCommand {
+    pub fn version(&self) -> ModelVersion {
+        match self {
+            ModelCommand::MoveCursor { version, .. } => *version,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -48,16 +83,29 @@ pub struct Camera {
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub struct Cursor {
-    pub position: PixelPosition,
+    position: PixelPosition,
 }
 
 impl Cursor {
+    pub const fn x(self) -> i16 {
+        self.position.x
+    }
+
+    pub const fn y(self) -> i16 {
+        self.position.y
+    }
+
     pub fn move_x(&mut self, delta: i16) {
         self.position.x += delta;
     }
 
     pub fn move_y(&mut self, delta: i16) {
         self.position.y += delta;
+    }
+
+    fn move_delta(&mut self, delta: PixelPosition) {
+        self.position.x += delta.x;
+        self.position.y += delta.y;
     }
 }
 
@@ -67,6 +115,12 @@ impl Cursor {
 pub struct PixelPosition {
     pub y: i16,
     pub x: i16,
+}
+
+impl From<(i16, i16)> for PixelPosition {
+    fn from((x, y): (i16, i16)) -> Self {
+        Self { x, y }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
