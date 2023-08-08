@@ -82,30 +82,30 @@ impl PixelCanvas {
         ctx: &mut ViewContext,
         KeyEvent { key, .. }: KeyEvent,
     ) -> pagurus::Result<()> {
-        // TODO: max / min
         match key {
             Key::Up => {
-                let command = ctx.model.move_cursor_command((0, -1).into());
-                ctx.model.apply(command).or_fail()?;
-                self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+                self.move_cursor(ctx, (0, -1).into()).or_fail()?;
             }
             Key::Down => {
-                let command = ctx.model.move_cursor_command((0, 1).into());
-                ctx.model.apply(command).or_fail()?;
-                self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+                self.move_cursor(ctx, (0, 1).into()).or_fail()?;
             }
             Key::Left => {
-                let command = ctx.model.move_cursor_command((-1, 0).into());
-                ctx.model.apply(command).or_fail()?;
-                self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+                self.move_cursor(ctx, (-1, 0).into()).or_fail()?;
             }
             Key::Right => {
-                let command = ctx.model.move_cursor_command((1, 0).into());
-                ctx.model.apply(command).or_fail()?;
-                self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+                self.move_cursor(ctx, (1, 0).into()).or_fail()?;
             }
             _ => {}
         }
+        Ok(())
+    }
+
+    fn move_cursor(&mut self, ctx: &mut ViewContext, delta: PixelPosition) -> pagurus::Result<()> {
+        // TODO: max / min
+
+        let command = ctx.model.move_cursor_command(delta.into());
+        ctx.model.apply(command).or_fail()?;
+        self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
         Ok(())
     }
 
