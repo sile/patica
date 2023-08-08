@@ -1,5 +1,5 @@
 use crate::{
-    model::Model,
+    model_actor::ModelActorHandle,
     view::{View, ViewContext},
 };
 use pagurus::{
@@ -17,7 +17,7 @@ const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
 #[derive(Debug, Default)]
 pub struct Game {
     video_frame: VideoFrame,
-    model: Model,
+    model: ModelActorHandle,
     view: View,
 }
 
@@ -25,7 +25,7 @@ impl Game {
     fn render<S: System>(&mut self, system: &mut S) {
         let size = self.video_frame.spec().resolution;
         let mut canvas = Canvas::new(&mut self.video_frame);
-        let ctx = ViewContext::new(size, system.clock_game_time());
+        let ctx = ViewContext::new(size, system.clock_game_time(), self.model.clone());
         self.view.render(&ctx, &mut canvas);
         system.video_draw(self.video_frame.as_ref());
     }
@@ -51,7 +51,11 @@ impl<S: System> pagurus::Game<S> for Game {
             _ => {}
         }
 
-        let ctx = ViewContext::new(self.video_frame.spec().resolution, system.clock_game_time());
+        let ctx = ViewContext::new(
+            self.video_frame.spec().resolution,
+            system.clock_game_time(),
+            self.model.clone(),
+        );
         self.view.handle_event(&ctx, event).or_fail()?;
 
         Ok(true)

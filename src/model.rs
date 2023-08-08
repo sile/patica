@@ -1,29 +1,69 @@
-use pagurus::image::Color;
+use pagurus::{failure::OrFail, image::Color};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Default)]
 pub struct Model {
+    cursor: Cursor,
+    camera: Camera,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
 }
 
 impl Model {
+    pub fn cursor(&self) -> Cursor {
+        self.cursor
+    }
+
+    pub fn camera(&self) -> Camera {
+        self.camera
+    }
+
     pub fn palette(&self) -> &Palette {
         &self.palette
     }
 
-    pub fn handle_command(&mut self, command: &ModelCommand) -> pagurus::Result<()> {
+    pub fn handle_command(&mut self, command: ModelCommand) -> pagurus::Result<()> {
         match command {
-            _ => todo!(),
+            ModelCommand::MoveCursor { delta } => self.handle_move_cursor_command(delta).or_fail(),
         }
+    }
+
+    fn handle_move_cursor_command(&mut self, delta: PixelPosition) -> pagurus::Result<()> {
+        self.cursor.position.x += delta.x;
+        self.cursor.position.y += delta.y;
+        Ok(())
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum ModelCommand {}
+pub enum ModelCommand {
+    MoveCursor { delta: PixelPosition },
+}
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
+pub struct Camera {
+    pub position: PixelPosition,
+}
+
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
+pub struct Cursor {
+    pub position: PixelPosition,
+}
+
+impl Cursor {
+    pub fn move_x(&mut self, delta: i16) {
+        self.position.x += delta;
+    }
+
+    pub fn move_y(&mut self, delta: i16) {
+        self.position.y += delta;
+    }
+}
+
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
 pub struct PixelPosition {
     pub y: i16,
     pub x: i16,

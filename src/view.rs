@@ -1,4 +1,4 @@
-use crate::model::PixelPosition;
+use crate::{model::PixelPosition, model_actor::ModelActorHandle};
 use pagurus::{
     event::{Event, Key, KeyEvent, MouseEvent},
     failure::OrFail,
@@ -17,11 +17,16 @@ const COLOR_CURSOR: Color = Color::rgba(255, 0, 0, 100);
 pub struct ViewContext {
     pub window_size: Size,
     pub now: Duration,
+    pub model: ModelActorHandle,
 }
 
 impl ViewContext {
-    pub fn new(window_size: Size, now: Duration) -> Self {
-        Self { window_size, now }
+    pub fn new(window_size: Size, now: Duration, model: ModelActorHandle) -> Self {
+        Self {
+            window_size,
+            now,
+            model,
+        }
     }
 }
 
@@ -55,19 +60,19 @@ impl View {
 
 #[derive(Debug, Default)]
 pub struct PixelCanvas {
-    cursor: PixelPosition,
     camera: PixelPosition,
     force_show_cursor_until: Duration,
 }
 
 impl PixelCanvas {
-    fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+    fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) -> pagurus::Result<()> {
         if ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0 {
             canvas.draw_pixel(self.cursor_position(ctx), COLOR_CURSOR)
         }
+        Ok(())
     }
 
-    fn cursor_position(&self, ctx: &ViewContext) -> Position {
+    fn cursor_position(&self, ctx: &ViewContext) -> pagurus::Result<Position> {
         let mut position = ctx.window_size.to_region().center();
         position.x += self.cursor.x as i32;
         position.y += self.cursor.y as i32;
