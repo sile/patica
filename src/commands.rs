@@ -1,4 +1,4 @@
-use crate::records::{CreateRecord, OpenRecord, Record, RecordFile, RecordWriter};
+use crate::journal::JournalHttpServer;
 use clap::{Args, Subcommand};
 use pagurus::{
     event::{Event, Key, KeyEvent},
@@ -30,22 +30,13 @@ pub struct NewCommand {
 
 impl NewCommand {
     pub fn run(&self) -> pagurus::Result<()> {
-        let file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&self.name)
-            .or_fail()?;
-
-        let record = CreateRecord::new().or_fail()?;
-        RecordWriter::new(file)
-            .append(&Record::Create(record))
-            .or_fail()?;
-
+        JournalHttpServer::start(&self.name, true).or_fail()?;
         println!("Created: {}", self.name.display());
         Ok(())
     }
 }
 
+// TODO: EditCommand
 #[derive(Debug, Args)]
 pub struct OpenCommand {
     pub name: PathBuf,
@@ -53,15 +44,7 @@ pub struct OpenCommand {
 
 impl OpenCommand {
     pub fn run(&self) -> pagurus::Result<()> {
-        let mut rf = RecordFile::open(&self.name).or_fail()?;
-        let mut port = crate::records::allocate_port().or_fail()?;
-        while let Some(record) = rf.next_record().or_fail()? {
-            if let Record::Open(open) = record {
-                port = open.port;
-            }
-        }
-        let record = OpenRecord::with_port(port).or_fail()?;
-        rf.append(&Record::Open(record)).or_fail()?;
+        JournalHttpServer::start(&self.name, false).or_fail()?;
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
