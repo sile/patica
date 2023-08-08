@@ -4,7 +4,7 @@ use crate::{
 };
 use pagurus::{
     event::{Event, TimeoutTag},
-    failure::OrFail,
+    failure::{Failure, OrFail},
     image::Canvas,
     video::VideoFrame,
     Result, System,
@@ -66,5 +66,16 @@ impl<S: System> pagurus::Game<S> for Game {
         self.model = Some(ctx.model);
 
         Ok(true)
+    }
+
+    fn query(&mut self, _system: &mut S, name: &str) -> Result<Vec<u8>> {
+        match name {
+            "model.take_applied_commands" => {
+                let commands = self.model.as_mut().or_fail()?.take_applied_commands();
+                let data = serde_json::to_vec(&commands).or_fail()?;
+                Ok(data)
+            }
+            _ => Err(Failure::new().message(format!("unknown query: {}", name))),
+        }
     }
 }

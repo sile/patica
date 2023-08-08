@@ -2,9 +2,12 @@ use pagurus::failure::OrFail;
 use serde::{Deserialize, Serialize};
 use std::time::UNIX_EPOCH;
 
+use crate::model::ModelCommand;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Record {
     Open(OpenRecord),
+    Model(ModelCommand),
 }
 
 #[derive(Debug, Serialize, Deserialize)]

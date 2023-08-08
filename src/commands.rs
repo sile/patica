@@ -44,7 +44,7 @@ pub struct OpenCommand {
 
 impl OpenCommand {
     pub fn run(&self) -> pagurus::Result<()> {
-        JournalHttpServer::start(&self.name, false).or_fail()?;
+        let mut journal = JournalHttpServer::start(&self.name, false).or_fail()?;
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
@@ -56,6 +56,14 @@ impl OpenCommand {
             if !game.handle_event(&mut system, event).or_fail()? {
                 break;
             }
+
+            let commands = serde_json::from_slice(
+                &game
+                    .query(&mut system, "model.take_applied_commands")
+                    .or_fail()?,
+            )
+            .or_fail()?;
+            journal.append_commands(commands).or_fail()?;
         }
         Ok(())
     }

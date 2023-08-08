@@ -1,20 +1,19 @@
-use crate::records::{OpenRecord, Record};
+use crate::{
+    model::ModelCommand,
+    records::{OpenRecord, Record},
+};
 use pagurus::failure::OrFail;
 use std::{
-    io::{BufRead, BufReader, Write},
+    fs::File,
+    io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
 };
 
-fn write_record<W: Write>(mut writer: W, record: &Record) -> pagurus::Result<()> {
-    serde_json::to_writer(&mut writer, record).or_fail()?;
-    writeln!(writer).or_fail()?;
-    Ok(())
-}
-
 #[derive(Debug)]
 pub struct JournalHttpServer {
-    file: std::fs::File,
+    writer: JournalWriter,
     socket: std::net::TcpListener,
+    external_comamnds: Vec<ModelCommand>,
 }
 
 impl JournalHttpServer {
@@ -33,20 +32,59 @@ impl JournalHttpServer {
                 Record::Open(x) => {
                     port = x.port;
                 }
+                _ => {}
             }
         }
 
+        // TODO: Use another port if the port is already in use by other dotedit programs.
         let socket = std::net::TcpListener::bind(("127.0.0.1", port)).or_fail()?;
+        socket.set_nonblocking(true).or_fail()?;
+
         let port = socket.local_addr().or_fail()?.port();
         let record = Record::Open(OpenRecord::new(port).or_fail()?);
-        write_record(&mut file, &record).or_fail()?;
+        let mut writer = JournalWriter::new(file);
+        writer.append(&record).or_fail()?;
 
-        Ok(Self { file, socket })
+        Ok(Self {
+            writer,
+            socket,
+            external_comamnds: Vec::new(),
+        })
+    }
+
+    pub fn append_commands(&mut self, commands: Vec<ModelCommand>) -> pagurus::Result<()> {
+        for command in commands {
+            self.writer.append(&Record::Model(command)).or_fail()?;
+        }
+        Ok(())
+    }
+
+    pub fn take_external_commands(&mut self) -> Vec<ModelCommand> {
+        std::mem::take(&mut self.external_comamnds)
     }
 }
 
 #[derive(Debug)]
 pub struct JournalHttpClient {}
+
+#[derive(Debug)]
+struct JournalWriter {
+    writer: BufWriter<File>,
+}
+
+impl JournalWriter {
+    fn new(file: File) -> Self {
+        Self {
+            writer: BufWriter::new(file),
+        }
+    }
+
+    fn append(&mut self, record: &Record) -> pagurus::Result<()> {
+        serde_json::to_writer(&mut self.writer, record).or_fail()?;
+        writeln!(self.writer).or_fail()?;
+        Ok(())
+    }
+}
 
 #[derive(Debug)]
 pub struct JournalRecords<R> {
