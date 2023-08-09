@@ -10,9 +10,6 @@ use std::time::Duration;
 const COLOR_BG0: Color = Color::rgb(100, 100, 100);
 const COLOR_BG1: Color = Color::rgb(200, 200, 200);
 
-// TODO
-const COLOR_CURSOR: Color = Color::rgba(255, 0, 0, 100);
-
 #[derive(Debug)]
 pub struct ViewContext {
     pub window_size: Size,
@@ -50,18 +47,34 @@ impl View {
 
 #[derive(Debug, Default)]
 pub struct PixelCanvas {
-    camera: PixelPosition,
     force_show_cursor_until: Duration,
 }
 
 impl PixelCanvas {
     fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        if ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0 {
-            canvas.draw_pixel(self.cursor_position(ctx), COLOR_CURSOR);
+        self.render_pixels(ctx, canvas);
+        self.render_cursor(ctx, canvas);
+    }
+
+    fn render_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+        let center = ctx.window_size.to_region().center();
+        for (pixel_position, color) in ctx.model.visible_pixels(ctx.window_size) {
+            let position = Position::from(pixel_position) + center;
+            canvas.draw_pixel(position, color);
         }
     }
 
+    fn render_cursor(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+        let mut color = ctx.model.palette().selected_color();
+        if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
+            let c = color.to_rgba();
+            color = Color::rgba(255 - c.r, 255 - c.g, 255 - c.b, c.a);
+        };
+        canvas.draw_pixel(self.cursor_position(ctx), color);
+    }
+
     fn cursor_position(&self, ctx: &ViewContext) -> Position {
+        // TODO: consider camera position
         let mut position = ctx.window_size.to_region().center();
         position.x += ctx.model.cursor().x() as i32;
         position.y += ctx.model.cursor().y() as i32;
@@ -95,8 +108,18 @@ impl PixelCanvas {
             Key::Right => {
                 self.move_cursor(ctx, (1, 0).into()).or_fail()?;
             }
+            Key::Char(' ') => {
+                self.draw_dot(ctx).or_fail()?;
+            }
             _ => {}
         }
+        Ok(())
+    }
+
+    fn draw_dot(&mut self, ctx: &mut ViewContext) -> pagurus::Result<()> {
+        let command = ctx.model.dot_command();
+        ctx.model.apply(command).or_fail()?;
+        self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
         Ok(())
     }
 

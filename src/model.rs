@@ -1,4 +1,8 @@
-use pagurus::{failure::OrFail, image::Color};
+use pagurus::{
+    failure::OrFail,
+    image::Color,
+    spatial::{Position, Region, Size},
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -34,11 +38,37 @@ impl Model {
         std::mem::take(&mut self.applied_commands)
     }
 
+    pub fn visible_pixels(
+        &self,
+        window_size: Size,
+    ) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
+        let region = Region::new(
+            Position::from(self.camera.position) - window_size.to_region().center(),
+            window_size,
+        );
+
+        // TODO: optimize
+        region.iter().filter_map(|p| {
+            let pixel_position = PixelPosition::from((p.x as i16, p.y as i16));
+            self.pixels
+                .get(&pixel_position)
+                .map(|color_index| (pixel_position, self.palette.colors[color_index]))
+        })
+    }
+
     pub fn apply(&mut self, command: ModelCommand) -> pagurus::Result<()> {
         (self.version == command.version()).or_fail()?;
 
         match &command {
             ModelCommand::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
+            ModelCommand::Dot { .. } => {
+                let old = self
+                    .pixels
+                    .insert(self.cursor.position, self.palette.selected);
+                if old == Some(self.palette.selected) {
+                    return Ok(());
+                }
+            }
         }
 
         self.applied_commands.push(command);
@@ -53,8 +83,15 @@ impl Model {
             delta,
         }
     }
+
+    pub fn dot_command(&self) -> ModelCommand {
+        ModelCommand::Dot {
+            version: self.version,
+        }
+    }
 }
 
+// TODO: remove
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
 )]
@@ -66,12 +103,16 @@ pub enum ModelCommand {
         version: ModelVersion,
         delta: PixelPosition,
     },
+    Dot {
+        version: ModelVersion,
+    },
 }
 
 impl ModelCommand {
     pub fn version(&self) -> ModelVersion {
         match self {
             ModelCommand::MoveCursor { version, .. } => *version,
+            ModelCommand::Dot { version, .. } => *version,
         }
     }
 }
@@ -123,35 +164,44 @@ impl From<(i16, i16)> for PixelPosition {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ColorIndex {
-    pub y: u8,
-    pub x: u8,
-}
-
-impl ColorIndex {
-    pub const fn from_yx(y: u8, x: u8) -> Self {
-        Self { y, x }
+impl From<PixelPosition> for Position {
+    fn from(position: PixelPosition) -> Self {
+        Self {
+            x: position.x as i32,
+            y: position.y as i32,
+        }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ColorIndex(pub usize);
 
 #[derive(Debug)]
 pub struct Palette {
     pub colors: BTreeMap<ColorIndex, Color>,
+    pub selected: ColorIndex,
+}
+
+impl Palette {
+    pub fn selected_color(&self) -> Color {
+        self.colors[&self.selected]
+    }
 }
 
 impl Default for Palette {
     fn default() -> Self {
         Self {
             colors: [
-                (ColorIndex::from_yx(0, 0), Color::rgb(255, 255, 255)),
-                (ColorIndex::from_yx(0, 1), Color::rgb(255, 0, 0)),
-                (ColorIndex::from_yx(0, 2), Color::rgb(0, 255, 0)),
-                (ColorIndex::from_yx(0, 3), Color::rgb(0, 0, 255)),
-                (ColorIndex::from_yx(0, 4), Color::rgb(0, 0, 0)),
+                (ColorIndex(0), Color::rgb(255, 255, 255)),
+                (ColorIndex(1), Color::rgb(255, 0, 0)),
+                (ColorIndex(2), Color::rgb(0, 255, 0)),
+                (ColorIndex(3), Color::rgb(0, 0, 255)),
+                (ColorIndex(4), Color::rgb(0, 0, 0)),
             ]
             .into_iter()
             .collect(),
+            selected: ColorIndex(4),
         }
     }
 }
