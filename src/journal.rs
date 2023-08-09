@@ -4,9 +4,10 @@ use crate::{
 };
 use pagurus::failure::OrFail;
 use std::{
-    collections::VecDeque,
+    collections::{HashMap, VecDeque},
     fs::File,
     io::{BufRead, BufReader, BufWriter, Write},
+    net::SocketAddr,
     path::Path,
 };
 
@@ -14,6 +15,7 @@ use std::{
 pub struct JournalHttpServer {
     writer: JournalWriter,
     socket: std::net::TcpListener,
+    connections: HashMap<SocketAddr, ServerSideConnection>,
     proposed_commands: VecDeque<ModelCommand>,
 }
 
@@ -52,8 +54,21 @@ impl JournalHttpServer {
         Ok(Self {
             writer,
             socket,
+            connections: HashMap::new(),
             proposed_commands,
         })
+    }
+
+    pub fn handle_http_request(&mut self) -> pagurus::Result<()> {
+        // match self.socket.accept() {
+        //     Ok((mut stream, _)) => {
+        //         todo!()
+        //     }
+        //     Err(e) => {
+        //         return Err(e).or_fail()
+        //     },
+        // }
+        Ok(())
     }
 
     pub fn append_commands(&mut self, commands: Vec<ModelCommand>) -> pagurus::Result<()> {
@@ -76,7 +91,19 @@ impl JournalHttpServer {
 }
 
 #[derive(Debug)]
-pub struct JournalHttpClient {}
+struct ServerSideConnection {}
+
+#[derive(Debug)]
+pub struct JournalHttpClient {
+    socket: std::net::TcpStream,
+}
+
+impl JournalHttpClient {
+    pub fn connect(port: u16) -> pagurus::Result<Self> {
+        let socket = std::net::TcpStream::connect(("127.0.0.1", port)).or_fail()?;
+        Ok(Self { socket })
+    }
+}
 
 #[derive(Debug)]
 struct JournalWriter {

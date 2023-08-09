@@ -12,6 +12,7 @@ use std::path::PathBuf;
 pub enum Command {
     New(NewCommand),
     Open(OpenCommand),
+    SelectColor(SelectColorCommand),
 }
 
 impl Command {
@@ -19,6 +20,7 @@ impl Command {
         match self {
             Command::New(cmd) => cmd.run().or_fail(),
             Command::Open(cmd) => cmd.run().or_fail(),
+            Command::SelectColor(cmd) => cmd.run().or_fail(),
         }
     }
 }
@@ -50,23 +52,26 @@ impl OpenCommand {
         let mut game = crate::game::Game::default();
         game.initialize(&mut system).or_fail()?;
         while let Ok(event) = system.next_event() {
-            let mut updated = false;
-            while journal
-                .with_next_proposed_command(|command| {
-                    let data = serde_json::to_vec(&command).or_fail()?;
-                    game.command(&mut system, "model.apply_command", &data)
-                        .or_fail()?;
-                    Ok(())
-                })
-                .or_fail()?
+            // TODO: Move to other place
             {
-                updated = true;
-            }
-            if updated {
-                let _ = game
-                    .query(&mut system, "model.take_applied_commands")
-                    .or_fail()?;
-                system.request_redraw().or_fail()?;
+                let mut updated = false;
+                while journal
+                    .with_next_proposed_command(|command| {
+                        let data = serde_json::to_vec(&command).or_fail()?;
+                        game.command(&mut system, "model.apply_command", &data)
+                            .or_fail()?;
+                        Ok(())
+                    })
+                    .or_fail()?
+                {
+                    updated = true;
+                }
+                if updated {
+                    let _ = game
+                        .query(&mut system, "model.take_applied_commands")
+                        .or_fail()?;
+                    system.request_redraw().or_fail()?;
+                }
             }
 
             if is_quit_key(&event) {
@@ -83,6 +88,8 @@ impl OpenCommand {
             )
             .or_fail()?;
             journal.append_commands(commands).or_fail()?;
+
+            journal.handle_http_request().or_fail()?;
         }
         Ok(())
     }
@@ -96,4 +103,16 @@ fn is_quit_key(event: &Event) -> bool {
         (key, ctrl),
         (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
     )
+}
+
+#[derive(Debug, Args)]
+pub struct SelectColorCommand {
+    pub name: PathBuf,
+    pub color_index: usize,
+}
+
+impl SelectColorCommand {
+    pub fn run(&self) -> pagurus::Result<()> {
+        Ok(())
+    }
 }

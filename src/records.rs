@@ -15,7 +15,7 @@ pub struct OpenRecord {
     pub timestamp: UnixTimestamp,
     pub version: String,
     pub port: u16,
-    // TODO: uuid
+    pub uuid: uuid::Uuid,
 }
 
 impl OpenRecord {
@@ -24,6 +24,7 @@ impl OpenRecord {
             timestamp: UnixTimestamp::now()?,
             version: env!("CARGO_PKG_VERSION").to_string(),
             port,
+            uuid: uuid::Uuid::new_v4(),
         })
     }
 }
