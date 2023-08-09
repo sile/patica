@@ -3,11 +3,12 @@ use crate::{
     records::{OpenRecord, Record},
 };
 use pagurus::failure::OrFail;
+use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::VecDeque,
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Write},
-    net::SocketAddr,
+    io::{BufRead, BufReader, BufWriter, Read, Write},
+    net::TcpStream,
     path::Path,
 };
 
@@ -15,7 +16,7 @@ use std::{
 pub struct JournalHttpServer {
     writer: JournalWriter,
     socket: std::net::TcpListener,
-    connections: HashMap<SocketAddr, ServerSideConnection>,
+    connections: Vec<ServerSideConnection>,
     proposed_commands: VecDeque<ModelCommand>,
 }
 
@@ -54,21 +55,44 @@ impl JournalHttpServer {
         Ok(Self {
             writer,
             socket,
-            connections: HashMap::new(),
+            connections: Vec::new(),
             proposed_commands,
         })
     }
 
     pub fn handle_http_request(&mut self) -> pagurus::Result<()> {
-        // match self.socket.accept() {
-        //     Ok((mut stream, _)) => {
-        //         todo!()
-        //     }
-        //     Err(e) => {
-        //         return Err(e).or_fail()
-        //     },
-        // }
+        match self.socket.accept() {
+            Ok((stream, addr)) => {
+                pagurus::dbg!(addr);
+                stream.set_nonblocking(true).or_fail()?;
+                self.connections.push(ServerSideConnection::new(stream));
+            }
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::WouldBlock {
+                    return Err(e).or_fail();
+                }
+            }
+        }
+
+        let mut connections = Vec::new();
+        for mut connection in std::mem::take(&mut self.connections) {
+            connection.handle_io();
+            if let Some(req) = connection.take_request() {
+                let res = self.handle_request(req).or_fail()?;
+                connection.set_response(res);
+                connection.handle_io();
+            }
+            if !connection.is_closed() {
+                connections.push(connection);
+            }
+        }
+        self.connections = connections;
+
         Ok(())
+    }
+
+    fn handle_request(&mut self, req: Request) -> pagurus::Result<Response> {
+        todo!()
     }
 
     pub fn append_commands(&mut self, commands: Vec<ModelCommand>) -> pagurus::Result<()> {
@@ -90,17 +114,180 @@ impl JournalHttpServer {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Method {
+    Get,
+    Post,
+}
+
 #[derive(Debug)]
-struct ServerSideConnection {}
+struct ServerSideConnection {
+    stream: TcpStream,
+    request: Option<Request>,
+    response: Option<Response>,
+    closed: bool,
+    buf: Vec<u8>,
+    buf_start: usize,
+    buf_end: usize,
+    method: Option<Method>,
+    content_length: usize,
+    is_body: bool,
+}
+
+impl ServerSideConnection {
+    fn new(stream: TcpStream) -> Self {
+        Self {
+            stream,
+            request: None,
+            response: None,
+            closed: false,
+            buf: vec![0; 4096],
+            buf_start: 0,
+            buf_end: 0,
+            method: None,
+            content_length: 0,
+            is_body: false,
+        }
+    }
+
+    fn handle_io(&mut self) {
+        if self.request.is_none() {
+            if let Err(e) = self.read_request().or_fail() {
+                pagurus::println!("{:?}", e);
+                self.closed = true;
+                return;
+            }
+        }
+    }
+
+    fn read_request(&mut self) -> pagurus::Result<()> {
+        pagurus::dbg!("read_request");
+        let n = match self.stream.read(&mut self.buf[self.buf_end..]) {
+            Ok(n) => n,
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::WouldBlock {
+                    return Err(e).or_fail();
+                } else {
+                    return Ok(());
+                }
+            }
+        };
+        if n == 0 {
+            self.closed = true;
+            return Ok(());
+        }
+        self.buf_end += n;
+        if self.method.is_none() {
+            if self.buf[..self.buf_end].starts_with(b"GET / HTTP/1.1\r\n") {
+                self.method = Some(Method::Get);
+                self.buf_start = 15;
+            } else if self.buf[..self.buf_end].starts_with(b"POST / HTTP/1.1\r\n") {
+                self.method = Some(Method::Post);
+                self.buf_start = 16;
+            } else if self.buf[..self.buf_end]
+                .iter()
+                .find(|b| **b == b'\r')
+                .is_some()
+            {
+                self.closed = true;
+                return Ok(());
+            } else {
+                return Ok(());
+            }
+        }
+        pagurus::dbg!(self.method);
+        if !self.is_body {
+            while let Some(line_end) = self.buf[self.buf_start..self.buf_end]
+                .iter()
+                .position(|b| *b == b'\r')
+            {
+                let i = b"Content-Length:".len().min(line_end);
+                if self.buf[self.buf_start..][..i].eq_ignore_ascii_case(b"Content-Length:") {
+                    self.content_length =
+                        std::str::from_utf8(&self.buf[self.buf_start..line_end][i..])
+                            .or_fail()?
+                            .parse::<usize>()
+                            .or_fail()?;
+                }
+                self.buf_start += line_end + 1;
+                if self.buf[self.buf_start..].starts_with(b"\n\r\n") {
+                    self.is_body = true;
+                    self.buf_start += 3;
+                    self.buf.resize(self.buf_start + self.content_length, 0);
+                    break;
+                }
+            }
+            if !self.is_body {
+                return Ok(());
+            }
+        }
+        pagurus::dbg!(self.content_length);
+        while self.buf_end - self.buf_start < self.content_length {
+            let n = match self.stream.read(&mut self.buf[self.buf_end..]) {
+                Ok(n) => n,
+                Err(e) => {
+                    if e.kind() != std::io::ErrorKind::WouldBlock {
+                        return Err(e).or_fail();
+                    } else {
+                        return Ok(());
+                    }
+                }
+            };
+            if n == 0 {
+                self.closed = true;
+                return Ok(());
+            }
+            self.buf_end += n;
+        }
+
+        self.request = Some(
+            serde_json::from_slice(&self.buf[self.buf_start..][..self.content_length]).or_fail()?,
+        );
+        pagurus::dbg!(&self.request);
+
+        self.buf_start += self.content_length;
+        self.buf.drain(..self.buf_start);
+        self.buf.resize(4096, 0);
+        self.buf_end -= self.buf_start;
+        self.buf_start = 0;
+        self.method = None;
+        self.is_body = false;
+        self.content_length = 0;
+
+        Ok(())
+    }
+
+    fn is_closed(&self) -> bool {
+        self.closed
+    }
+
+    fn take_request(&mut self) -> Option<Request> {
+        self.request.take()
+    }
+
+    fn set_response(&mut self, res: Response) {
+        self.response = Some(res);
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum Request {
+    SelectColor { index: usize },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum Response {
+    Ok,
+}
 
 #[derive(Debug)]
 pub struct JournalHttpClient {
-    socket: std::net::TcpStream,
+    socket: TcpStream,
 }
 
 impl JournalHttpClient {
     pub fn connect(port: u16) -> pagurus::Result<Self> {
-        let socket = std::net::TcpStream::connect(("127.0.0.1", port)).or_fail()?;
+        let socket = TcpStream::connect(("127.0.0.1", port)).or_fail()?;
         Ok(Self { socket })
     }
 }
