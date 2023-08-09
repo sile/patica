@@ -1,4 +1,8 @@
-use crate::journal::JournalHttpServer;
+use crate::{
+    journal::{JournalHttpClient, JournalHttpServer, JournalRecords, Request},
+    model::{ColorIndex, ModelCommand},
+    records::Record,
+};
 use clap::{Args, Subcommand};
 use pagurus::{
     event::{Event, Key, KeyEvent},
@@ -6,7 +10,7 @@ use pagurus::{
     Game,
 };
 use pagurus_tui::TuiSystem;
-use std::path::PathBuf;
+use std::{io::BufReader, path::PathBuf};
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -89,7 +93,9 @@ impl OpenCommand {
             .or_fail()?;
             journal.append_commands(commands).or_fail()?;
 
-            journal.handle_http_request().or_fail()?;
+            journal
+                .handle_http_request(&mut game, &mut system)
+                .or_fail()?;
         }
         Ok(())
     }
@@ -113,6 +119,32 @@ pub struct SelectColorCommand {
 
 impl SelectColorCommand {
     pub fn run(&self) -> pagurus::Result<()> {
+        // TODO: optimize
+        let file = std::fs::File::open(&self.name).or_fail()?;
+        let mut port = 0;
+        let mut uuid = None;
+        let mut version = Default::default();
+        for record in JournalRecords::new(BufReader::new(file)) {
+            let record = record.or_fail()?;
+            if let Record::Model(x) = &record {
+                version = x.version();
+            }
+            if let Record::Open(v) = record {
+                port = v.port;
+                uuid = Some(v.uuid);
+            }
+        }
+
+        let mut client = JournalHttpClient::connect(port).or_fail()?;
+        let request = Request::Command {
+            uuid: uuid.or_fail()?,
+            command: ModelCommand::SelectColor {
+                version: version.next(),
+                index: ColorIndex(self.color_index),
+            },
+        };
+        client.post(request).or_fail()?;
+
         Ok(())
     }
 }

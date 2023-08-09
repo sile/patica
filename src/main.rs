@@ -13,6 +13,9 @@ struct Args {
 
 fn main() -> pagurus::Result<()> {
     pagurus::io::set_println_fn(file_println).or_fail()?;
+    std::panic::set_hook(Box::new(|info| {
+        pagurus::println!("{info}");
+    }));
 
     let args = Args::parse();
     let result = args.command.run().or_fail();

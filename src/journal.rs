@@ -1,8 +1,10 @@
 use crate::{
+    game::Game,
     model::ModelCommand,
     records::{OpenRecord, Record},
 };
-use pagurus::failure::OrFail;
+use pagurus::{failure::OrFail, Game as _};
+use pagurus_tui::TuiSystem;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::VecDeque,
@@ -60,7 +62,11 @@ impl JournalHttpServer {
         })
     }
 
-    pub fn handle_http_request(&mut self) -> pagurus::Result<()> {
+    pub fn handle_http_request(
+        &mut self,
+        game: &mut Game,
+        system: &mut TuiSystem,
+    ) -> pagurus::Result<()> {
         match self.socket.accept() {
             Ok((stream, addr)) => {
                 pagurus::dbg!(addr);
@@ -78,7 +84,8 @@ impl JournalHttpServer {
         for mut connection in std::mem::take(&mut self.connections) {
             connection.handle_io();
             if let Some(req) = connection.take_request() {
-                let res = self.handle_request(req).or_fail()?;
+                pagurus::dbg!(&req);
+                let res = self.handle_request(game, system, req).or_fail()?;
                 connection.set_response(res);
                 connection.handle_io();
             }
@@ -91,8 +98,22 @@ impl JournalHttpServer {
         Ok(())
     }
 
-    fn handle_request(&mut self, req: Request) -> pagurus::Result<Response> {
-        todo!()
+    fn handle_request(
+        &mut self,
+        game: &mut Game,
+        system: &mut TuiSystem,
+        req: Request,
+    ) -> pagurus::Result<Response> {
+        match req {
+            Request::Command { uuid, command } => {
+                pagurus::dbg!(uuid);
+                let _ = uuid; // TDOO: check
+                let data = serde_json::to_vec(&command).or_fail()?;
+                let result = game.command(system, "model.apply_command", &data).or_fail();
+                pagurus::dbg!(&result);
+                Ok(Response::new(result).or_fail()?)
+            }
+        }
     }
 
     pub fn append_commands(&mut self, commands: Vec<ModelCommand>) -> pagurus::Result<()> {
@@ -201,13 +222,15 @@ impl ServerSideConnection {
                 .iter()
                 .position(|b| *b == b'\r')
             {
-                let i = b"Content-Length:".len().min(line_end);
-                if self.buf[self.buf_start..][..i].eq_ignore_ascii_case(b"Content-Length:") {
-                    self.content_length =
-                        std::str::from_utf8(&self.buf[self.buf_start..line_end][i..])
-                            .or_fail()?
-                            .parse::<usize>()
-                            .or_fail()?;
+                let i = b"\nContent-Length:".len().min(line_end);
+                if self.buf[self.buf_start..][..i].eq_ignore_ascii_case(b"\nContent-Length:") {
+                    self.content_length = std::str::from_utf8(
+                        &self.buf[self.buf_start..][..line_end][b"\nContent-Length:".len()..],
+                    )
+                    .or_fail()?
+                    .trim()
+                    .parse::<usize>()
+                    .or_fail()?;
                 }
                 self.buf_start += line_end + 1;
                 if self.buf[self.buf_start..].starts_with(b"\n\r\n") {
@@ -272,13 +295,20 @@ impl ServerSideConnection {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Request {
-    SelectColor { index: usize },
+    Command {
+        uuid: uuid::Uuid,
+        command: ModelCommand,
+    },
 }
 
 // TODO: delete
 #[derive(Debug, Serialize, Deserialize)]
-enum Response {
-    Ok,
+struct Response(Vec<u8>);
+
+impl Response {
+    fn new<T: Serialize>(t: T) -> pagurus::Result<Self> {
+        serde_json::to_vec(&t).or_fail().map(Self)
+    }
 }
 
 #[derive(Debug)]
@@ -301,6 +331,7 @@ impl JournalHttpClient {
         self.socket.write_all(b"\r\n").or_fail()?;
         self.socket.write_all(&body).or_fail()?;
 
+        pagurus::dbg!("POST");
         // TODO: read response
 
         Ok(())

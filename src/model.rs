@@ -57,7 +57,13 @@ impl Model {
     }
 
     pub fn apply(&mut self, command: ModelCommand) -> pagurus::Result<()> {
-        (self.version == command.version()).or_fail()?;
+        (self.version == command.version()).or_fail().map_err(|f| {
+            f.message(format!(
+                "version mismatch: model version is {}, command version is {}",
+                self.version.0,
+                command.version().0
+            ))
+        })?;
 
         match &command {
             ModelCommand::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
@@ -68,6 +74,12 @@ impl Model {
                 if old == Some(self.palette.selected) {
                     return Ok(());
                 }
+            }
+            ModelCommand::SelectColor { index, .. } => {
+                pagurus::dbg!(index);
+                self.palette.colors.get(index).or_fail()?;
+                self.palette.selected = *index;
+                pagurus::dbg!(self.palette.selected_color());
             }
         }
 
@@ -97,6 +109,12 @@ impl Model {
 )]
 pub struct ModelVersion(pub u64);
 
+impl ModelVersion {
+    pub fn next(self) -> Self {
+        Self(self.0 + 1)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ModelCommand {
     MoveCursor {
@@ -106,6 +124,10 @@ pub enum ModelCommand {
     Dot {
         version: ModelVersion,
     },
+    SelectColor {
+        version: ModelVersion,
+        index: ColorIndex,
+    },
 }
 
 impl ModelCommand {
@@ -113,6 +135,7 @@ impl ModelCommand {
         match self {
             ModelCommand::MoveCursor { version, .. } => *version,
             ModelCommand::Dot { version, .. } => *version,
+            ModelCommand::SelectColor { version, .. } => *version,
         }
     }
 }
