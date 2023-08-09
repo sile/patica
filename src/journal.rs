@@ -271,10 +271,11 @@ impl ServerSideConnection {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-enum Request {
+pub enum Request {
     SelectColor { index: usize },
 }
 
+// TODO: delete
 #[derive(Debug, Serialize, Deserialize)]
 enum Response {
     Ok,
@@ -289,6 +290,20 @@ impl JournalHttpClient {
     pub fn connect(port: u16) -> pagurus::Result<Self> {
         let socket = TcpStream::connect(("127.0.0.1", port)).or_fail()?;
         Ok(Self { socket })
+    }
+
+    pub fn post(&mut self, req: Request) -> pagurus::Result<()> {
+        let body = serde_json::to_vec(&req).or_fail()?;
+        self.socket.write_all(b"POST / HTTP/1.1\r\n").or_fail()?;
+        self.socket
+            .write_all(&format!("Content-Length: {}\r\n", body.len()).as_bytes())
+            .or_fail()?;
+        self.socket.write_all(b"\r\n").or_fail()?;
+        self.socket.write_all(&body).or_fail()?;
+
+        // TODO: read response
+
+        Ok(())
     }
 }
 
