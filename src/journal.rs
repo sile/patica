@@ -117,12 +117,18 @@ impl JournalHttpServer {
     }
 
     pub fn append_commands(&mut self, commands: Vec<ModelCommand>) -> pagurus::Result<()> {
+        let mut updated = false;
         for command in commands {
             self.writer.append(&Record::Model(command)).or_fail()?;
+            updated = true;
+        }
+        if updated {
+            self.writer.flush().or_fail()?;
         }
         Ok(())
     }
 
+    // TODO: delete
     pub fn with_next_proposed_command<F>(&mut self, mut f: F) -> pagurus::Result<bool>
     where
         F: FnMut(ModelCommand) -> pagurus::Result<()>,
@@ -353,6 +359,11 @@ impl JournalWriter {
     fn append(&mut self, record: &Record) -> pagurus::Result<()> {
         serde_json::to_writer(&mut self.writer, record).or_fail()?;
         writeln!(self.writer).or_fail()?;
+        Ok(())
+    }
+
+    fn flush(&mut self) -> pagurus::Result<()> {
+        self.writer.flush().or_fail()?;
         Ok(())
     }
 }
