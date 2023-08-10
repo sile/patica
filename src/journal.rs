@@ -1,7 +1,7 @@
 use crate::model::{Model, ModelCommand};
 use pagurus::failure::{Failure, OrFail};
 use std::{
-    fs::File,
+    fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
     time::{Duration, Instant},
@@ -16,13 +16,28 @@ pub struct JournaledModel {
 }
 
 impl JournaledModel {
-    pub fn open<P: AsRef<Path>>(path: P) -> pagurus::Result<Self> {
-        let file = std::fs::OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .open(path.as_ref())
-            .or_fail()?;
+    pub fn open_or_create<P: AsRef<Path>>(path: P) -> pagurus::Result<Self> {
+        Self::open(
+            path,
+            std::fs::OpenOptions::new()
+                .write(true)
+                .read(true)
+                .create(true)
+                .clone(),
+        )
+        .or_fail()
+    }
+
+    pub fn open_if_exists<P: AsRef<Path>>(path: P) -> pagurus::Result<Self> {
+        Self::open(
+            path,
+            std::fs::OpenOptions::new().write(true).read(true).clone(),
+        )
+        .or_fail()
+    }
+
+    fn open<P: AsRef<Path>>(path: P, options: OpenOptions) -> pagurus::Result<Self> {
+        let file = options.open(path.as_ref()).or_fail()?;
         let lock_extension = if let Some(e) = path.as_ref().extension() {
             format!("{}.lock", e.to_str().or_fail()?)
         } else {

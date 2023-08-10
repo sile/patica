@@ -8,7 +8,6 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
-    version: ModelVersion,
     cursor: Cursor,
     camera: Camera,
     palette: Palette,
@@ -17,10 +16,6 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn version(&self) -> ModelVersion {
-        self.version
-    }
-
     pub fn cursor(&self) -> Cursor {
         self.cursor
     }
@@ -57,14 +52,6 @@ impl Model {
     }
 
     pub fn apply(&mut self, command: ModelCommand) -> pagurus::Result<()> {
-        (self.version == command.version()).or_fail().map_err(|f| {
-            f.message(format!(
-                "version mismatch: model version is {}, command version is {}",
-                self.version.0,
-                command.version().0
-            ))
-        })?;
-
         match &command {
             ModelCommand::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
             ModelCommand::Dot { .. } => {
@@ -84,61 +71,25 @@ impl Model {
         }
 
         self.applied_commands.push(command);
-        self.version.0 += 1;
 
         Ok(())
     }
 
     pub fn move_cursor_command(&self, delta: PixelPosition) -> ModelCommand {
-        ModelCommand::MoveCursor {
-            version: self.version,
-            delta,
-        }
+        ModelCommand::MoveCursor { delta }
     }
 
     pub fn dot_command(&self) -> ModelCommand {
-        ModelCommand::Dot {
-            version: self.version,
-        }
-    }
-}
-
-// TODO: remove
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
-)]
-pub struct ModelVersion(pub u64);
-
-impl ModelVersion {
-    pub fn next(self) -> Self {
-        Self(self.0 + 1)
+        ModelCommand::Dot {}
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ModelCommand {
-    MoveCursor {
-        version: ModelVersion, // TODO: delete
-        delta: PixelPosition,
-    },
-    Dot {
-        version: ModelVersion,
-    },
-    SelectColor {
-        version: ModelVersion,
-        index: ColorIndex,
-    },
+    MoveCursor { delta: PixelPosition },
+    Dot {},
+    SelectColor { index: ColorIndex },
     // Snapshot
-}
-
-impl ModelCommand {
-    pub fn version(&self) -> ModelVersion {
-        match self {
-            ModelCommand::MoveCursor { version, .. } => *version,
-            ModelCommand::Dot { version, .. } => *version,
-            ModelCommand::SelectColor { version, .. } => *version,
-        }
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]

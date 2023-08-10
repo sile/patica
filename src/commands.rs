@@ -1,4 +1,7 @@
-use crate::journal_file::JournaledModel;
+use crate::{
+    journal::JournaledModel,
+    model::{ColorIndex, ModelCommand},
+};
 use clap::{Args, Subcommand};
 use pagurus::{
     event::{Event, Key, KeyEvent},
@@ -31,7 +34,7 @@ pub struct OpenCommand {
 
 impl OpenCommand {
     pub fn run(&self) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open(&self.name).or_fail()?;
+        let mut journal = JournaledModel::open_or_create(&self.name).or_fail()?;
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
@@ -75,32 +78,16 @@ pub struct SelectColorCommand {
 
 impl SelectColorCommand {
     pub fn run(&self) -> pagurus::Result<()> {
-        // TODO: optimize
-        // let file = std::fs::File::open(&self.name).or_fail()?;
-        // let mut port = 0;
-        // let mut uuid = None;
-        // let mut version = Default::default();
-        // for record in JournalRecords::new(BufReader::new(file)) {
-        //     let record = record.or_fail()?;
-        //     if let Record::Model(x) = &record {
-        //         version = x.version();
-        //     }
-        //     if let Record::Open(v) = record {
-        //         port = v.port;
-        //         uuid = Some(v.uuid);
-        //     }
-        // }
-
-        // let mut client = JournalHttpClient::connect(port).or_fail()?;
-        // let request = Request::Command {
-        //     uuid: uuid.or_fail()?,
-        //     command: ModelCommand::SelectColor {
-        //         version: version.next(),
-        //         index: ColorIndex(self.color_index),
-        //     },
-        // };
-        // client.post(request).or_fail()?;
-
+        let mut journal = JournaledModel::open_if_exists(&self.name).or_fail()?;
+        journal
+            .with_locked_model(|model| {
+                let command = ModelCommand::SelectColor {
+                    index: ColorIndex(self.color_index),
+                };
+                model.apply(command).or_fail()?;
+                Ok(())
+            })
+            .or_fail()?;
         Ok(())
     }
 }
