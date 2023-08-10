@@ -22,6 +22,14 @@ pub struct Game {
 }
 
 impl Game {
+    pub fn set_model(&mut self, model: Model) {
+        self.model = Some(model);
+    }
+
+    pub fn take_model(&mut self) -> Option<Model> {
+        self.model.take()
+    }
+
     fn render<S: System>(&mut self, system: &mut S) -> pagurus::Result<()> {
         let ctx = self.make_view_context(system).or_fail()?;
         let mut canvas = Canvas::new(&mut self.video_frame);
@@ -84,6 +92,8 @@ impl<S: System> pagurus::Game<S> for Game {
             "model.apply_command" => {
                 let command = serde_json::from_slice(data).or_fail()?;
                 self.model.as_mut().or_fail()?.apply(command).or_fail()?;
+                // TODO
+                let _ = self.model.as_mut().or_fail()?.take_applied_commands();
                 Ok(())
             }
             _ => Err(Failure::new().message(format!("unknown command: {name:?}"))),

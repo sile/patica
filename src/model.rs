@@ -6,7 +6,7 @@ use pagurus::{
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Model {
     version: ModelVersion,
     cursor: Cursor,
@@ -118,7 +118,7 @@ impl ModelVersion {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ModelCommand {
     MoveCursor {
-        version: ModelVersion,
+        version: ModelVersion, // TODO: delete
         delta: PixelPosition,
     },
     Dot {
@@ -128,6 +128,7 @@ pub enum ModelCommand {
         version: ModelVersion,
         index: ColorIndex,
     },
+    // Snapshot
 }
 
 impl ModelCommand {
@@ -200,7 +201,7 @@ impl From<PixelPosition> for Position {
 #[serde(transparent)]
 pub struct ColorIndex(pub usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Palette {
     pub colors: BTreeMap<ColorIndex, Color>,
     pub selected: ColorIndex,
