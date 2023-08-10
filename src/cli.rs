@@ -1,7 +1,4 @@
-use crate::{
-    journal::JournaledModel,
-    model::{ColorIndex, ModelCommand},
-};
+use crate::journal::JournaledModel;
 use pagurus::{
     event::{Event, Key, KeyEvent},
     failure::OrFail,
@@ -32,7 +29,7 @@ enum Command {
 }
 
 impl Command {
-    pub fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         match self {
             Command::Open(cmd) => cmd.run(path).or_fail(),
             Command::SelectColor(cmd) => cmd.run(path).or_fail(),
@@ -71,9 +68,9 @@ impl OpenCommand {
     }
 
     fn is_quit_key(&self, event: &Event) -> bool {
-        let Event::Key(KeyEvent { key, ctrl,.. }) = event else {
-        return false;
-    };
+        let Event::Key(KeyEvent { key, ctrl, .. }) = event else {
+            return false;
+        };
         matches!(
             (key, ctrl),
             (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
@@ -87,16 +84,10 @@ struct SelectColorCommand {
 }
 
 impl SelectColorCommand {
-    pub fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open_if_exists(path).or_fail()?;
-        journal
-            .with_locked_model(|model| {
-                let command = ModelCommand::SelectColor {
-                    index: ColorIndex(self.color_index),
-                };
-                model.apply(command).or_fail()?;
-                Ok(())
-            })
+    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        JournaledModel::open_if_exists(path)
+            .or_fail()?
+            .with_locked_model(|model| model.select_color(self.color_index).or_fail())
             .or_fail()?;
         Ok(())
     }

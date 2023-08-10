@@ -12,7 +12,9 @@ pub struct Model {
     camera: Camera,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
-    applied_commands: Vec<ModelCommand>,
+    applied_commands: Vec<Command>, // dirty_commands (?)
+
+                                    // TODO: undo_commands: Vec<Command>
 }
 
 impl Model {
@@ -28,7 +30,7 @@ impl Model {
         &self.palette
     }
 
-    pub fn take_applied_commands(&mut self) -> Vec<ModelCommand> {
+    pub fn take_applied_commands(&mut self) -> Vec<Command> {
         // TODO: compaction
         std::mem::take(&mut self.applied_commands)
     }
@@ -51,10 +53,18 @@ impl Model {
         })
     }
 
-    pub fn apply(&mut self, command: ModelCommand) -> pagurus::Result<()> {
+    pub fn select_color(&mut self, index: usize) -> pagurus::Result<()> {
+        let command = Command::SelectColor {
+            index: ColorIndex(index),
+        };
+        self.apply(command).or_fail()?;
+        Ok(())
+    }
+
+    pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
         match &command {
-            ModelCommand::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
-            ModelCommand::Dot { .. } => {
+            Command::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
+            Command::Dot { .. } => {
                 let old = self
                     .pixels
                     .insert(self.cursor.position, self.palette.selected);
@@ -62,7 +72,7 @@ impl Model {
                     return Ok(());
                 }
             }
-            ModelCommand::SelectColor { index, .. } => {
+            Command::SelectColor { index, .. } => {
                 pagurus::dbg!(index);
                 self.palette.colors.get(index).or_fail()?;
                 self.palette.selected = *index;
@@ -75,17 +85,17 @@ impl Model {
         Ok(())
     }
 
-    pub fn move_cursor_command(&self, delta: PixelPosition) -> ModelCommand {
-        ModelCommand::MoveCursor { delta }
+    pub fn move_cursor_command(&self, delta: PixelPosition) -> Command {
+        Command::MoveCursor { delta }
     }
 
-    pub fn dot_command(&self) -> ModelCommand {
-        ModelCommand::Dot {}
+    pub fn dot_command(&self) -> Command {
+        Command::Dot {}
     }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ModelCommand {
+pub enum Command {
     MoveCursor { delta: PixelPosition },
     Dot {},
     SelectColor { index: ColorIndex },

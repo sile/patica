@@ -1,4 +1,4 @@
-use crate::model::{Model, ModelCommand};
+use crate::model::{Command, Model};
 use pagurus::failure::{Failure, OrFail};
 use std::{
     fs::{File, OpenOptions},
@@ -112,7 +112,7 @@ impl JournaledModel {
         Ok(())
     }
 
-    fn next_command(&mut self) -> pagurus::Result<Option<ModelCommand>> {
+    fn next_command(&mut self) -> pagurus::Result<Option<Command>> {
         let mut line = String::new();
         let n = self.reader.read_line(&mut line).or_fail()?;
         if n == 0 {
