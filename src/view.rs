@@ -93,22 +93,22 @@ impl PixelCanvas {
     fn handle_key_event(
         &mut self,
         ctx: &mut ViewContext,
-        KeyEvent { key, .. }: KeyEvent,
+        KeyEvent { key, ctrl, .. }: KeyEvent,
     ) -> pagurus::Result<()> {
-        match key {
-            Key::Up => {
+        match (key, ctrl) {
+            (Key::Up, _) | (Key::Char('p'), true) => {
                 self.move_cursor(ctx, (0, -1).into()).or_fail()?;
             }
-            Key::Down => {
+            (Key::Down, _) | (Key::Char('n'), true) => {
                 self.move_cursor(ctx, (0, 1).into()).or_fail()?;
             }
-            Key::Left => {
+            (Key::Left, _) | (Key::Char('b'), true) => {
                 self.move_cursor(ctx, (-1, 0).into()).or_fail()?;
             }
-            Key::Right => {
+            (Key::Right, _) | (Key::Char('f'), true) => {
                 self.move_cursor(ctx, (1, 0).into()).or_fail()?;
             }
-            Key::Char(' ') => {
+            (Key::Char(' '), _) | (Key::Char('d'), _) => {
                 self.draw_dot(ctx).or_fail()?;
             }
             _ => {}
