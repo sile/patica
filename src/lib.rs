@@ -1,4 +1,4 @@
-pub mod commands;
+pub mod cli;
 pub mod game;
 pub mod journal;
 pub mod model;

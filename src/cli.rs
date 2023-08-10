@@ -2,7 +2,6 @@ use crate::{
     journal::JournaledModel,
     model::{ColorIndex, ModelCommand},
 };
-use clap::{Args, Subcommand};
 use pagurus::{
     event::{Event, Key, KeyEvent},
     failure::OrFail,
@@ -11,37 +10,49 @@ use pagurus::{
 use pagurus_tui::TuiSystem;
 use std::path::PathBuf;
 
-#[derive(Debug, Subcommand)]
-pub enum Command {
+#[derive(Debug, clap::Parser)]
+#[clap(version, about)]
+pub struct Args {
+    file: PathBuf,
+
+    #[clap(subcommand)]
+    command: Command,
+}
+
+impl Args {
+    pub fn run(&self) -> pagurus::Result<()> {
+        self.command.run(&self.file).or_fail()
+    }
+}
+
+#[derive(Debug, clap::Subcommand)]
+enum Command {
     Open(OpenCommand),
     SelectColor(SelectColorCommand),
 }
 
 impl Command {
-    pub fn run(&self) -> pagurus::Result<()> {
+    pub fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         match self {
-            Command::Open(cmd) => cmd.run().or_fail(),
-            Command::SelectColor(cmd) => cmd.run().or_fail(),
+            Command::Open(cmd) => cmd.run(path).or_fail(),
+            Command::SelectColor(cmd) => cmd.run(path).or_fail(),
         }
     }
 }
 
-// TODO: EditCommand
-#[derive(Debug, Args)]
-pub struct OpenCommand {
-    pub name: PathBuf,
-}
+#[derive(Debug, clap::Args)]
+struct OpenCommand;
 
 impl OpenCommand {
-    pub fn run(&self) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open_or_create(&self.name).or_fail()?;
+    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        let mut journal = JournaledModel::open_or_create(path).or_fail()?;
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
         game.initialize(&mut system).or_fail()?;
 
         while let Ok(event) = system.next_event() {
-            if is_quit_key(&event) {
+            if self.is_quit_key(&event) {
                 break;
             }
 
@@ -58,27 +69,26 @@ impl OpenCommand {
         }
         Ok(())
     }
-}
 
-fn is_quit_key(event: &Event) -> bool {
-    let Event::Key(KeyEvent { key, ctrl,.. }) = event else {
+    fn is_quit_key(&self, event: &Event) -> bool {
+        let Event::Key(KeyEvent { key, ctrl,.. }) = event else {
         return false;
     };
-    matches!(
-        (key, ctrl),
-        (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
-    )
+        matches!(
+            (key, ctrl),
+            (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
+        )
+    }
 }
 
-#[derive(Debug, Args)]
-pub struct SelectColorCommand {
-    pub name: PathBuf,
-    pub color_index: usize,
+#[derive(Debug, clap::Args)]
+struct SelectColorCommand {
+    color_index: usize,
 }
 
 impl SelectColorCommand {
-    pub fn run(&self) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open_if_exists(&self.name).or_fail()?;
+    pub fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        let mut journal = JournaledModel::open_if_exists(path).or_fail()?;
         journal
             .with_locked_model(|model| {
                 let command = ModelCommand::SelectColor {

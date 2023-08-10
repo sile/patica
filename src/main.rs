@@ -1,15 +1,8 @@
 use clap::Parser;
-use dotedit::commands::Command;
+use dotedit::cli::Args;
 use pagurus::failure::OrFail;
 use std::fs::OpenOptions;
 use std::io::Write;
-
-#[derive(Debug, Parser)]
-#[clap(version, about)]
-struct Args {
-    #[clap(subcommand)]
-    command: Command,
-}
 
 fn main() -> pagurus::Result<()> {
     pagurus::io::set_println_fn(file_println).or_fail()?;
@@ -18,7 +11,7 @@ fn main() -> pagurus::Result<()> {
     }));
 
     let args = Args::parse();
-    let result = args.command.run().or_fail();
+    let result = args.run().or_fail();
     if let Err(e) = &result {
         pagurus::println!("Args: {args:?}");
         pagurus::println!("Error: {e}");
