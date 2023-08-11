@@ -4,17 +4,17 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime},
 };
 
 #[derive(Debug)]
 pub struct JournaledModel {
-    path: PathBuf,
     lock_path: PathBuf,
     reader: BufReader<File>,
     writer: BufWriter<File>,
     model: Model,
     applied_commands: usize,
+    modified_time: SystemTime,
 }
 
 impl JournaledModel {
@@ -46,32 +46,34 @@ impl JournaledModel {
             "lock".to_owned()
         };
         let mut this = Self {
-            path: path.as_ref().to_path_buf(),
             reader: BufReader::new(file.try_clone().or_fail()?),
             writer: BufWriter::new(file),
             lock_path: path.as_ref().with_extension(lock_extension).to_path_buf(),
             model: Model::default(),
             applied_commands: 0,
+            modified_time: SystemTime::UNIX_EPOCH,
         };
         this.sync_model().or_fail()?;
         Ok(this)
     }
 
-    fn reset_if_shrink(&mut self) -> pagurus::Result<()> {
-        let metadata = self.path.metadata().or_fail()?;
-        if metadata.len() < self.reader.get_mut().stream_position().or_fail()? {
+    fn reload_if_need(&mut self) -> pagurus::Result<()> {
+        if self.modified_time != self.read_modified_time().or_fail()?
+            || self.reader.stream_position().or_fail()?
+                != self.reader.get_ref().metadata().or_fail()?.len()
+        {
             self.model = Model::default();
             self.applied_commands = 0;
             self.reader.seek(SeekFrom::Start(0)).or_fail()?;
+            pagurus::println!("Reloaded");
         }
-
         Ok(())
     }
 
     fn sync_model(&mut self) -> pagurus::Result<()> {
         self.model.take_applied_commands().is_empty().or_fail()?;
 
-        self.reset_if_shrink().or_fail()?;
+        self.reload_if_need().or_fail()?;
 
         while let Some(command) = self.next_command().or_fail()? {
             self.model.apply(command).or_fail()?;
@@ -131,7 +133,17 @@ impl JournaledModel {
             self.applied_commands += 1;
         }
         self.writer.flush().or_fail()?;
+        self.modified_time = self.read_modified_time().or_fail()?;
         Ok(())
+    }
+
+    fn read_modified_time(&self) -> pagurus::Result<SystemTime> {
+        self.reader
+            .get_ref()
+            .metadata()
+            .or_fail()?
+            .modified()
+            .or_fail()
     }
 
     fn next_command(&mut self) -> pagurus::Result<Option<Command>> {
