@@ -22,6 +22,7 @@ impl Args {
 enum Command {
     Open(OpenCommand),
     Apply(ApplyCommand),
+    // Show(Palette)
     // Convert(?)
 }
 

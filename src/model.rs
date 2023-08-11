@@ -14,8 +14,6 @@ pub struct Model {
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     applied_commands: Vec<Command>, // dirty_commands (?)
-
-                                    // TODO: undo_commands: Vec<Command> or Vec<Snapshot>
 }
 
 impl Model {
@@ -83,6 +81,9 @@ impl Model {
             Command::Set(SetCommand::ActiveColor(color_name)) => {
                 self.active_color = self.palette.get_index(color_name).or_fail()?;
             }
+            Command::Anchor(_) => {
+                // Do nothing
+            }
         }
 
         self.applied_commands.push(command);
@@ -133,6 +134,7 @@ pub enum Command {
     Set(SetCommand),
     Dot,
     //Pick,
+    Anchor(serde_json::Value),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
