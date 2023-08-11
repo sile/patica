@@ -1,4 +1,4 @@
-use crate::model::{Model, PixelPosition};
+use crate::model::{Model, PixelPositionDelta};
 use pagurus::{
     event::{Event, Key, KeyEvent, MouseEvent},
     failure::OrFail,
@@ -123,10 +123,14 @@ impl PixelCanvas {
         Ok(())
     }
 
-    fn move_cursor(&mut self, ctx: &mut ViewContext, delta: PixelPosition) -> pagurus::Result<()> {
+    fn move_cursor(
+        &mut self,
+        ctx: &mut ViewContext,
+        delta: PixelPositionDelta,
+    ) -> pagurus::Result<()> {
         // TODO: max / min
 
-        let command = ctx.model.move_cursor_command(delta.into());
+        let command = ctx.model.move_cursor_command(delta);
         ctx.model.apply(command).or_fail()?;
         self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
         Ok(())

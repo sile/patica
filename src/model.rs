@@ -63,7 +63,7 @@ impl Model {
 
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
         match &command {
-            Command::MoveCursor { delta, .. } => self.cursor.move_delta(*delta),
+            Command::Move(delta) => self.cursor.move_delta(*delta),
             Command::Dot { .. } => {
                 let old = self
                     .pixels
@@ -85,8 +85,8 @@ impl Model {
         Ok(())
     }
 
-    pub fn move_cursor_command(&self, delta: PixelPosition) -> Command {
-        Command::MoveCursor { delta }
+    pub fn move_cursor_command(&self, delta: PixelPositionDelta) -> Command {
+        Command::Move(delta)
     }
 
     pub fn dot_command(&self) -> Command {
@@ -95,9 +95,10 @@ impl Model {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Command {
-    MoveCursor { delta: PixelPosition },
-    Dot {},
+    Move(PixelPositionDelta),
+    Dot,
     SelectColor { index: ColorIndex },
     // Snapshot
 }
@@ -129,9 +130,36 @@ impl Cursor {
         self.position.y += delta;
     }
 
-    fn move_delta(&mut self, delta: PixelPosition) {
-        self.position.x += delta.x;
-        self.position.y += delta.y;
+    fn move_delta(&mut self, delta: PixelPositionDelta) {
+        self.position.x += delta.x();
+        self.position.y += delta.y();
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct PixelPositionDelta(i16, i16);
+
+impl PixelPositionDelta {
+    pub const fn from_xy(x: i16, y: i16) -> Self {
+        Self(x, y)
+    }
+
+    pub const fn to_xy(self) -> (i16, i16) {
+        (self.0, self.1)
+    }
+
+    pub const fn x(self) -> i16 {
+        self.0
+    }
+
+    pub const fn y(self) -> i16 {
+        self.1
+    }
+}
+
+impl From<(i16, i16)> for PixelPositionDelta {
+    fn from((x, y): (i16, i16)) -> Self {
+        Self(x, y)
     }
 }
 
