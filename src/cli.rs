@@ -1,9 +1,5 @@
-use crate::journal::JournaledModel;
-use pagurus::{
-    event::{Event, Key, KeyEvent},
-    failure::OrFail,
-    Game,
-};
+use crate::{config::Config, journal::JournaledModel};
+use pagurus::{failure::OrFail, Game};
 use pagurus_tui::TuiSystem;
 use std::path::PathBuf;
 
@@ -42,17 +38,16 @@ struct OpenCommand;
 
 impl OpenCommand {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        let config = Config::load_config_file().or_fail()?.unwrap_or_default();
         let mut journal = JournaledModel::open_or_create(path).or_fail()?;
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
+
+        game.set_config(config);
         game.initialize(&mut system).or_fail()?;
 
         while let Ok(event) = system.next_event() {
-            if self.is_quit_key(&event) {
-                break;
-            }
-
             let playing = journal.with_locked_model(|model| {
                 game.set_model(std::mem::take(model));
                 let playing = !game.handle_event(&mut system, event).or_fail()?;
@@ -65,16 +60,6 @@ impl OpenCommand {
             }
         }
         Ok(())
-    }
-
-    fn is_quit_key(&self, event: &Event) -> bool {
-        let Event::Key(KeyEvent { key, ctrl, .. }) = event else {
-            return false;
-        };
-        matches!(
-            (key, ctrl),
-            (Key::Esc, _) | (Key::Char('c'), true) | (Key::Char('q'), false)
-        )
     }
 }
 

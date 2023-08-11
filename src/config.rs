@@ -1,23 +1,74 @@
+use crate::model::Command;
 use pagurus::{
     event::KeyEvent,
     failure::{Failure, OrFail},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::Path};
 
-use crate::model::Command;
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct KeyConfig(BTreeMap<Key, Command>);
+impl Config {
+    pub fn load_config_file() -> pagurus::Result<Option<Self>> {
+        let Ok(home_dir) = std::env::var("HOME") else {
+            return Ok(None);
+        };
+
+        let path = Path::new(&home_dir).join(".config").join("dotedit.json");
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        let json = std::fs::read_to_string(&path)
+            .or_fail()
+            .map_err(|f| f.message(format!("Failed to read config file: {}", path.display())))?;
+        serde_json::from_str(&json)
+            .map_err(|e| {
+                Failure::new().message(format!(
+                    "Failed to parse config file: path={}, reason={e}",
+                    path.display()
+                ))
+            })
+            .map(Some)
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        serde_json::from_str(include_str!("../default-config.json")).expect("unreachable")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyCommand {
+    Quit,
+    #[serde(untagged)]
+    Model(Command),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KeyConfig(BTreeMap<Key, KeyCommand>);
+
+impl KeyConfig {
+    pub fn get_command(&self, key: KeyEvent) -> Option<KeyCommand> {
+        let key = Key(key);
+        self.0.get(&key).cloned()
+    }
+}
+
+impl Default for KeyConfig {
+    fn default() -> Self {
+        Config::default().key
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(try_from = "&str", into = "String")]
+#[serde(try_from = "String", into = "String")]
 pub struct Key(KeyEvent);
 
 impl PartialOrd for Key {
@@ -63,10 +114,10 @@ impl From<Key> for String {
     }
 }
 
-impl TryFrom<&str> for Key {
+impl TryFrom<String> for Key {
     type Error = Failure;
 
-    fn try_from(s: &str) -> Result<Self, Self::Error> {
+    fn try_from(s: String) -> Result<Self, Self::Error> {
         let mut ctrl = false;
         let mut alt = false;
         let mut tokens = s.split('+').collect::<Vec<_>>();
@@ -87,12 +138,10 @@ impl TryFrom<&str> for Key {
             "BackTab" => pagurus::event::Key::BackTab,
             "Esc" => pagurus::event::Key::Esc,
             _ if last.chars().count() == 1 => match last.chars().next().or_fail()? {
-                'a'..='z' => pagurus::event::Key::Char(last.chars().next().or_fail()?),
-                'A'..='Z' => pagurus::event::Key::Char(last.chars().next().or_fail()?),
-                '0'..='9' => pagurus::event::Key::Char(last.chars().next().or_fail()?),
-                _ => return Err(Failure::new().message("Unknown key: {last:?}")),
+                c @ ('a'..='z' | 'A'..='Z' | ' ') => pagurus::event::Key::Char(c),
+                _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
             },
-            _ => return Err(Failure::new().message("Unknown key: {last:?}")),
+            _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
         };
         for token in tokens {
             match token {

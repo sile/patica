@@ -1,14 +1,16 @@
 use crate::{
+    config::Config,
     model::Model,
     view::{View, ViewContext},
 };
 use pagurus::{
     event::{Event, TimeoutTag},
-    failure::{Failure, OrFail},
+    failure::OrFail,
     image::Canvas,
     video::VideoFrame,
     Result, System,
 };
+use std::sync::Arc;
 use std::time::Duration;
 
 const FPS: u32 = 30;
@@ -19,6 +21,7 @@ pub struct Game {
     video_frame: VideoFrame,
     view: View,
     model: Option<Model>,
+    config: Arc<Config>,
 }
 
 impl Game {
@@ -28,6 +31,10 @@ impl Game {
 
     pub fn take_model(&mut self) -> Option<Model> {
         self.model.take()
+    }
+
+    pub fn set_config(&mut self, config: Config) {
+        self.config = Arc::new(config);
     }
 
     fn render<S: System>(&mut self, system: &mut S) -> pagurus::Result<()> {
@@ -44,6 +51,8 @@ impl Game {
             window_size: self.video_frame.spec().resolution,
             now: system.clock_game_time(),
             model: self.model.take().or_fail()?,
+            config: Arc::clone(&self.config),
+            quit: false,
         })
     }
 }
@@ -73,30 +82,6 @@ impl<S: System> pagurus::Game<S> for Game {
         self.view.handle_event(&mut ctx, event).or_fail()?;
         self.model = Some(ctx.model);
 
-        Ok(true)
-    }
-
-    fn query(&mut self, _system: &mut S, name: &str) -> Result<Vec<u8>> {
-        match name {
-            "model.take_applied_commands" => {
-                let commands = self.model.as_mut().or_fail()?.take_applied_commands();
-                let data = serde_json::to_vec(&commands).or_fail()?;
-                Ok(data)
-            }
-            _ => Err(Failure::new().message(format!("unknown query: {name:?}"))),
-        }
-    }
-
-    fn command(&mut self, _system: &mut S, name: &str, data: &[u8]) -> Result<()> {
-        match name {
-            "model.apply_command" => {
-                let command = serde_json::from_slice(data).or_fail()?;
-                self.model.as_mut().or_fail()?.apply(command).or_fail()?;
-                // TODO
-                let _ = self.model.as_mut().or_fail()?.take_applied_commands();
-                Ok(())
-            }
-            _ => Err(Failure::new().message(format!("unknown command: {name:?}"))),
-        }
+        Ok(!ctx.quit)
     }
 }

@@ -1,10 +1,14 @@
-use crate::model::{Model, PixelPositionDelta};
+use crate::{
+    config::{Config, KeyCommand},
+    model::Model,
+};
 use pagurus::{
-    event::{Event, Key, KeyEvent, MouseEvent},
+    event::{Event, KeyEvent},
     failure::OrFail,
     image::{Canvas, Color},
     spatial::{Position, Size},
 };
+use std::sync::Arc;
 use std::time::Duration;
 
 const COLOR_BG0: Color = Color::rgb(100, 100, 100);
@@ -15,6 +19,8 @@ pub struct ViewContext {
     pub window_size: Size,
     pub now: Duration,
     pub model: Model,
+    pub config: Arc<Config>,
+    pub quit: bool,
 }
 
 #[derive(Debug, Default)]
@@ -84,63 +90,22 @@ impl PixelCanvas {
     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
         match event {
             Event::Key(event) => self.handle_key_event(ctx, event).or_fail()?,
-            Event::Mouse(event) => self.handle_mouse_event(ctx, event).or_fail()?,
             _ => {}
         }
         Ok(())
     }
 
-    fn handle_key_event(
-        &mut self,
-        ctx: &mut ViewContext,
-        KeyEvent { key, ctrl, .. }: KeyEvent,
-    ) -> pagurus::Result<()> {
-        match (key, ctrl) {
-            (Key::Up, _) | (Key::Char('p'), true) => {
-                self.move_cursor(ctx, (0, -1).into()).or_fail()?;
+    fn handle_key_event(&mut self, ctx: &mut ViewContext, key: KeyEvent) -> pagurus::Result<()> {
+        match ctx.config.key.get_command(key) {
+            None => {}
+            Some(KeyCommand::Quit) => {
+                ctx.quit = true;
             }
-            (Key::Down, _) | (Key::Char('n'), true) => {
-                self.move_cursor(ctx, (0, 1).into()).or_fail()?;
+            Some(KeyCommand::Model(command)) => {
+                ctx.model.apply(command).or_fail()?;
+                self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
-            (Key::Left, _) | (Key::Char('b'), true) => {
-                self.move_cursor(ctx, (-1, 0).into()).or_fail()?;
-            }
-            (Key::Right, _) | (Key::Char('f'), true) => {
-                self.move_cursor(ctx, (1, 0).into()).or_fail()?;
-            }
-            (Key::Char(' '), _) | (Key::Char('d'), _) => {
-                self.draw_dot(ctx).or_fail()?;
-            }
-            _ => {}
         }
-        Ok(())
-    }
-
-    fn draw_dot(&mut self, ctx: &mut ViewContext) -> pagurus::Result<()> {
-        let command = ctx.model.dot_command();
-        ctx.model.apply(command).or_fail()?;
-        self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
-        Ok(())
-    }
-
-    fn move_cursor(
-        &mut self,
-        ctx: &mut ViewContext,
-        delta: PixelPositionDelta,
-    ) -> pagurus::Result<()> {
-        // TODO: max / min
-
-        let command = ctx.model.move_cursor_command(delta);
-        ctx.model.apply(command).or_fail()?;
-        self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
-        Ok(())
-    }
-
-    fn handle_mouse_event(
-        &mut self,
-        _ctx: &mut ViewContext,
-        _event: MouseEvent,
-    ) -> pagurus::Result<()> {
         Ok(())
     }
 }

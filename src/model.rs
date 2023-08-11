@@ -84,14 +84,6 @@ impl Model {
 
         Ok(())
     }
-
-    pub fn move_cursor_command(&self, delta: PixelPositionDelta) -> Command {
-        Command::Move(delta)
-    }
-
-    pub fn dot_command(&self) -> Command {
-        Command::Dot {}
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
