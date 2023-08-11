@@ -1,0 +1,16 @@
+{
+    "key": {
+        "Up": {"move": [0, -1]},
+        "Down": {"move": [0, 1]},
+        "Left": {"move": [-1, 0]},
+        "Right": {"move": [1, 0]},
+        "Ctrl+p": {"move": [0, -1]},
+        "Ctrl+n": {"move": [0, 1]},
+        "Ctrl+b": {"move": [-1, 0]},
+        "Ctrl+f": {"move": [1, 0]},
+        " ": "dot",
+        "q": "quit",
+        "Esc": "quit",
+        "Ctrl+c": "quit"
+    }
+}
