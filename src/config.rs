@@ -12,7 +12,7 @@ pub struct Config {
     pub key: KeyConfig,
 
     #[serde(default)]
-    pub palette: PaletteConfig,
+    pub init: InitConfig,
 }
 
 impl Config {
@@ -159,26 +159,16 @@ impl TryFrom<String> for Key {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PaletteConfig(Vec<Color>);
+pub struct InitConfig(Vec<Command>);
 
-impl PaletteConfig {
-    pub fn colors(&self) -> impl '_ + Iterator<Item = pagurus::image::Color> {
-        self.0.iter().map(|c| match c {
-            Color::Rgb(r, g, b) => pagurus::image::Color::rgb(*r, *g, *b),
-            Color::Rgba(r, g, b, a) => pagurus::image::Color::rgba(*r, *g, *b, *a),
-        })
+impl InitConfig {
+    pub fn commands(&self) -> &[Command] {
+        &self.0
     }
 }
 
-impl Default for PaletteConfig {
+impl Default for InitConfig {
     fn default() -> Self {
-        Config::default().palette
+        Config::default().init
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-enum Color {
-    Rgb(u8, u8, u8),
-    Rgba(u8, u8, u8, u8),
 }

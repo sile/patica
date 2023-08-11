@@ -13,6 +13,7 @@ pub struct JournaledModel {
     reader: BufReader<File>,
     writer: BufWriter<File>,
     model: Model,
+    applied_commands: usize,
 }
 
 impl JournaledModel {
@@ -48,22 +49,26 @@ impl JournaledModel {
             writer: BufWriter::new(file),
             lock_path: path.as_ref().with_extension(lock_extension).to_path_buf(),
             model: Model::default(),
+            applied_commands: 0,
         };
         this.sync_model().or_fail()?;
         Ok(this)
     }
 
-    fn sync_model(&mut self) -> pagurus::Result<usize> {
+    fn sync_model(&mut self) -> pagurus::Result<()> {
         self.model.take_applied_commands().is_empty().or_fail()?;
 
-        let mut n = 0;
         while let Some(command) = self.next_command().or_fail()? {
             self.model.apply(command).or_fail()?;
             self.model.take_applied_commands();
-            n += 1;
+            self.applied_commands += 1;
         }
 
-        Ok(n)
+        Ok(())
+    }
+
+    pub fn applied_commands(&self) -> usize {
+        self.applied_commands
     }
 
     pub fn with_locked_model<F, T>(&mut self, f: F) -> pagurus::Result<T>
@@ -107,6 +112,7 @@ impl JournaledModel {
         for command in self.model.take_applied_commands() {
             serde_json::to_writer(&mut self.writer, &command).or_fail()?;
             self.writer.write_all(b"\n").or_fail()?;
+            self.applied_commands += 1;
         }
         self.writer.flush().or_fail()?;
         Ok(())

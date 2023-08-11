@@ -71,7 +71,7 @@ impl PixelCanvas {
     }
 
     fn render_cursor(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        let mut color = ctx.model.palette().selected_color();
+        let mut color = ctx.model.active_color();
         if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
             let c = color.to_rgba();
             color = Color::rgba(255 - c.r, 255 - c.g, 255 - c.b, c.a);

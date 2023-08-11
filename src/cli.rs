@@ -21,14 +21,15 @@ impl Args {
 #[derive(Debug, clap::Subcommand)]
 enum Command {
     Open(OpenCommand),
-    SelectColor(SelectColorCommand),
+    #[clap(subcommand)]
+    Set(SetCommand),
 }
 
 impl Command {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         match self {
             Command::Open(cmd) => cmd.run(path).or_fail(),
-            Command::SelectColor(cmd) => cmd.run(path).or_fail(),
+            Command::Set(cmd) => cmd.run(path).or_fail(),
         }
     }
 }
@@ -39,7 +40,18 @@ struct OpenCommand;
 impl OpenCommand {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         let config = Config::load_config_file().or_fail()?.unwrap_or_default();
+
         let mut journal = JournaledModel::open_or_create(path).or_fail()?;
+        if journal.applied_commands() == 0 {
+            journal
+                .with_locked_model(|model| {
+                    for command in config.init.commands() {
+                        model.apply(command.clone()).or_fail()?;
+                    }
+                    Ok(())
+                })
+                .or_fail()?;
+        }
 
         let mut system = TuiSystem::new().or_fail()?;
         let mut game = crate::game::Game::default();
@@ -63,16 +75,29 @@ impl OpenCommand {
     }
 }
 
-#[derive(Debug, clap::Args)]
-struct SelectColorCommand {
-    color_index: usize,
+#[derive(Debug, clap::Subcommand)]
+enum SetCommand {
+    Color(SetColorCommand),
 }
 
-impl SelectColorCommand {
+impl SetCommand {
+    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        match self {
+            SetCommand::Color(cmd) => cmd.run(path).or_fail(),
+        }
+    }
+}
+
+#[derive(Debug, clap::Args)]
+struct SetColorCommand {
+    name: String,
+}
+
+impl SetColorCommand {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         JournaledModel::open_if_exists(path)
             .or_fail()?
-            .with_locked_model(|model| model.select_color(self.color_index).or_fail())
+            .with_locked_model(|model| model.set_color(self.name.clone().into()).or_fail())
             .or_fail()?;
         Ok(())
     }

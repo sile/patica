@@ -10,14 +10,21 @@ use std::collections::BTreeMap;
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
+    color: ColorIndex,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     applied_commands: Vec<Command>, // dirty_commands (?)
 
-                                    // TODO: undo_commands: Vec<Command>
+                                    // TODO: undo_commands: Vec<Command> or Vec<Snapshot>
 }
 
 impl Model {
+    pub fn set_color(&mut self, name: ColorName) -> pagurus::Result<()> {
+        let command = Command::Set(SetCommand::Color(name));
+        self.apply(command).or_fail()?;
+        Ok(())
+    }
+
     pub fn cursor(&self) -> Cursor {
         self.cursor
     }
@@ -49,34 +56,31 @@ impl Model {
             let pixel_position = PixelPosition::from((p.x as i16, p.y as i16));
             self.pixels
                 .get(&pixel_position)
-                .map(|color_index| (pixel_position, self.palette.colors[color_index]))
+                .map(|&color_index| (pixel_position, self.palette.get(color_index)))
         })
     }
 
-    pub fn select_color(&mut self, index: usize) -> pagurus::Result<()> {
-        let command = Command::SelectColor {
-            index: ColorIndex(index),
-        };
-        self.apply(command).or_fail()?;
-        Ok(())
+    pub fn active_color(&self) -> Color {
+        self.palette.get(self.color)
     }
 
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
         match &command {
-            Command::Move(delta) => self.cursor.move_delta(*delta),
+            Command::Move(delta) => {
+                // TODO: aggregate consecutive moves into one command
+                self.cursor.move_delta(*delta)
+            }
             Command::Dot { .. } => {
-                let old = self
-                    .pixels
-                    .insert(self.cursor.position, self.palette.selected);
-                if old == Some(self.palette.selected) {
+                let old = self.pixels.insert(self.cursor.position, self.color);
+                if old == Some(self.color) {
                     return Ok(());
                 }
             }
-            Command::SelectColor { index, .. } => {
-                pagurus::dbg!(index);
-                self.palette.colors.get(index).or_fail()?;
-                self.palette.selected = *index;
-                pagurus::dbg!(self.palette.selected_color());
+            Command::Define(DefineCommand::Palette(colors)) => {
+                self.palette = Palette::new(colors.clone()).or_fail()?;
+            }
+            Command::Set(SetCommand::Color(color_name)) => {
+                self.color = self.palette.get_index(color_name).or_fail()?;
             }
         }
 
@@ -91,8 +95,21 @@ impl Model {
 pub enum Command {
     Move(PixelPositionDelta),
     Dot,
-    SelectColor { index: ColorIndex },
-    // Snapshot
+    Define(DefineCommand),
+    Set(SetCommand),
+    // Pick,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DefineCommand {
+    Palette(BTreeMap<ColorName, Color>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SetCommand {
+    Color(ColorName),
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -178,35 +195,45 @@ impl From<PixelPosition> for Position {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ColorIndex(pub usize);
+pub struct ColorName(pub String);
 
-#[derive(Debug, Clone)]
-pub struct Palette {
-    pub colors: BTreeMap<ColorIndex, Color>,
-    pub selected: ColorIndex,
-}
-
-impl Palette {
-    pub fn selected_color(&self) -> Color {
-        self.colors[&self.selected]
+impl From<String> for ColorName {
+    fn from(s: String) -> Self {
+        Self(s)
     }
 }
 
-impl Default for Palette {
-    fn default() -> Self {
-        Self {
-            colors: [
-                (ColorIndex(0), Color::rgb(255, 255, 255)),
-                (ColorIndex(1), Color::rgb(255, 0, 0)),
-                (ColorIndex(2), Color::rgb(0, 255, 0)),
-                (ColorIndex(3), Color::rgb(0, 0, 255)),
-                (ColorIndex(4), Color::rgb(0, 0, 0)),
-            ]
-            .into_iter()
-            .collect(),
-            selected: ColorIndex(4),
-        }
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct ColorIndex(pub usize);
+
+#[derive(Debug, Default, Clone)]
+pub struct Palette {
+    colors: BTreeMap<ColorName, Color>,
+    table: Vec<ColorName>,
+}
+
+impl Palette {
+    pub fn new(colors: BTreeMap<ColorName, Color>) -> pagurus::Result<Self> {
+        (!colors.is_empty()).or_fail()?;
+        let table = colors.keys().cloned().collect();
+        Ok(Self { colors, table })
+    }
+
+    pub fn get(&self, index: ColorIndex) -> Color {
+        self.colors
+            .get(&self.table[index.0])
+            .copied()
+            .unwrap_or(Color::BLACK)
+    }
+
+    pub fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
+        self.table
+            .iter()
+            .position(|name| name == color_name)
+            .map(ColorIndex)
+            .or_fail()
+            .map_err(|f| f.message(format!("color '{}' not found", color_name.0)))
     }
 }

@@ -12,5 +12,15 @@
         "q": "quit",
         "Esc": "quit",
         "Ctrl+c": "quit"
-    }
+    },
+    "init": [
+        {"define": {"palette": {
+            "black": [0, 0, 0],
+            "white": [255, 255, 255],
+            "red": [255, 0, 0],
+            "green": [0, 255, 0],
+            "blue": [0, 0, 255]
+        }}},
+        {"set": {"color": "black"}}
+    ]
 }
