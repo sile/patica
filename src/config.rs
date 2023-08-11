@@ -10,6 +10,9 @@ use std::{collections::BTreeMap, path::Path};
 pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
+
+    #[serde(default)]
+    pub palette: PaletteConfig,
 }
 
 impl Config {
@@ -153,4 +156,29 @@ impl TryFrom<String> for Key {
 
         Ok(Self(KeyEvent { key, ctrl, alt }))
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaletteConfig(Vec<Color>);
+
+impl PaletteConfig {
+    pub fn colors(&self) -> impl '_ + Iterator<Item = pagurus::image::Color> {
+        self.0.iter().map(|c| match c {
+            Color::Rgb(r, g, b) => pagurus::image::Color::rgb(*r, *g, *b),
+            Color::Rgba(r, g, b, a) => pagurus::image::Color::rgba(*r, *g, *b, *a),
+        })
+    }
+}
+
+impl Default for PaletteConfig {
+    fn default() -> Self {
+        Config::default().palette
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+enum Color {
+    Rgb(u8, u8, u8),
+    Rgba(u8, u8, u8, u8),
 }
