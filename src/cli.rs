@@ -22,6 +22,7 @@ impl Args {
 enum Command {
     Open(OpenCommand),
     Apply(ApplyCommand),
+    // Convert(?)
 }
 
 impl Command {
@@ -100,6 +101,7 @@ impl OpenCommand {
                 break;
             }
         }
+
         Ok(())
     }
 }

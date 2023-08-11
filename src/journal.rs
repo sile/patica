@@ -2,13 +2,14 @@ use crate::model::{Command, Model};
 use pagurus::failure::{Failure, OrFail};
 use std::{
     fs::{File, OpenOptions},
-    io::{BufRead, BufReader, BufWriter, Write},
+    io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 
 #[derive(Debug)]
 pub struct JournaledModel {
+    path: PathBuf,
     lock_path: PathBuf,
     reader: BufReader<File>,
     writer: BufWriter<File>,
@@ -45,6 +46,7 @@ impl JournaledModel {
             "lock".to_owned()
         };
         let mut this = Self {
+            path: path.as_ref().to_path_buf(),
             reader: BufReader::new(file.try_clone().or_fail()?),
             writer: BufWriter::new(file),
             lock_path: path.as_ref().with_extension(lock_extension).to_path_buf(),
@@ -55,8 +57,21 @@ impl JournaledModel {
         Ok(this)
     }
 
+    fn reset_if_shrink(&mut self) -> pagurus::Result<()> {
+        let metadata = self.path.metadata().or_fail()?;
+        if metadata.len() < self.reader.get_mut().stream_position().or_fail()? {
+            self.model = Model::default();
+            self.applied_commands = 0;
+            self.reader.seek(SeekFrom::Start(0)).or_fail()?;
+        }
+
+        Ok(())
+    }
+
     fn sync_model(&mut self) -> pagurus::Result<()> {
         self.model.take_applied_commands().is_empty().or_fail()?;
+
+        self.reset_if_shrink().or_fail()?;
 
         while let Some(command) = self.next_command().or_fail()? {
             self.model.apply(command).or_fail()?;
@@ -91,6 +106,7 @@ impl JournaledModel {
         result
     }
 
+    // TODO: remove lock
     fn lock(&mut self) -> pagurus::Result<()> {
         let now = Instant::now();
         while let Err(e) = std::fs::OpenOptions::new()
@@ -119,15 +135,22 @@ impl JournaledModel {
     }
 
     fn next_command(&mut self) -> pagurus::Result<Option<Command>> {
-        let mut line = String::new();
-        let n = self.reader.read_line(&mut line).or_fail()?;
-        if n == 0 {
-            Ok(None)
-        } else if line.ends_with('\n') {
-            serde_json::from_str(&line).or_fail().map(Some)
-        } else {
-            self.reader.seek_relative(-(n as i64)).or_fail()?;
-            Ok(None)
+        loop {
+            let mut line = String::new();
+            let n = self.reader.read_line(&mut line).or_fail()?;
+            if n == 0 {
+                return Ok(None);
+            }
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+
+            if line.ends_with('\n') {
+                return serde_json::from_str(&line).or_fail().map(Some);
+            } else {
+                self.reader.seek_relative(-(n as i64)).or_fail()?;
+                return Ok(None);
+            }
         }
     }
 }
