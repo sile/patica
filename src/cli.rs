@@ -77,27 +77,27 @@ impl OpenCommand {
 
 #[derive(Debug, clap::Subcommand)]
 enum SetCommand {
-    Color(SetColorCommand),
+    ActiveColor(SetActiveColorCommand),
 }
 
 impl SetCommand {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         match self {
-            SetCommand::Color(cmd) => cmd.run(path).or_fail(),
+            SetCommand::ActiveColor(cmd) => cmd.run(path).or_fail(),
         }
     }
 }
 
 #[derive(Debug, clap::Args)]
-struct SetColorCommand {
+struct SetActiveColorCommand {
     name: String,
 }
 
-impl SetColorCommand {
+impl SetActiveColorCommand {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         JournaledModel::open_if_exists(path)
             .or_fail()?
-            .with_locked_model(|model| model.set_color(self.name.clone().into()).or_fail())
+            .with_locked_model(|model| model.set_active_color(self.name.clone().into()).or_fail())
             .or_fail()?;
         Ok(())
     }

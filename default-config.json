@@ -21,6 +21,6 @@
             "green": [0, 255, 0],
             "blue": [0, 0, 255]
         }}},
-        {"set": {"color": "black"}}
+        {"set": {"active_color": "black"}}
     ]
 }

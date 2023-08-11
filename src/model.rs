@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
-    color: ColorIndex,
+    active_color: ColorIndex,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     applied_commands: Vec<Command>, // dirty_commands (?)
@@ -19,8 +19,8 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn set_color(&mut self, name: ColorName) -> pagurus::Result<()> {
-        let command = Command::Set(SetCommand::Color(name));
+    pub fn set_active_color(&mut self, name: ColorName) -> pagurus::Result<()> {
+        let command = Command::Set(SetCommand::ActiveColor(name));
         self.apply(command).or_fail()?;
         Ok(())
     }
@@ -61,7 +61,7 @@ impl Model {
     }
 
     pub fn active_color(&self) -> Color {
-        self.palette.get(self.color)
+        self.palette.get(self.active_color)
     }
 
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
@@ -71,16 +71,16 @@ impl Model {
                 self.cursor.move_delta(*delta)
             }
             Command::Dot { .. } => {
-                let old = self.pixels.insert(self.cursor.position, self.color);
-                if old == Some(self.color) {
+                let old = self.pixels.insert(self.cursor.position, self.active_color);
+                if old == Some(self.active_color) {
                     return Ok(());
                 }
             }
             Command::Define(DefineCommand::Palette(colors)) => {
                 self.palette = Palette::new(colors.clone()).or_fail()?;
             }
-            Command::Set(SetCommand::Color(color_name)) => {
-                self.color = self.palette.get_index(color_name).or_fail()?;
+            Command::Set(SetCommand::ActiveColor(color_name)) => {
+                self.active_color = self.palette.get_index(color_name).or_fail()?;
             }
         }
 
@@ -109,7 +109,7 @@ pub enum DefineCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SetCommand {
-    Color(ColorName),
+    ActiveColor(ColorName),
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
