@@ -1,15 +1,14 @@
 use crate::model::{Command, Model};
-use pagurus::failure::{Failure, OrFail};
+use pagurus::failure::OrFail;
 use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
-    path::{Path, PathBuf},
-    time::{Duration, Instant, SystemTime},
+    path::Path,
+    time::SystemTime,
 };
 
 #[derive(Debug)]
 pub struct JournaledModel {
-    lock_path: PathBuf,
     reader: BufReader<File>,
     writer: BufWriter<File>,
     model: Model,
@@ -40,21 +39,19 @@ impl JournaledModel {
 
     fn open<P: AsRef<Path>>(path: P, options: OpenOptions) -> pagurus::Result<Self> {
         let file = options.open(path.as_ref()).or_fail()?;
-        let lock_extension = if let Some(e) = path.as_ref().extension() {
-            format!("{}.lock", e.to_str().or_fail()?)
-        } else {
-            "lock".to_owned()
-        };
         let mut this = Self {
             reader: BufReader::new(file.try_clone().or_fail()?),
             writer: BufWriter::new(file),
-            lock_path: path.as_ref().with_extension(lock_extension).to_path_buf(),
             model: Model::default(),
             applied_commands: 0,
             modified_time: SystemTime::UNIX_EPOCH,
         };
         this.sync_model().or_fail()?;
         Ok(this)
+    }
+
+    pub fn model_mut(&mut self) -> &mut Model {
+        &mut self.model
     }
 
     fn reload_if_need(&mut self) -> pagurus::Result<()> {
@@ -70,7 +67,7 @@ impl JournaledModel {
         Ok(())
     }
 
-    fn sync_model(&mut self) -> pagurus::Result<()> {
+    pub fn sync_model(&mut self) -> pagurus::Result<()> {
         self.model.take_applied_commands().is_empty().or_fail()?;
 
         self.reload_if_need().or_fail()?;
@@ -88,45 +85,45 @@ impl JournaledModel {
         self.applied_commands
     }
 
-    pub fn with_locked_model<F, T>(&mut self, f: F) -> pagurus::Result<T>
-    where
-        F: FnOnce(&mut Model) -> pagurus::Result<T>,
-    {
-        self.lock().or_fail()?;
+    // pub fn with_locked_model<F, T>(&mut self, f: F) -> pagurus::Result<T>
+    // where
+    //     F: FnOnce(&mut Model) -> pagurus::Result<T>,
+    // {
+    //     self.lock().or_fail()?;
 
-        let result = self
-            .sync_model()
-            .or_fail()
-            .and_then(|_| f(&mut self.model).or_fail())
-            .and_then(|value| {
-                self.append_applied_commands().or_fail()?;
-                Ok(value)
-            });
+    //     let result = self
+    //         .sync_model()
+    //         .or_fail()
+    //         .and_then(|_| f(&mut self.model).or_fail())
+    //         .and_then(|value| {
+    //             self.append_applied_commands().or_fail()?;
+    //             Ok(value)
+    //         });
 
-        std::fs::remove_file(&self.lock_path).or_fail()?;
+    //     std::fs::remove_file(&self.lock_path).or_fail()?;
 
-        result
-    }
+    //     result
+    // }
 
-    // TODO: remove lock
-    fn lock(&mut self) -> pagurus::Result<()> {
-        let now = Instant::now();
-        while let Err(e) = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&self.lock_path)
-        {
-            pagurus::println!("Cannot acquire lock: {} ({})", e, self.lock_path.display());
+    // // TODO: remove lock
+    // fn lock(&mut self) -> pagurus::Result<()> {
+    //     let now = Instant::now();
+    //     while let Err(e) = std::fs::OpenOptions::new()
+    //         .write(true)
+    //         .create_new(true)
+    //         .open(&self.lock_path)
+    //     {
+    //         pagurus::println!("Cannot acquire lock: {} ({})", e, self.lock_path.display());
 
-            if now.elapsed() > Duration::from_secs(1) {
-                return Err(Failure::new().message("Cannot acquire lock (timeout)"));
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
-        Ok(())
-    }
+    //         if now.elapsed() > Duration::from_secs(1) {
+    //             return Err(Failure::new().message("Cannot acquire lock (timeout)"));
+    //         }
+    //         std::thread::sleep(Duration::from_millis(100));
+    //     }
+    //     Ok(())
+    // }
 
-    fn append_applied_commands(&mut self) -> pagurus::Result<()> {
+    pub fn append_applied_commands(&mut self) -> pagurus::Result<()> {
         for command in self.model.take_applied_commands() {
             serde_json::to_writer(&mut self.writer, &command).or_fail()?;
             self.writer.write_all(b"\n").or_fail()?;

@@ -52,14 +52,11 @@ impl ApplyCommand {
             );
         }
 
-        journal
-            .with_locked_model(|model| {
-                for command in commands {
-                    model.apply(command).or_fail()?;
-                }
-                Ok(())
-            })
-            .or_fail()?;
+        for command in commands {
+            journal.model_mut().apply(command).or_fail()?;
+        }
+        journal.append_applied_commands().or_fail()?;
+
         Ok(())
     }
 }
@@ -73,14 +70,9 @@ impl OpenCommand {
 
         let mut journal = JournaledModel::open_or_create(path).or_fail()?;
         if journal.applied_commands() == 0 {
-            journal
-                .with_locked_model(|model| {
-                    for command in config.init.clone().into_iter() {
-                        model.apply(command).or_fail()?;
-                    }
-                    Ok(())
-                })
-                .or_fail()?;
+            for command in config.init.clone().into_iter() {
+                journal.model_mut().apply(command).or_fail()?;
+            }
         }
 
         let mut system = TuiSystem::new().or_fail()?;
@@ -90,16 +82,13 @@ impl OpenCommand {
         game.initialize(&mut system).or_fail()?;
 
         while let Ok(event) = system.next_event() {
-            let playing = journal.with_locked_model(|model| {
-                game.set_model(std::mem::take(model));
-                let playing = !game.handle_event(&mut system, event).or_fail()?;
-                *model = game.take_model().or_fail()?;
-                Ok(playing)
-            })?;
-
-            if playing {
+            journal.sync_model().or_fail()?;
+            game.set_model(std::mem::take(journal.model_mut()));
+            if !game.handle_event(&mut system, event).or_fail()? {
                 break;
             }
+            *journal.model_mut() = game.take_model().or_fail()?;
+            journal.append_applied_commands().or_fail()?;
         }
 
         Ok(())
