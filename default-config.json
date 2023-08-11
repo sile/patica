@@ -21,6 +21,6 @@
             "green": [0, 255, 0],
             "blue": [0, 0, 255]
         }},
-        {"set": {"active_color": "black"}}
+        {"set_dot_color": "black"}
     ]
 }

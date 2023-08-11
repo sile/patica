@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
-    active_color: ColorIndex,
+    dot_color: ColorIndex,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     applied_commands: Vec<Command>, // dirty_commands (?)
@@ -18,9 +18,8 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn set_active_color(&mut self, name: ColorName) -> pagurus::Result<()> {
-        let command = Command::Set(SetCommand::ActiveColor(name));
-        self.apply(command).or_fail()?;
+    pub fn set_dot_color(&mut self, name: ColorName) -> pagurus::Result<()> {
+        self.apply(Command::SetDotColor(name)).or_fail()?;
         Ok(())
     }
 
@@ -60,7 +59,7 @@ impl Model {
     }
 
     pub fn active_color(&self) -> Color {
-        self.palette.get(self.active_color)
+        self.palette.get(self.dot_color)
     }
 
     pub fn redo(&mut self, command: Command) -> pagurus::Result<()> {
@@ -70,8 +69,8 @@ impl Model {
                 self.cursor.move_delta(delta)
             }
             Command::Dot => {
-                let old = self.pixels.insert(self.cursor.position, self.active_color);
-                if old == Some(self.active_color) {
+                let old = self.pixels.insert(self.cursor.position, self.dot_color);
+                if old == Some(self.dot_color) {
                     return Ok(());
                 }
             }
@@ -93,10 +92,13 @@ impl Model {
                             *i = to_i;
                         }
                     }
+                    if self.dot_color == from_i {
+                        self.dot_color = to_i;
+                    }
                 }
             }
-            Command::Set(SetCommand::ActiveColor(color_name)) => {
-                self.active_color = self.palette.get_index(&color_name).or_fail()?;
+            Command::SetDotColor(color_name) => {
+                self.dot_color = self.palette.get_index(&color_name).or_fail()?;
             }
             Command::Anchor(_) => {
                 // Do nothing
@@ -146,6 +148,7 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
     }
 }
 
+// TODO: add unit test
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
@@ -155,17 +158,11 @@ pub enum Command {
     RemoveColors(Vec<ColorName>),
     RenameColors(BTreeMap<ColorName, ColorName>),
 
-    // TODO: SetDotColor
-    Set(SetCommand),
+    SetDotColor(ColorName),
+
     Dot,
     //Pick,
     Anchor(serde_json::Value), // TODO: Add timestamp field (?)
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SetCommand {
-    ActiveColor(ColorName),
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
