@@ -22,7 +22,7 @@ impl Args {
 enum Command {
     Open(OpenCommand),
     Apply(ApplyCommand),
-    // Show(Palette)
+    // Summary
     // Convert(?)
 }
 
@@ -70,10 +70,11 @@ impl OpenCommand {
         let config = Config::load_config_file().or_fail()?.unwrap_or_default();
 
         let mut journal = JournaledModel::open_or_create(path).or_fail()?;
-        if journal.applied_commands() == 0 {
+        if journal.commands_len() == 0 {
             for command in config.init.clone().into_iter() {
                 journal.model_mut().apply(command).or_fail()?;
             }
+            journal.append_applied_commands().or_fail()?;
         }
 
         let mut system = TuiSystem::new().or_fail()?;

@@ -14,6 +14,7 @@ pub struct Model {
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     applied_commands: Vec<Command>, // dirty_commands (?)
+                                    // anchors: Vec<(usize,Anchor)>
 }
 
 impl Model {
@@ -62,11 +63,11 @@ impl Model {
         self.palette.get(self.active_color)
     }
 
-    pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
-        match &command {
+    pub fn redo(&mut self, command: Command) -> pagurus::Result<()> {
+        match command {
             Command::Move(delta) => {
-                // TODO: aggregate consecutive moves into one command
-                self.cursor.move_delta(*delta)
+                // TODO: aggregate consecutive moves in a certain period of time into one command
+                self.cursor.move_delta(delta)
             }
             Command::Dot => {
                 let old = self.pixels.insert(self.cursor.position, self.active_color);
@@ -74,20 +75,39 @@ impl Model {
                     return Ok(());
                 }
             }
-            Command::Define(DefineCommand::Palette(colors)) => {
-                // TODO: validate not to remove existing colors or removing colors that will be removed in the new palette
-                self.palette = Palette::new(colors.clone()).or_fail()?;
+            Command::DefineColors(colors) => {
+                self.palette.extend(colors);
+            }
+            Command::RemoveColors(names) => {
+                let removed_indices = self.palette.remove(&names).or_fail()?;
+                for index in removed_indices {
+                    self.pixels
+                        .retain(|_, &mut color_index| color_index != index);
+                }
+            }
+            Command::RenameColors(renames) => {
+                let merged_idices = self.palette.rename(renames).or_fail()?;
+                for (from_i, to_i) in merged_idices {
+                    for i in self.pixels.values_mut() {
+                        if *i == from_i {
+                            *i = to_i;
+                        }
+                    }
+                }
             }
             Command::Set(SetCommand::ActiveColor(color_name)) => {
-                self.active_color = self.palette.get_index(color_name).or_fail()?;
+                self.active_color = self.palette.get_index(&color_name).or_fail()?;
             }
             Command::Anchor(_) => {
                 // Do nothing
             }
         }
+        Ok(())
+    }
 
+    pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
+        self.redo(command.clone()).or_fail()?;
         self.applied_commands.push(command);
-
         Ok(())
     }
 }
@@ -130,17 +150,16 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Move(PixelPositionDelta),
-    Define(DefineCommand),
+
+    DefineColors(BTreeMap<ColorName, Color>),
+    RemoveColors(Vec<ColorName>),
+    RenameColors(BTreeMap<ColorName, ColorName>),
+
+    // TODO: SetDotColor
     Set(SetCommand),
     Dot,
     //Pick,
-    Anchor(serde_json::Value),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DefineCommand {
-    Palette(BTreeMap<ColorName, Color>),
+    Anchor(serde_json::Value), // TODO: Add timestamp field (?)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,25 +271,65 @@ pub struct Palette {
 }
 
 impl Palette {
-    pub fn new(colors: BTreeMap<ColorName, Color>) -> pagurus::Result<Self> {
-        (!colors.is_empty()).or_fail()?;
-        let table = colors.keys().cloned().collect();
-        Ok(Self { colors, table })
+    pub fn extend(&mut self, colors: BTreeMap<ColorName, Color>) {
+        for (name, color) in colors {
+            self.colors.insert(name.clone(), color);
+            if !self.table.contains(&name) {
+                self.table.push(name);
+            }
+        }
+    }
+
+    pub fn remove(&mut self, names: &[ColorName]) -> pagurus::Result<Vec<ColorIndex>> {
+        let mut removed = Vec::new();
+        for (i, name) in names.iter().enumerate() {
+            self.colors
+                .remove(name)
+                .or_fail()
+                .map_err(|f| f.message(format!("Color '{}' is not found", name.0)))?;
+            removed.push(ColorIndex(i));
+
+            // NOTE: Don't remove the color name from self.table so that keep color indices unchanged.
+        }
+        Ok(removed)
+    }
+
+    pub fn rename(
+        &mut self,
+        renames: BTreeMap<ColorName, ColorName>,
+    ) -> pagurus::Result<BTreeMap<ColorIndex, ColorIndex>> {
+        let mut merged = BTreeMap::new();
+        for (i, (old_name, new_name)) in renames.into_iter().enumerate() {
+            let color = self
+                .colors
+                .remove(&old_name)
+                .or_fail()
+                .map_err(|f| f.message(format!("Color '{}' is not found", old_name.0)))?;
+            self.colors.insert(new_name.clone(), color);
+            if let Some(existing_i) = self.table.iter().position(|name| *name == new_name) {
+                merged.insert(ColorIndex(i), ColorIndex(existing_i));
+            } else {
+                self.table[i] = new_name;
+            }
+        }
+        Ok(merged)
     }
 
     pub fn get(&self, index: ColorIndex) -> Color {
-        self.colors
-            .get(&self.table[index.0])
+        self.table
+            .get(index.0)
+            .and_then(|name| self.colors.get(name))
             .copied()
             .unwrap_or(Color::BLACK)
     }
 
     pub fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
-        self.table
-            .iter()
-            .position(|name| name == color_name)
+        self.colors
+            .contains_key(color_name)
+            .then_some(())
+            .and_then(|()| self.table.iter().position(|name| name == color_name))
             .map(ColorIndex)
             .or_fail()
-            .map_err(|f| f.message(format!("color '{}' not found", color_name.0)))
+            .map_err(|f| f.message(format!("Color '{}' is not found", color_name.0)))
     }
 }

@@ -12,7 +12,7 @@ pub struct JournaledModel {
     reader: BufReader<File>,
     writer: BufWriter<File>,
     model: Model,
-    applied_commands: usize,
+    commands_len: usize,
     modified_time: SystemTime,
 }
 
@@ -43,7 +43,7 @@ impl JournaledModel {
             reader: BufReader::new(file.try_clone().or_fail()?),
             writer: BufWriter::new(file),
             model: Model::default(),
-            applied_commands: 0,
+            commands_len: 0,
             modified_time: SystemTime::UNIX_EPOCH,
         };
         this.sync_model().or_fail()?;
@@ -60,7 +60,7 @@ impl JournaledModel {
                 != self.reader.get_ref().metadata().or_fail()?.len()
         {
             self.model = Model::default();
-            self.applied_commands = 0;
+            self.commands_len = 0;
             self.reader.seek(SeekFrom::Start(0)).or_fail()?;
             pagurus::println!("Reloaded");
         }
@@ -73,61 +73,22 @@ impl JournaledModel {
         self.reload_if_need().or_fail()?;
 
         while let Some(command) = self.next_command().or_fail()? {
-            self.model.apply(command).or_fail()?;
-            self.model.take_applied_commands();
-            self.applied_commands += 1;
+            self.model.redo(command).or_fail()?;
+            self.commands_len += 1;
         }
 
         Ok(())
     }
 
-    pub fn applied_commands(&self) -> usize {
-        self.applied_commands
+    pub fn commands_len(&self) -> usize {
+        self.commands_len
     }
-
-    // pub fn with_locked_model<F, T>(&mut self, f: F) -> pagurus::Result<T>
-    // where
-    //     F: FnOnce(&mut Model) -> pagurus::Result<T>,
-    // {
-    //     self.lock().or_fail()?;
-
-    //     let result = self
-    //         .sync_model()
-    //         .or_fail()
-    //         .and_then(|_| f(&mut self.model).or_fail())
-    //         .and_then(|value| {
-    //             self.append_applied_commands().or_fail()?;
-    //             Ok(value)
-    //         });
-
-    //     std::fs::remove_file(&self.lock_path).or_fail()?;
-
-    //     result
-    // }
-
-    // // TODO: remove lock
-    // fn lock(&mut self) -> pagurus::Result<()> {
-    //     let now = Instant::now();
-    //     while let Err(e) = std::fs::OpenOptions::new()
-    //         .write(true)
-    //         .create_new(true)
-    //         .open(&self.lock_path)
-    //     {
-    //         pagurus::println!("Cannot acquire lock: {} ({})", e, self.lock_path.display());
-
-    //         if now.elapsed() > Duration::from_secs(1) {
-    //             return Err(Failure::new().message("Cannot acquire lock (timeout)"));
-    //         }
-    //         std::thread::sleep(Duration::from_millis(100));
-    //     }
-    //     Ok(())
-    // }
 
     pub fn append_applied_commands(&mut self) -> pagurus::Result<()> {
         for command in self.model.take_applied_commands() {
             serde_json::to_writer(&mut self.writer, &command).or_fail()?;
             self.writer.write_all(b"\n").or_fail()?;
-            self.applied_commands += 1;
+            self.commands_len += 1;
         }
         self.writer.flush().or_fail()?;
         self.modified_time = self.read_modified_time().or_fail()?;
