@@ -70,13 +70,14 @@ impl Model {
                 // TODO: aggregate consecutive moves into one command
                 self.cursor.move_delta(*delta)
             }
-            Command::Dot { .. } => {
+            Command::Dot => {
                 let old = self.pixels.insert(self.cursor.position, self.active_color);
                 if old == Some(self.active_color) {
                     return Ok(());
                 }
             }
             Command::Define(DefineCommand::Palette(colors)) => {
+                // TODO: validate not to remove existing colors or removing colors that will be removed in the new palette
                 self.palette = Palette::new(colors.clone()).or_fail()?;
             }
             Command::Set(SetCommand::ActiveColor(color_name)) => {
@@ -87,6 +88,40 @@ impl Model {
         self.applied_commands.push(command);
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged, try_from = "serde_json::Value")]
+pub enum CommandOrCommands {
+    Commands(Vec<Command>),
+    Command(Command),
+}
+
+impl CommandOrCommands {
+    pub fn into_iter(self) -> impl Iterator<Item = Command> {
+        match self {
+            Self::Commands(commands) => commands.into_iter(),
+            Self::Command(command) => vec![command].into_iter(),
+        }
+    }
+}
+
+impl Default for CommandOrCommands {
+    fn default() -> Self {
+        Self::Commands(Vec::new())
+    }
+}
+
+impl TryFrom<serde_json::Value> for CommandOrCommands {
+    type Error = serde_json::Error;
+
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
+        if value.is_array() {
+            serde_json::from_value(value).map(Self::Commands)
+        } else {
+            serde_json::from_value(value).map(Self::Command)
+        }
     }
 }
 

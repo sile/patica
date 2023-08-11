@@ -101,8 +101,10 @@ impl PixelCanvas {
             Some(KeyCommand::Quit) => {
                 ctx.quit = true;
             }
-            Some(KeyCommand::Model(command)) => {
-                ctx.model.apply(command).or_fail()?;
+            Some(KeyCommand::Model(commands)) => {
+                for command in commands.into_iter() {
+                    ctx.model.apply(command).or_fail()?;
+                }
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
             }
         }

@@ -1,7 +1,6 @@
-use crate::{config::Config, journal::JournaledModel};
+use crate::{config::Config, journal::JournaledModel, model::CommandOrCommands};
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::TuiSystem;
-use serde::{Deserialize, Serialize};
 use std::{io::BufRead, path::PathBuf};
 
 #[derive(Debug, clap::Parser)]
@@ -43,23 +42,13 @@ impl ApplyCommand {
         let mut commands = Vec::new();
         let stdin = std::io::stdin();
 
-        #[derive(Debug, Serialize, Deserialize)]
-        #[serde(untagged)]
-        enum ListOrOne {
-            List(Vec<crate::model::Command>),
-            One(crate::model::Command),
-        }
-
         for line in stdin.lock().lines() {
             let line = line.or_fail()?;
-            match serde_json::from_str(&line).or_fail()? {
-                ListOrOne::List(list) => {
-                    commands.extend(list);
-                }
-                ListOrOne::One(one) => {
-                    commands.push(one);
-                }
-            }
+            commands.extend(
+                serde_json::from_str::<CommandOrCommands>(&line)
+                    .or_fail()?
+                    .into_iter(),
+            );
         }
 
         journal
@@ -85,8 +74,8 @@ impl OpenCommand {
         if journal.applied_commands() == 0 {
             journal
                 .with_locked_model(|model| {
-                    for command in config.init.commands() {
-                        model.apply(command.clone()).or_fail()?;
+                    for command in config.init.clone().into_iter() {
+                        model.apply(command).or_fail()?;
                     }
                     Ok(())
                 })

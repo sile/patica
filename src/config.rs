@@ -1,4 +1,4 @@
-use crate::model::Command;
+use crate::model::CommandOrCommands;
 use pagurus::{
     event::KeyEvent,
     failure::{Failure, OrFail},
@@ -12,7 +12,7 @@ pub struct Config {
     pub key: KeyConfig,
 
     #[serde(default)]
-    pub init: InitConfig,
+    pub init: CommandOrCommands,
 }
 
 impl Config {
@@ -51,7 +51,7 @@ impl Default for Config {
 pub enum KeyCommand {
     Quit,
     #[serde(untagged)]
-    Model(Command),
+    Model(CommandOrCommands),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -155,20 +155,5 @@ impl TryFrom<String> for Key {
         }
 
         Ok(Self(KeyEvent { key, ctrl, alt }))
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InitConfig(Vec<Command>);
-
-impl InitConfig {
-    pub fn commands(&self) -> &[Command] {
-        &self.0
-    }
-}
-
-impl Default for InitConfig {
-    fn default() -> Self {
-        Config::default().init
     }
 }
