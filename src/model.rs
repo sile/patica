@@ -94,10 +94,10 @@ impl Model {
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Move(PixelPositionDelta),
-    Dot,
     Define(DefineCommand),
     Set(SetCommand),
-    // Pick,
+    Dot,
+    //Pick,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

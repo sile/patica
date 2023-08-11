@@ -1,7 +1,8 @@
 use crate::{config::Config, journal::JournaledModel};
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::TuiSystem;
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use std::{io::BufRead, path::PathBuf};
 
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
@@ -21,16 +22,55 @@ impl Args {
 #[derive(Debug, clap::Subcommand)]
 enum Command {
     Open(OpenCommand),
-    #[clap(subcommand)]
-    Set(SetCommand),
+    Apply(ApplyCommand),
 }
 
 impl Command {
     fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
         match self {
             Command::Open(cmd) => cmd.run(path).or_fail(),
-            Command::Set(cmd) => cmd.run(path).or_fail(),
+            Command::Apply(cmd) => cmd.run(path).or_fail(),
         }
+    }
+}
+
+#[derive(Debug, clap::Args)]
+struct ApplyCommand;
+
+impl ApplyCommand {
+    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+        let mut journal = JournaledModel::open_if_exists(path).or_fail()?;
+        let mut commands = Vec::new();
+        let stdin = std::io::stdin();
+
+        #[derive(Debug, Serialize, Deserialize)]
+        #[serde(untagged)]
+        enum ListOrOne {
+            List(Vec<crate::model::Command>),
+            One(crate::model::Command),
+        }
+
+        for line in stdin.lock().lines() {
+            let line = line.or_fail()?;
+            match serde_json::from_str(&line).or_fail()? {
+                ListOrOne::List(list) => {
+                    commands.extend(list);
+                }
+                ListOrOne::One(one) => {
+                    commands.push(one);
+                }
+            }
+        }
+
+        journal
+            .with_locked_model(|model| {
+                for command in commands {
+                    model.apply(command).or_fail()?;
+                }
+                Ok(())
+            })
+            .or_fail()?;
+        Ok(())
     }
 }
 
@@ -71,34 +111,6 @@ impl OpenCommand {
                 break;
             }
         }
-        Ok(())
-    }
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum SetCommand {
-    ActiveColor(SetActiveColorCommand),
-}
-
-impl SetCommand {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
-        match self {
-            SetCommand::ActiveColor(cmd) => cmd.run(path).or_fail(),
-        }
-    }
-}
-
-#[derive(Debug, clap::Args)]
-struct SetActiveColorCommand {
-    name: String,
-}
-
-impl SetActiveColorCommand {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
-        JournaledModel::open_if_exists(path)
-            .or_fail()?
-            .with_locked_model(|model| model.set_active_color(self.name.clone().into()).or_fail())
-            .or_fail()?;
         Ok(())
     }
 }
