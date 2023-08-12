@@ -40,6 +40,10 @@ impl Model {
         std::mem::take(&mut self.applied_commands)
     }
 
+    pub fn applied_commands(&self) -> &[Command] {
+        &self.applied_commands
+    }
+
     pub fn visible_pixels(
         &self,
         window_size: Size,
@@ -77,6 +81,10 @@ impl Model {
 
     fn redo_command(&mut self, command: &Command) -> pagurus::Result<bool> {
         match command {
+            Command::Quit => {
+                // TODO: note
+                return Ok(false);
+            }
             Command::Move(delta) => {
                 // TODO: aggregate consecutive moves in a certain period of time into one command
                 self.cursor.move_delta(*delta)
@@ -182,11 +190,12 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    Move(PixelPositionDelta),
+    Quit,
+
     //---------------
     // Basic commands
     //---------------
-    Move(PixelPositionDelta),
-
     DefineColors(BTreeMap<ColorName, Color>),
     RemoveColors(Vec<ColorName>),                 // undefine(?)
     RenameColors(BTreeMap<ColorName, ColorName>), // TODO: remove
@@ -212,7 +221,6 @@ pub enum Command {
     //-----------------
     // Special commands
     //-----------------
-    // Quit
 
     //------------------
     // Compound commands

@@ -1,6 +1,6 @@
 use crate::{
-    config::{Config, KeyCommand},
-    model::{Model, Tool},
+    config::Config,
+    model::{Command, Model, Tool},
 };
 use pagurus::{
     event::{Event, KeyEvent},
@@ -126,11 +126,11 @@ impl PixelCanvas {
     fn handle_key_event(&mut self, ctx: &mut ViewContext, key: KeyEvent) -> pagurus::Result<()> {
         match ctx.config.key.get_command(key) {
             None => {}
-            Some(KeyCommand::Quit) => {
-                ctx.quit = true;
-            }
-            Some(KeyCommand::Model(commands)) => {
+            Some(commands) => {
                 for command in commands.into_iter() {
+                    if matches!(command, Command::Quit) {
+                        ctx.quit = true;
+                    }
                     ctx.model.apply(command).or_fail()?;
                 }
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);

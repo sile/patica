@@ -47,18 +47,10 @@ impl Default for Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum KeyCommand {
-    Quit,
-    #[serde(untagged)]
-    Model(CommandOrCommands),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KeyConfig(BTreeMap<Key, KeyCommand>);
+pub struct KeyConfig(BTreeMap<Key, CommandOrCommands>);
 
 impl KeyConfig {
-    pub fn get_command(&self, key: KeyEvent) -> Option<KeyCommand> {
+    pub fn get_command(&self, key: KeyEvent) -> Option<CommandOrCommands> {
         let key = Key(key);
         self.0.get(&key).cloned()
     }
