@@ -13,6 +13,7 @@ pub struct Model {
     dot_color: ColorIndex,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
+    names: BTreeMap<String, NameKind>,
     active_tool: Option<Tool>,
     applied_commands: Vec<Command>, // dirty_commands (?)
                                     // anchors: Vec<(usize,Anchor)>
@@ -93,12 +94,9 @@ impl Model {
                 let old = self.pixels.insert(self.cursor.position, self.dot_color);
                 return Ok(old != Some(self.dot_color));
             }
-            Command::Define(colors) => {
-                let removed_indices = self.palette.handle_define_command(colors.clone());
-                for index in removed_indices {
-                    self.pixels
-                        .retain(|_, &mut color_index| color_index != index);
-                }
+            Command::Define(c) => {
+                self.handle_define_command(c.0.name.clone(), c.0.value.clone())
+                    .or_fail()?;
             }
             Command::SetDotColor(color_name) => {
                 self.dot_color = self.palette.get_index(&color_name).or_fail()?;
@@ -128,11 +126,38 @@ impl Model {
         Ok(true)
     }
 
+    fn handle_define_command(&mut self, name: String, color: Color) -> pagurus::Result<()> {
+        matches!(self.names.get(&name), None | Some(NameKind::Color))
+            .or_fail()
+            .map_err(|f| {
+                f.message(format!(
+                    "The name '{name}' is already in used by as a {} name",
+                    self.names[&name]
+                ))
+            })?;
+        self.palette.set_color(ColorName(name.clone()), color);
+        self.names.insert(name, NameKind::Color);
+        Ok(())
+    }
+
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
         if self.redo(&command).or_fail()? {
             self.applied_commands.push(command);
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum NameKind {
+    Color,
+}
+
+impl std::fmt::Display for NameKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NameKind::Color => write!(f, "color"),
+        }
     }
 }
 
@@ -170,6 +195,36 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DefineCommand(NameAndValue<Color>);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "BTreeMap<String, T>", into = "BTreeMap<String, T>")]
+pub struct NameAndValue<T: Clone> {
+    pub name: String,
+    pub value: T,
+}
+
+impl<T: Clone> From<NameAndValue<T>> for BTreeMap<String, T> {
+    fn from(name_and_value: NameAndValue<T>) -> Self {
+        [(name_and_value.name, name_and_value.value)]
+            .into_iter()
+            .collect()
+    }
+}
+
+impl<T: Clone> TryFrom<BTreeMap<String, T>> for NameAndValue<T> {
+    type Error = &'static str;
+
+    fn try_from(map: BTreeMap<String, T>) -> Result<Self, Self::Error> {
+        if map.len() != 1 {
+            return Err("Expected exactly one name and value");
+        }
+        let (name, value) = map.into_iter().next().expect("unreachable");
+        Ok(Self { name, value })
+    }
+}
+
 // TODO: add unit test
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -177,10 +232,7 @@ pub enum Command {
     Quit,
     Move(PixelPositionDelta),
 
-    //--------
-    // Palette
-    //--------
-    Define(BTreeMap<ColorName, Option<Color>>),
+    Define(DefineCommand),
 
     //-------
     // Marker
@@ -198,6 +250,12 @@ pub enum Command {
     // {"define": {"name": "place", "allow_update": true, "anchor": {}}},
     // {"define": {"black: {"type":"color", "update_if_exists":true, "value":[0, 0, 0]}}},
     // {"update": {"black": [0, 0, 0]}},
+    // {"define": {"anchor": {"type": "anchor", "value": null}}},
+    // {"update": {"anchor": null}}
+
+    // {"define": {"black": [0, 0, 0]}},
+    // {"embed": {}}
+    // {"anchor": "name"}
 
     // {"move": [0, 1]}
     // {"set": {"cursor": "anchor_name"}}
@@ -214,6 +272,7 @@ pub enum Command {
     //
     // {"tag": "foo"}
     //
+    // {"embed": "frame_name"}
     // Draw
     // Erase
     // Cut // or kill
@@ -404,25 +463,11 @@ pub struct Palette {
 }
 
 impl Palette {
-    fn handle_define_command(
-        &mut self,
-        colors: BTreeMap<ColorName, Option<Color>>,
-    ) -> Vec<ColorIndex> {
-        let mut removed = Vec::new();
-        for (i, (name, color)) in colors.into_iter().enumerate() {
-            if let Some(color) = color {
-                self.colors.insert(name.clone(), color);
-                if !self.table.contains(&name) {
-                    self.table.push(name);
-                }
-            } else {
-                if self.colors.remove(&name).is_some() {
-                    removed.push(ColorIndex(i));
-                }
-                // NOTE: Don't remove the color name from self.table so that keep color indices unchanged.
-            }
+    fn set_color(&mut self, name: ColorName, color: Color) {
+        if !self.table.contains(&name) {
+            self.table.push(name.clone());
         }
-        removed
+        self.colors.insert(name, color);
     }
 
     fn get(&self, index: ColorIndex) -> Color {
