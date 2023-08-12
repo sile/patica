@@ -1,12 +1,12 @@
 use crate::{
     config::{Config, KeyCommand},
-    model::Model,
+    model::{Model, Tool},
 };
 use pagurus::{
     event::{Event, KeyEvent},
     failure::OrFail,
     image::{Canvas, Color},
-    spatial::{Position, Size},
+    spatial::{Contains, Position, Region, Size},
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -59,6 +59,9 @@ pub struct PixelCanvas {
 impl PixelCanvas {
     fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         self.render_pixels(ctx, canvas);
+        if let Some(tool) = ctx.model.active_tool() {
+            self.render_marked_pixels(ctx, canvas, tool);
+        }
         self.render_cursor(ctx, canvas);
     }
 
@@ -70,8 +73,33 @@ impl PixelCanvas {
         }
     }
 
+    fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, tool: &Tool) {
+        // TODO: Use a method to be defined in ctx
+        let center = ctx.window_size.to_region().center();
+        let region = Region::new(
+            Position::from(ctx.model.camera().position) - center,
+            ctx.window_size,
+        );
+
+        for pixel_position in tool.marked_pixels() {
+            if !region.contains(&Position::from(pixel_position)) {
+                continue;
+            }
+
+            // TODO: consider mark kind
+
+            if ctx.now.as_millis() % 1000 < 500 {
+                continue;
+            }
+
+            let position = Position::from(pixel_position) + center;
+            canvas.draw_pixel(position, ctx.model.dot_color());
+        }
+    }
+
     fn render_cursor(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        let mut color = ctx.model.active_color();
+        // TODO: consider draw tool
+        let mut color = ctx.model.dot_color();
         if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
             let c = color.to_rgba();
             color = Color::rgba(255 - c.r, 255 - c.g, 255 - c.b, c.a);

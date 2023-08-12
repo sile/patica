@@ -73,7 +73,7 @@ impl JournaledModel {
         self.reload_if_need().or_fail()?;
 
         while let Some(command) = self.next_command().or_fail()? {
-            self.model.redo(command).or_fail()?;
+            self.model.redo(&command).or_fail()?;
             self.commands_len += 1;
         }
 

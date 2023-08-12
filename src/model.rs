@@ -4,7 +4,7 @@ use pagurus::{
     spatial::{Position, Region, Size},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
@@ -13,6 +13,7 @@ pub struct Model {
     dot_color: ColorIndex,
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
+    active_tool: Option<Tool>,
     applied_commands: Vec<Command>, // dirty_commands (?)
                                     // anchors: Vec<(usize,Anchor)>
 }
@@ -36,7 +37,6 @@ impl Model {
     }
 
     pub fn take_applied_commands(&mut self) -> Vec<Command> {
-        // TODO: compaction
         std::mem::take(&mut self.applied_commands)
     }
 
@@ -58,24 +58,35 @@ impl Model {
         })
     }
 
-    pub fn active_color(&self) -> Color {
+    pub fn active_tool(&self) -> Option<&Tool> {
+        self.active_tool.as_ref()
+    }
+
+    pub fn dot_color(&self) -> Color {
         self.palette.get(self.dot_color)
     }
 
-    pub fn redo(&mut self, command: Command) -> pagurus::Result<()> {
+    pub fn redo(&mut self, command: &Command) -> pagurus::Result<bool> {
+        let applied = self.redo_command(command).or_fail()?;
+        if let Some(mut tool) = self.active_tool.take() {
+            tool.handle_command(command, self);
+            self.active_tool = Some(tool);
+        }
+        Ok(applied)
+    }
+
+    fn redo_command(&mut self, command: &Command) -> pagurus::Result<bool> {
         match command {
             Command::Move(delta) => {
                 // TODO: aggregate consecutive moves in a certain period of time into one command
-                self.cursor.move_delta(delta)
+                self.cursor.move_delta(*delta)
             }
             Command::Dot => {
                 let old = self.pixels.insert(self.cursor.position, self.dot_color);
-                if old == Some(self.dot_color) {
-                    return Ok(());
-                }
+                return Ok(old != Some(self.dot_color));
             }
             Command::DefineColors(colors) => {
-                self.palette.extend(colors);
+                self.palette.extend(colors.clone());
             }
             Command::RemoveColors(names) => {
                 let removed_indices = self.palette.remove(&names).or_fail()?;
@@ -85,7 +96,7 @@ impl Model {
                 }
             }
             Command::RenameColors(renames) => {
-                let merged_idices = self.palette.rename(renames).or_fail()?;
+                let merged_idices = self.palette.rename(renames.clone()).or_fail()?;
                 for (from_i, to_i) in merged_idices {
                     for i in self.pixels.values_mut() {
                         if *i == from_i {
@@ -103,13 +114,32 @@ impl Model {
             Command::Anchor(_) => {
                 // Do nothing
             }
+            Command::ActivateDrawTool(mark) => {
+                self.active_tool = Some(Tool::new(*mark, self));
+            }
+            Command::FixTool => {
+                let Some(tool) = self.active_tool.take() else {
+                    return Ok(false);
+                };
+                for position in tool.marked_pixels() {
+                    match tool {
+                        Tool::Stroke(_) => {
+                            self.pixels.insert(position, self.dot_color);
+                        }
+                    }
+                }
+            }
+            Command::CancelTool => {
+                self.active_tool = None;
+            }
         }
-        Ok(())
+        Ok(true)
     }
 
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
-        self.redo(command.clone()).or_fail()?;
-        self.applied_commands.push(command);
+        if self.redo(&command).or_fail()? {
+            self.applied_commands.push(command);
+        }
         Ok(())
     }
 }
@@ -159,10 +189,28 @@ pub enum Command {
     RenameColors(BTreeMap<ColorName, ColorName>),
 
     SetDotColor(ColorName),
+    // TODO: SetDotColorByIndex
+    ActivateDrawTool(MarkKind),
+    FixTool,
+    CancelTool,
 
+    // Activate(Tool),
+    // Deactivate,
+
+    // MarkStart,
+    // MarkFix,
+    // MarkCancel
     Dot,
+    // Undot
     //Pick,
+    //Quit,
     Anchor(serde_json::Value), // TODO: Add timestamp field (?)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MarkKind {
+    Stroke,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -328,5 +376,51 @@ impl Palette {
             .map(ColorIndex)
             .or_fail()
             .map_err(|f| f.message(format!("Color '{}' is not found", color_name.0)))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Tool {
+    Stroke(StrokeTool),
+}
+
+impl Tool {
+    fn new(mark_kind: MarkKind, model: &Model) -> Self {
+        match mark_kind {
+            MarkKind::Stroke => Self::Stroke(StrokeTool::new(model)),
+        }
+    }
+
+    fn handle_command(&mut self, command: &Command, model: &Model) {
+        match self {
+            Self::Stroke(tool) => tool.handle_command(command, model),
+        }
+    }
+
+    pub fn marked_pixels(&self) -> Box<dyn '_ + Iterator<Item = PixelPosition>> {
+        match self {
+            Self::Stroke(tool) => Box::new(tool.marked_pixels()),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StrokeTool {
+    stroke: HashSet<PixelPosition>,
+}
+
+impl StrokeTool {
+    fn new(model: &Model) -> Self {
+        Self {
+            stroke: vec![model.cursor.position].into_iter().collect(),
+        }
+    }
+
+    fn handle_command(&mut self, _command: &Command, model: &Model) {
+        self.stroke.insert(model.cursor.position);
+    }
+
+    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
+        self.stroke.iter().copied()
     }
 }

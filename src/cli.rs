@@ -23,7 +23,8 @@ enum Command {
     Open(OpenCommand),
     Apply(ApplyCommand),
     // Summary
-    // Convert(?)
+    // ConvertToPng(?) or render or export
+    // Compaction or GC
 }
 
 impl Command {

@@ -8,7 +8,13 @@
         "Ctrl+n": {"move": [0, 1]},
         "Ctrl+b": {"move": [-1, 0]},
         "Ctrl+f": {"move": [1, 0]},
+
         " ": "dot",
+
+        "a": {"activate_draw_tool": "stroke"},
+        "v": "fix_tool",
+        "c": "cancel_tool",
+
         "q": "quit",
         "Esc": "quit",
         "Ctrl+c": "quit"
