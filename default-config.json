@@ -24,6 +24,8 @@
         "3": {"rotate": {"color": 1}},
 
         "p": "pick",
+        "c": "cut",
+        "v": ["paste", "cancel"],
 
         "m": {"mark": "stroke"},
         "Esc": "cancel",

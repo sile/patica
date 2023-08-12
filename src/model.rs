@@ -15,6 +15,7 @@ pub struct Model {
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     names: BTreeMap<String, NameKind>,
     marker: Option<Marker>,
+    stash_buffer: StashBuffer,
     applied_commands: Vec<Command>, // dirty_commands (?)
                                     // anchors: Vec<(usize,Anchor)>
 }
@@ -43,6 +44,17 @@ impl Model {
 
     pub fn applied_commands(&self) -> &[Command] {
         &self.applied_commands
+    }
+
+    pub fn has_stashed_pixels(&self) -> bool {
+        !self.stash_buffer.pixels.is_empty()
+    }
+
+    pub fn stashed_pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
+        self.stash_buffer
+            .pixels
+            .iter()
+            .map(|(p, &color_index)| (self.cursor.position + *p, self.palette.get(color_index)))
     }
 
     pub fn visible_pixels(
@@ -104,9 +116,11 @@ impl Model {
             }
             Command::Mark(kind) => {
                 self.marker = Some(Marker::new(*kind, self));
+                self.stash_buffer.clear();
             }
             Command::Cancel => {
                 self.marker = None;
+                self.stash_buffer.clear();
             }
             Command::Draw => {
                 self.handle_draw_command().or_fail()?;
@@ -125,8 +139,44 @@ impl Model {
                     self.dot_color = color;
                 }
             }
+            Command::Cut => {
+                self.handle_cut_command().or_fail()?;
+            }
+            Command::Paste => {
+                self.handle_paste_command().or_fail()?;
+            }
         }
         Ok(true)
+    }
+
+    fn handle_paste_command(&mut self) -> pagurus::Result<()> {
+        let pixels = self
+            .stash_buffer
+            .pixels
+            .iter()
+            .map(|(p, &color_index)| (self.cursor.position + *p, color_index));
+
+        for (position, color) in pixels {
+            // TODO: validate whether the index exists
+            self.pixels.insert(position, color);
+        }
+        Ok(())
+    }
+
+    fn handle_cut_command(&mut self) -> pagurus::Result<()> {
+        let Some(marker) = self.marker.take() else {
+            return Ok(());
+        };
+
+        self.stash_buffer.clear();
+        for pixel in marker.marked_pixels() {
+            if let Some(color) = self.pixels.remove(&pixel) {
+                self.stash_buffer
+                    .store(self.cursor.position.delta(pixel), color);
+            }
+        }
+
+        Ok(())
     }
 
     fn handle_rotate_command(&mut self, c: &RotateCommand) -> pagurus::Result<()> {
@@ -328,7 +378,12 @@ pub enum Command {
     Draw,
     Erase,
 
+    Cut,
+    Paste,
+
     Pick,
+
+    // {"stash": [[null, 0, 0], [1, 2, 3]]}
 
     // {"set": {"color": "red"}},
     // {"set": {"cursor": "anchor_name"}},
@@ -372,7 +427,6 @@ pub enum Command {
     // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
     //
     //
-    // pick
     // checkpoint (chronological)
     // anchor (spatial)
     // {"anchor": {
@@ -450,35 +504,39 @@ impl Cursor {
     }
 
     fn move_delta(&mut self, delta: PixelPositionDelta) {
-        self.position.x += delta.x();
-        self.position.y += delta.y();
+        self.position.x += delta.x;
+        self.position.y += delta.y;
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct PixelPositionDelta(i16, i16);
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
+#[serde(from = "(i16, i16)", into = "(i16, i16)")]
+pub struct PixelPositionDelta {
+    pub y: i16,
+    pub x: i16,
+}
 
 impl PixelPositionDelta {
     pub const fn from_xy(x: i16, y: i16) -> Self {
-        Self(x, y)
+        Self { x, y }
     }
 
     pub const fn to_xy(self) -> (i16, i16) {
-        (self.0, self.1)
-    }
-
-    pub const fn x(self) -> i16 {
-        self.0
-    }
-
-    pub const fn y(self) -> i16 {
-        self.1
+        (self.x, self.y)
     }
 }
 
 impl From<(i16, i16)> for PixelPositionDelta {
     fn from((x, y): (i16, i16)) -> Self {
-        Self(x, y)
+        Self { x, y }
+    }
+}
+
+impl From<PixelPositionDelta> for (i16, i16) {
+    fn from(delta: PixelPositionDelta) -> Self {
+        (delta.x, delta.y)
     }
 }
 
@@ -488,6 +546,23 @@ impl From<(i16, i16)> for PixelPositionDelta {
 pub struct PixelPosition {
     pub y: i16,
     pub x: i16,
+}
+
+impl PixelPosition {
+    pub fn delta(self, other: Self) -> PixelPositionDelta {
+        PixelPositionDelta::from_xy(other.x - self.x, other.y - self.y)
+    }
+}
+
+impl std::ops::Add<PixelPositionDelta> for PixelPosition {
+    type Output = Self;
+
+    fn add(self, delta: PixelPositionDelta) -> Self::Output {
+        Self {
+            x: self.x + delta.x,
+            y: self.y + delta.y,
+        }
+    }
 }
 
 impl From<(i16, i16)> for PixelPosition {
@@ -607,5 +682,20 @@ impl StrokeMarker {
 
     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
         self.stroke.iter().copied()
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct StashBuffer {
+    pixels: BTreeMap<PixelPositionDelta, ColorIndex>,
+}
+
+impl StashBuffer {
+    fn clear(&mut self) {
+        self.pixels.clear();
+    }
+
+    fn store(&mut self, position: PixelPositionDelta, color: ColorIndex) {
+        self.pixels.insert(position, color);
     }
 }

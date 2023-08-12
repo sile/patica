@@ -62,12 +62,27 @@ impl PixelCanvas {
         if let Some(marker) = ctx.model.marker() {
             self.render_marked_pixels(ctx, canvas, marker);
         }
+        if ctx.model.has_stashed_pixels() {
+            self.render_stashed_pixels(ctx, canvas);
+        }
         self.render_cursor(ctx, canvas);
     }
 
     fn render_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         let center = ctx.window_size.to_region().center();
         for (pixel_position, color) in ctx.model.visible_pixels(ctx.window_size) {
+            let position = Position::from(pixel_position) + center;
+            canvas.draw_pixel(position, color);
+        }
+    }
+
+    fn render_stashed_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+        if ctx.now.as_millis() % 1000 < 500 {
+            return;
+        }
+
+        let center = ctx.window_size.to_region().center(); // TODO: consider camera
+        for (pixel_position, color) in ctx.model.stashed_pixels() {
             let position = Position::from(pixel_position) + center;
             canvas.draw_pixel(position, color);
         }
