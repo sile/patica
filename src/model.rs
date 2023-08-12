@@ -21,11 +21,6 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn set_dot_color(&mut self, name: ColorName) -> pagurus::Result<()> {
-        self.apply(Command::SetDotColor(name)).or_fail()?;
-        Ok(())
-    }
-
     pub fn cursor(&self) -> Cursor {
         self.cursor
     }
@@ -107,9 +102,6 @@ impl Model {
             Command::Define(c) => {
                 self.handle_define_command(c.0.name.clone(), c.0.value.clone())
                     .or_fail()?;
-            }
-            Command::SetDotColor(color_name) => {
-                self.dot_color = self.palette.get_index(&color_name).or_fail()?;
             }
             Command::Anchor(_) => {
                 // Do nothing
@@ -413,16 +405,10 @@ pub enum Command {
     // {"tag": "foo"}
     //
     // {"embed": "frame_name"}
-    // Cut // or kill
-    // Copy = [Cut, Paste], {"apply": ["cut", "paste"]}
-    // Paste // or yank
     // Stash(commands)
     // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
     // Mark (color)
-    // Cancel (mark or clipboard)
 
-    // {"set": {"camera": [0, 0]}}
-    // {"set": {"camera": "foo"}}
     //
     // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
     //
@@ -438,7 +424,7 @@ pub enum Command {
     // Compound commands
     //------------------
     // move_up = {"set": {"cursor": [0, 1]}}
-    SetDotColor(ColorName),
+
     // TODO: SetDotColorByIndex
 
     // Cut,
