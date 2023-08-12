@@ -186,26 +186,42 @@ pub enum Command {
     // Basic commands
     //---------------
     Move(PixelPositionDelta),
-    // MoveInnerEdges, OuterEdges (mark ?)
-    DefineColors(BTreeMap<ColorName, Color>),
-    RemoveColors(Vec<ColorName>),
-    RenameColors(BTreeMap<ColorName, ColorName>),
 
+    DefineColors(BTreeMap<ColorName, Color>),
+    RemoveColors(Vec<ColorName>),                 // undefine(?)
+    RenameColors(BTreeMap<ColorName, ColorName>), // TODO: remove
+    // Undefine
+    // Redefine
+
+    // Draw
+    // Erase
+    // Cut // or kill
+    // Paste // or yank
+    // Stash(commands)
+    // Embed: {"embed": {"foo": {path: "foo.de", "position": [0, 0], "frames": [-1, 1, -29], "fps": 30,  "size": [100, 100]}}}
+    // Unembed: {"unembed": ["foo"]}
+    // Mark (color)
+    // Cancel (mark or clipboard)
+
+    // Select (color)
+    // Set / unset: show-embedding
+
+    // alias / unalias
+    // pick
+
+    //-----------------
+    // Special commands
+    //-----------------
+    // Quit
+
+    //------------------
+    // Compound commands
+    //------------------
     SetDotColor(ColorName),
     // TODO: SetDotColorByIndex
     ActivateDrawTool(MarkKind),
     FixTool,
     CancelTool,
-
-    //------------------
-    // Compound commands
-    //------------------
-
-    // Draw
-    // Erase
-    // Copy
-    // Paste
-    // TugglePreview
 
     // Activate(Tool),
     // Deactivate,
@@ -213,13 +229,20 @@ pub enum Command {
     // MarkStart, (mark or select)
     // MarkFix,
     // MarkCancel
+    // MoveInnerEdges, OuterEdges (mark ?)
     Dot, // [StartMark, Draw, FixMark]
+    // Undot
     // Cut,
     // Paste,
     // TuplePastePreview,
     // Copy = [Cut, Paste, TublePastePreview],
 
     // Cut = [CopyToClipboard, Erase]
+
+    // SetClipboard(Commands)
+    // ShowClipboard or preview
+    // HideClipboard or unpreview
+    // ClearClipboard
 
     // CopyToClipboard
     // StartClipboard
