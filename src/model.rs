@@ -120,6 +120,11 @@ impl Model {
             Command::Rotate(c) => {
                 self.handle_rotate_command(c).or_fail()?;
             }
+            Command::Pick => {
+                if let Some(color) = self.pixels.get(&self.cursor.position).copied() {
+                    self.dot_color = color;
+                }
+            }
         }
         Ok(true)
     }
@@ -323,8 +328,13 @@ pub enum Command {
     Draw,
     Erase,
 
+    Pick,
+
     // {"set": {"color": "red"}},
     // {"set": {"cursor": "anchor_name"}},
+    // {"set": {"background": "red"}}
+    // {"set": {"show-frame": 1}}
+    // {"set": {"camera": [0, 0]}}
     Set(SetCommand),
 
     // {"rotate": {"color": 1}},
@@ -348,8 +358,6 @@ pub enum Command {
     // {"tag": "foo"}
     //
     // {"embed": "frame_name"}
-    // Draw
-    // Erase
     // Cut // or kill
     // Copy = [Cut, Paste], {"apply": ["cut", "paste"]}
     // Paste // or yank
@@ -363,18 +371,7 @@ pub enum Command {
     //
     // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
     //
-    // {"set": {"color": "red"}}
-    // {"set": {"cursor": "name"}}
-    // {"set": {"background": "red"}}
-    // {"rotate": {"color": 1}}
-    // {"rotate": {"show-embedding": 1}}
-    // {"rotate": {"cursor": 0}}
-    // {"rotate": {"camera": 1}}
     //
-    // Select (color) => set
-    // Set / unset: show-embedding
-    // toggle or shift or rotate
-
     // pick
     // checkpoint (chronological)
     // anchor (spatial)
