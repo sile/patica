@@ -94,10 +94,7 @@ impl Model {
                 return Ok(old != Some(self.dot_color));
             }
             Command::Define(colors) => {
-                self.palette.extend(colors.clone());
-            }
-            Command::Undefine(names) => {
-                let removed_indices = self.palette.remove(&names).or_fail()?;
+                let removed_indices = self.palette.handle_define_command(colors.clone());
                 for index in removed_indices {
                     self.pixels
                         .retain(|_, &mut color_index| color_index != index);
@@ -178,42 +175,84 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Quit,
-
     Move(PixelPositionDelta),
 
     //--------
     // Palette
     //--------
-    Define(BTreeMap<ColorName, Color>),
-    Undefine(Vec<ColorName>),
+    Define(BTreeMap<ColorName, Option<Color>>),
+
+    //-------
+    // Marker
+    //-------
 
     //---------------
     // Basic commands
     //---------------
 
+    // {"rename": {"black": "white"}},
+    // {"remove": "black"},
+    // {"define": {"name": "black", "color": [0, 0, 0]}},
+    // {"update": {"name": "black", "color": [0, 0, 0]}},
+    // {"define": {"name": "foo", "frame": ""}},
+    // {"define": {"name": "place", "allow_update": true, "anchor": {}}},
+    // {"define": {"black: {"type":"color", "update_if_exists":true, "value":[0, 0, 0]}}},
+    // {"update": {"black": [0, 0, 0]}},
+
+    // {"move": [0, 1]}
+    // {"set": {"cursor": "anchor_name"}}
+
+    // {"set": {"color": "red"}},
+    // {"rotate": {"color": 1}},
+    // {"set": {"color": "black"}},
+
+    // {"define": {"colors": ...}}
+    // {"define": {"anchors": ...}}
+    // {"define": {"frames": ...}}
+    // {"rename": {"colors": ...}}
+    // {"remove": {"colors": ["red", "blue"]}}
+    //
+    // {"tag": "foo"}
+    //
     // Draw
     // Erase
     // Cut // or kill
+    // Copy = [Cut, Paste], {"apply": ["cut", "paste"]}
     // Paste // or yank
     // Stash(commands)
-    // Embed: {"embed": {"foo": {path: "foo.de", "position": [0, 0], "frames": [-1, 1, -29], "fps": 30,  "size": [100, 100]}}}
-    // Unembed: {"unembed": ["foo"]}
+    // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
     // Mark (color)
     // Cancel (mark or clipboard)
 
-    // Select (color)
+    // {"set": {"camera": [0, 0]}}
+    // {"set": {"camera": "foo"}}
+    //
+    // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
+    //
+    // {"set": {"color": "red"}}
+    // {"set": {"cursor": "name"}}
+    // {"set": {"background": "red"}}
+    // {"rotate": {"color": 1}}
+    // {"rotate": {"show-embedding": 1}}
+    // {"rotate": {"cursor": 0}}
+    // {"rotate": {"camera": 1}}
+    //
+    // Select (color) => set
     // Set / unset: show-embedding
+    // toggle or shift or rotate
 
-    // alias / unalias
     // pick
-
-    //-----------------
-    // Special commands
-    //-----------------
+    // checkpoint (chronological)
+    // anchor (spatial)
+    // {"anchor": {
+    //     "foo": {"position": [0,10], "anchor": "origin"}
+    // }
+    // {"anchor": {"foo": {}}}
 
     //------------------
     // Compound commands
     //------------------
+    // move_up = {"set": {"cursor": [0, 1]}}
     SetDotColor(ColorName),
     // TODO: SetDotColorByIndex
     ActivateDrawTool(MarkKind),
@@ -365,27 +404,25 @@ pub struct Palette {
 }
 
 impl Palette {
-    fn extend(&mut self, colors: BTreeMap<ColorName, Color>) {
-        for (name, color) in colors {
-            self.colors.insert(name.clone(), color);
-            if !self.table.contains(&name) {
-                self.table.push(name);
+    fn handle_define_command(
+        &mut self,
+        colors: BTreeMap<ColorName, Option<Color>>,
+    ) -> Vec<ColorIndex> {
+        let mut removed = Vec::new();
+        for (i, (name, color)) in colors.into_iter().enumerate() {
+            if let Some(color) = color {
+                self.colors.insert(name.clone(), color);
+                if !self.table.contains(&name) {
+                    self.table.push(name);
+                }
+            } else {
+                if self.colors.remove(&name).is_some() {
+                    removed.push(ColorIndex(i));
+                }
+                // NOTE: Don't remove the color name from self.table so that keep color indices unchanged.
             }
         }
-    }
-
-    fn remove(&mut self, names: &[ColorName]) -> pagurus::Result<Vec<ColorIndex>> {
-        let mut removed = Vec::new();
-        for (i, name) in names.iter().enumerate() {
-            self.colors
-                .remove(name)
-                .or_fail()
-                .map_err(|f| f.message(format!("Color '{}' is not found", name.0)))?;
-            removed.push(ColorIndex(i));
-
-            // NOTE: Don't remove the color name from self.table so that keep color indices unchanged.
-        }
-        Ok(removed)
+        removed
     }
 
     fn get(&self, index: ColorIndex) -> Color {
@@ -393,7 +430,7 @@ impl Palette {
             .get(index.0)
             .and_then(|name| self.colors.get(name))
             .copied()
-            .unwrap_or(Color::BLACK)
+            .unwrap_or(Color::BLACK) // TODO: return Error (?)
     }
 
     fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {

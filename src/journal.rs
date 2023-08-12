@@ -4,7 +4,6 @@ use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
     path::Path,
-    time::SystemTime,
 };
 
 #[derive(Debug)]
@@ -13,7 +12,6 @@ pub struct JournaledModel {
     writer: BufWriter<File>,
     model: Model,
     commands_len: usize,
-    modified_time: SystemTime,
 }
 
 impl JournaledModel {
@@ -44,7 +42,6 @@ impl JournaledModel {
             writer: BufWriter::new(file),
             model: Model::default(),
             commands_len: 0,
-            modified_time: SystemTime::UNIX_EPOCH,
         };
         this.sync_model().or_fail()?;
         Ok(this)
@@ -55,9 +52,8 @@ impl JournaledModel {
     }
 
     fn reload_if_need(&mut self) -> pagurus::Result<()> {
-        if self.modified_time != self.read_modified_time().or_fail()?
-            || self.reader.stream_position().or_fail()?
-                != self.reader.get_ref().metadata().or_fail()?.len()
+        if self.reader.get_ref().metadata().or_fail()?.len()
+            < self.reader.stream_position().or_fail()?
         {
             self.model = Model::default();
             self.commands_len = 0;
@@ -91,17 +87,7 @@ impl JournaledModel {
             self.commands_len += 1;
         }
         self.writer.flush().or_fail()?;
-        self.modified_time = self.read_modified_time().or_fail()?;
         Ok(())
-    }
-
-    fn read_modified_time(&self) -> pagurus::Result<SystemTime> {
-        self.reader
-            .get_ref()
-            .metadata()
-            .or_fail()?
-            .modified()
-            .or_fail()
     }
 
     fn next_command(&mut self) -> pagurus::Result<Option<Command>> {
