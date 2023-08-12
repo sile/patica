@@ -182,8 +182,11 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    //---------------
+    // Basic commands
+    //---------------
     Move(PixelPositionDelta),
-
+    // MoveInnerEdges, OuterEdges (mark ?)
     DefineColors(BTreeMap<ColorName, Color>),
     RemoveColors(Vec<ColorName>),
     RenameColors(BTreeMap<ColorName, ColorName>),
@@ -194,14 +197,40 @@ pub enum Command {
     FixTool,
     CancelTool,
 
+    //------------------
+    // Compound commands
+    //------------------
+
+    // Draw
+    // Erase
+    // Copy
+    // Paste
+    // TugglePreview
+
     // Activate(Tool),
     // Deactivate,
 
-    // MarkStart,
+    // MarkStart, (mark or select)
     // MarkFix,
     // MarkCancel
-    Dot,
-    // Undot
+    Dot, // [StartMark, Draw, FixMark]
+    // Cut,
+    // Paste,
+    // TuplePastePreview,
+    // Copy = [Cut, Paste, TublePastePreview],
+
+    // Cut = [CopyToClipboard, Erase]
+
+    // CopyToClipboard
+    // StartClipboard
+    // EndClipboard
+    // ShowClipboard
+    // PasteClipboard
+
+    // bg or frame (iframe)
+    // {"set_background": [{"color": [0,0,0], "size": [100,100]}, {"file": {"path": "path/to/image.png", "position": [0, 0], "size": [100, 100]}}]
+    // animation frame
+
     //Pick,
     //Quit,
     Anchor(serde_json::Value), // TODO: Add timestamp field (?)

@@ -22,6 +22,7 @@ impl Args {
 enum Command {
     Open(OpenCommand),
     Apply(ApplyCommand),
+    // Include (set-origin -> cut -> reset-origin)
     // Summary
     // ConvertToPng(?) or render or export
     // Compaction or GC
