@@ -93,27 +93,14 @@ impl Model {
                 let old = self.pixels.insert(self.cursor.position, self.dot_color);
                 return Ok(old != Some(self.dot_color));
             }
-            Command::DefineColors(colors) => {
+            Command::Define(colors) => {
                 self.palette.extend(colors.clone());
             }
-            Command::RemoveColors(names) => {
+            Command::Undefine(names) => {
                 let removed_indices = self.palette.remove(&names).or_fail()?;
                 for index in removed_indices {
                     self.pixels
                         .retain(|_, &mut color_index| color_index != index);
-                }
-            }
-            Command::RenameColors(renames) => {
-                let merged_idices = self.palette.rename(renames.clone()).or_fail()?;
-                for (from_i, to_i) in merged_idices {
-                    for i in self.pixels.values_mut() {
-                        if *i == from_i {
-                            *i = to_i;
-                        }
-                    }
-                    if self.dot_color == from_i {
-                        self.dot_color = to_i;
-                    }
                 }
             }
             Command::SetDotColor(color_name) => {
@@ -190,17 +177,19 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
-    Move(PixelPositionDelta),
     Quit,
+
+    Move(PixelPositionDelta),
+
+    //--------
+    // Palette
+    //--------
+    Define(BTreeMap<ColorName, Color>),
+    Undefine(Vec<ColorName>),
 
     //---------------
     // Basic commands
     //---------------
-    DefineColors(BTreeMap<ColorName, Color>),
-    RemoveColors(Vec<ColorName>),                 // undefine(?)
-    RenameColors(BTreeMap<ColorName, ColorName>), // TODO: remove
-    // Undefine
-    // Redefine
 
     // Draw
     // Erase
@@ -376,7 +365,7 @@ pub struct Palette {
 }
 
 impl Palette {
-    pub fn extend(&mut self, colors: BTreeMap<ColorName, Color>) {
+    fn extend(&mut self, colors: BTreeMap<ColorName, Color>) {
         for (name, color) in colors {
             self.colors.insert(name.clone(), color);
             if !self.table.contains(&name) {
@@ -385,7 +374,7 @@ impl Palette {
         }
     }
 
-    pub fn remove(&mut self, names: &[ColorName]) -> pagurus::Result<Vec<ColorIndex>> {
+    fn remove(&mut self, names: &[ColorName]) -> pagurus::Result<Vec<ColorIndex>> {
         let mut removed = Vec::new();
         for (i, name) in names.iter().enumerate() {
             self.colors
@@ -399,28 +388,7 @@ impl Palette {
         Ok(removed)
     }
 
-    pub fn rename(
-        &mut self,
-        renames: BTreeMap<ColorName, ColorName>,
-    ) -> pagurus::Result<BTreeMap<ColorIndex, ColorIndex>> {
-        let mut merged = BTreeMap::new();
-        for (i, (old_name, new_name)) in renames.into_iter().enumerate() {
-            let color = self
-                .colors
-                .remove(&old_name)
-                .or_fail()
-                .map_err(|f| f.message(format!("Color '{}' is not found", old_name.0)))?;
-            self.colors.insert(new_name.clone(), color);
-            if let Some(existing_i) = self.table.iter().position(|name| *name == new_name) {
-                merged.insert(ColorIndex(i), ColorIndex(existing_i));
-            } else {
-                self.table[i] = new_name;
-            }
-        }
-        Ok(merged)
-    }
-
-    pub fn get(&self, index: ColorIndex) -> Color {
+    fn get(&self, index: ColorIndex) -> Color {
         self.table
             .get(index.0)
             .and_then(|name| self.colors.get(name))
@@ -428,7 +396,7 @@ impl Palette {
             .unwrap_or(Color::BLACK)
     }
 
-    pub fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
+    fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
         self.colors
             .contains_key(color_name)
             .then_some(())
