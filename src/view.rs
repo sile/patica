@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    model::{Command, Model, Tool},
+    model::{Command, Marker, Model},
 };
 use pagurus::{
     event::{Event, KeyEvent},
@@ -59,8 +59,8 @@ pub struct PixelCanvas {
 impl PixelCanvas {
     fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         self.render_pixels(ctx, canvas);
-        if let Some(tool) = ctx.model.active_tool() {
-            self.render_marked_pixels(ctx, canvas, tool);
+        if let Some(marker) = ctx.model.marker() {
+            self.render_marked_pixels(ctx, canvas, marker);
         }
         self.render_cursor(ctx, canvas);
     }
@@ -73,7 +73,7 @@ impl PixelCanvas {
         }
     }
 
-    fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, tool: &Tool) {
+    fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, marker: &Marker) {
         // TODO: Use a method to be defined in ctx
         let center = ctx.window_size.to_region().center();
         let region = Region::new(
@@ -81,7 +81,7 @@ impl PixelCanvas {
             ctx.window_size,
         );
 
-        for pixel_position in tool.marked_pixels() {
+        for pixel_position in marker.marked_pixels() {
             if !region.contains(&Position::from(pixel_position)) {
                 continue;
             }

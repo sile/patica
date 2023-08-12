@@ -133,7 +133,7 @@ impl TryFrom<String> for Key {
             "BackTab" => pagurus::event::Key::BackTab,
             "Esc" => pagurus::event::Key::Esc,
             _ if last.chars().count() == 1 => match last.chars().next().or_fail()? {
-                c @ ('a'..='z' | 'A'..='Z' | ' ') => pagurus::event::Key::Char(c),
+                c @ ('a'..='z' | 'A'..='Z' | '0'..='9' | ' ') => pagurus::event::Key::Char(c),
                 _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
             },
             _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),

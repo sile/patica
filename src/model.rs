@@ -10,11 +10,11 @@ use std::collections::{BTreeMap, HashSet};
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
-    dot_color: ColorIndex,
+    dot_color: ColorIndex, // TODO: rename
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     names: BTreeMap<String, NameKind>,
-    active_tool: Option<Tool>,
+    marker: Option<Marker>,
     applied_commands: Vec<Command>, // dirty_commands (?)
                                     // anchors: Vec<(usize,Anchor)>
 }
@@ -63,8 +63,8 @@ impl Model {
         })
     }
 
-    pub fn active_tool(&self) -> Option<&Tool> {
-        self.active_tool.as_ref()
+    pub fn marker(&self) -> Option<&Marker> {
+        self.marker.as_ref()
     }
 
     pub fn dot_color(&self) -> Color {
@@ -73,10 +73,12 @@ impl Model {
 
     pub fn redo(&mut self, command: &Command) -> pagurus::Result<bool> {
         let applied = self.redo_command(command).or_fail()?;
-        if let Some(mut tool) = self.active_tool.take() {
-            tool.handle_command(command, self);
-            self.active_tool = Some(tool);
+
+        if let Some(mut marker) = self.marker.take() {
+            marker.handle_command(command, self);
+            self.marker = Some(marker);
         }
+
         Ok(applied)
     }
 
@@ -90,10 +92,6 @@ impl Model {
                 // TODO: aggregate consecutive moves in a certain period of time into one command
                 self.cursor.move_delta(*delta)
             }
-            Command::Dot => {
-                let old = self.pixels.insert(self.cursor.position, self.dot_color);
-                return Ok(old != Some(self.dot_color));
-            }
             Command::Define(c) => {
                 self.handle_define_command(c.0.name.clone(), c.0.value.clone())
                     .or_fail()?;
@@ -104,26 +102,91 @@ impl Model {
             Command::Anchor(_) => {
                 // Do nothing
             }
-            Command::ActivateDrawTool(mark) => {
-                self.active_tool = Some(Tool::new(*mark, self));
+            Command::Mark(kind) => {
+                self.marker = Some(Marker::new(*kind, self));
             }
-            Command::FixTool => {
-                let Some(tool) = self.active_tool.take() else {
-                    return Ok(false);
-                };
-                for position in tool.marked_pixels() {
-                    match tool {
-                        Tool::Stroke(_) => {
-                            self.pixels.insert(position, self.dot_color);
-                        }
-                    }
-                }
+            Command::Cancel => {
+                self.marker = None;
             }
-            Command::CancelTool => {
-                self.active_tool = None;
+            Command::Draw => {
+                self.handle_draw_command().or_fail()?;
+            }
+            Command::Erase => {
+                self.handle_erase_command().or_fail()?;
+            }
+            Command::Set(c) => {
+                self.handle_set_command(c).or_fail()?;
+            }
+            Command::Rotate(c) => {
+                self.handle_rotate_command(c).or_fail()?;
             }
         }
         Ok(true)
+    }
+
+    fn handle_rotate_command(&mut self, c: &RotateCommand) -> pagurus::Result<()> {
+        match c {
+            RotateCommand::Color(delta) => {
+                let name = self.palette.get_name(self.dot_color).or_fail()?;
+                let rotated_name = if delta.0 >= 0 {
+                    self.palette
+                        .colors()
+                        .skip_while(|c| *c != name)
+                        .nth((delta.0.abs() as usize) % self.palette.len())
+                        .or_fail()?
+                } else {
+                    self.palette
+                        .colors()
+                        .rev()
+                        .skip_while(|c| *c != name)
+                        .nth((delta.0.abs() as usize) % self.palette.len())
+                        .or_fail()?
+                };
+                self.dot_color = self.palette.get_index(rotated_name).or_fail()?;
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_set_command(&mut self, c: &SetCommand) -> pagurus::Result<()> {
+        match c {
+            SetCommand::Color(name) => {
+                let kind = self
+                    .names
+                    .get(&name.0)
+                    .copied()
+                    .or_fail()
+                    .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
+                matches!(kind, NameKind::Color).or_fail().map_err(|f| {
+                    f.message(format!(
+                        "The name '{}' is defined as a {kind} name, not a color name",
+                        name.0,
+                    ))
+                })?;
+                self.dot_color = self.palette.get_index(name).or_fail()?;
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_draw_command(&mut self) -> pagurus::Result<()> {
+        let Some(marker) = self.marker.take() else {
+            return Ok(());
+        };
+        for pixel in marker.marked_pixels() {
+            self.pixels.insert(pixel, self.dot_color);
+        }
+        Ok(())
+    }
+
+    fn handle_erase_command(&mut self) -> pagurus::Result<()> {
+        let Some(marker) = self.marker.take() else {
+            return Ok(());
+        };
+        for pixel in marker.marked_pixels() {
+            self.pixels.remove(&pixel);
+        }
+        Ok(())
     }
 
     fn handle_define_command(&mut self, name: String, color: Color) -> pagurus::Result<()> {
@@ -225,44 +288,56 @@ impl<T: Clone> TryFrom<BTreeMap<String, T>> for NameAndValue<T> {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SetCommand {
+    Color(ColorName),
+    // Cursor
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RotateCommand {
+    Color(RotateDelta), // Cursor
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct RotateDelta(isize);
+
 // TODO: add unit test
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    // "quit"
     Quit,
+
+    // {"move": [0, 1]}
     Move(PixelPositionDelta),
 
+    // {"define": {"white": [255, 255, 255]}}
     Define(DefineCommand),
+    // {"rename": {"black": "white"}},
+    // {"remove": "black"},
+    Mark(MarkKind),
+    Cancel,
+    Draw,
+    Erase,
 
-    //-------
-    // Marker
-    //-------
+    // {"set": {"color": "red"}},
+    // {"set": {"cursor": "anchor_name"}},
+    Set(SetCommand),
+
+    // {"rotate": {"color": 1}},
+    Rotate(RotateCommand),
 
     //---------------
     // Basic commands
     //---------------
 
-    // {"rename": {"black": "white"}},
-    // {"remove": "black"},
-    // {"define": {"name": "black", "color": [0, 0, 0]}},
-    // {"update": {"name": "black", "color": [0, 0, 0]}},
-    // {"define": {"name": "foo", "frame": ""}},
-    // {"define": {"name": "place", "allow_update": true, "anchor": {}}},
-    // {"define": {"black: {"type":"color", "update_if_exists":true, "value":[0, 0, 0]}}},
-    // {"update": {"black": [0, 0, 0]}},
-    // {"define": {"anchor": {"type": "anchor", "value": null}}},
-    // {"update": {"anchor": null}}
-
-    // {"define": {"black": [0, 0, 0]}},
     // {"embed": {}}
     // {"anchor": "name"}
 
-    // {"move": [0, 1]}
-    // {"set": {"cursor": "anchor_name"}}
-
-    // {"set": {"color": "red"}},
     // {"rotate": {"color": 1}},
-    // {"set": {"color": "black"}},
 
     // {"define": {"colors": ...}}
     // {"define": {"anchors": ...}}
@@ -314,19 +389,7 @@ pub enum Command {
     // move_up = {"set": {"cursor": [0, 1]}}
     SetDotColor(ColorName),
     // TODO: SetDotColorByIndex
-    ActivateDrawTool(MarkKind),
-    FixTool,
-    CancelTool,
 
-    // Activate(Tool),
-    // Deactivate,
-
-    // MarkStart, (mark or select)
-    // MarkFix,
-    // MarkCancel
-    // MoveInnerEdges, OuterEdges (mark ?)
-    Dot, // [StartMark, Draw, FixMark]
-    // Undot
     // Cut,
     // Paste,
     // TuplePastePreview,
@@ -358,6 +421,8 @@ pub enum Command {
 #[serde(rename_all = "snake_case")]
 pub enum MarkKind {
     Stroke,
+    // Fill, SameColor, InnerEdge, OuterEdge,
+    // Line, Rectangle, Ellipse
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -463,6 +528,15 @@ pub struct Palette {
 }
 
 impl Palette {
+    // TODO: rename
+    fn colors(&self) -> impl '_ + DoubleEndedIterator<Item = &ColorName> {
+        self.colors.keys().chain(self.colors.keys())
+    }
+
+    fn len(&self) -> usize {
+        self.colors.len()
+    }
+
     fn set_color(&mut self, name: ColorName, color: Color) {
         if !self.table.contains(&name) {
             self.table.push(name.clone());
@@ -478,6 +552,10 @@ impl Palette {
             .unwrap_or(Color::BLACK) // TODO: return Error (?)
     }
 
+    fn get_name(&self, index: ColorIndex) -> pagurus::Result<&ColorName> {
+        self.table.get(index.0).or_fail()
+    }
+
     fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
         self.colors
             .contains_key(color_name)
@@ -490,14 +568,14 @@ impl Palette {
 }
 
 #[derive(Debug, Clone)]
-pub enum Tool {
-    Stroke(StrokeTool),
+pub enum Marker {
+    Stroke(StrokeMarker),
 }
 
-impl Tool {
+impl Marker {
     fn new(mark_kind: MarkKind, model: &Model) -> Self {
         match mark_kind {
-            MarkKind::Stroke => Self::Stroke(StrokeTool::new(model)),
+            MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
         }
     }
 
@@ -515,14 +593,14 @@ impl Tool {
 }
 
 #[derive(Debug, Clone)]
-pub struct StrokeTool {
+pub struct StrokeMarker {
     stroke: HashSet<PixelPosition>,
 }
 
-impl StrokeTool {
+impl StrokeMarker {
     fn new(model: &Model) -> Self {
         Self {
-            stroke: vec![model.cursor.position].into_iter().collect(),
+            stroke: [model.cursor.position].into_iter().collect(),
         }
     }
 

@@ -9,14 +9,29 @@
         "Ctrl+b": {"move": [-1, 0]},
         "Ctrl+f": {"move": [1, 0]},
 
-        " ": "dot",
+        "k": {"move": [0, -1]},
+        "j": {"move": [0, 1]},
+        "h": {"move": [-1, 0]},
+        "l": {"move": [1, 0]},
 
-        "a": {"activate_draw_tool": "stroke"},
-        "v": "fix_tool",
-        "c": "cancel_tool",
+        "Alt+k": {"move": [0, -8]},
+        "Alt+j": {"move": [0, 8]},
+        "Alt+h": {"move": [-8, 0]},
+        "Alt+l": {"move": [8, 0]},
+
+        "1": {"rotate": {"color": -1}},
+        "2": {"set": {"color": "black"}},
+        "3": {"rotate": {"color": 1}},
+        
+        "m": {"mark": "stroke"},
+        "Esc": "cancel",
+        "d": "draw",
+        "e": "erase",
+        "Backspace": [{"mark": "stroke"}, "erase"],
+
+        " ": [{"mark": "stroke"}, "draw"],
 
         "q": "quit",
-        "Esc": "quit",
         "Ctrl+c": "quit"
     },
     "init": [
