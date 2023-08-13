@@ -47,6 +47,10 @@ impl JournaledModel {
         Ok(this)
     }
 
+    pub fn model(&self) -> &Model {
+        &self.model
+    }
+
     pub fn model_mut(&mut self) -> &mut Model {
         &mut self.model
     }

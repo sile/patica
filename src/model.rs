@@ -423,11 +423,7 @@ pub enum Command {
 
     // {"stash": [[null, 0, 0], [1, 2, 3]]}
 
-    // {"set": {"color": "red"}},
-    // {"set": {"cursor": "anchor_name"}},
-    // {"set": {"background": "red"}}
     // {"set": {"show-frame": 1}}
-    // {"set": {"camera": [0, 0]}}
     Set(SetCommand),
 
     // {"rotate": {"color": 1}},
@@ -442,21 +438,12 @@ pub enum Command {
 
     // {"embed": {}}
 
-    // {"rotate": {"color": 1}},
-
     // {"define": {"frames": ...}}
     // {"rename": {"colors": ...}}
     // {"remove": {"colors": ["red", "blue"]}}
     //
     // {"embed": "frame_name"}
-    // Stash(commands)
     // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
-
-    //
-    // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
-    //
-    //
-    // checkpoint (chronological)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -711,6 +698,16 @@ pub struct PixelRegion {
 }
 
 impl PixelRegion {
+    pub fn from_corners(min_x: i16, min_y: i16, max_x: i16, max_y: i16) -> Self {
+        Self {
+            position: PixelPosition { x: min_x, y: min_y },
+            size: PixelSize {
+                width: (max_x - min_x + 1) as u16,
+                height: (max_y - min_y + 1) as u16,
+            },
+        }
+    }
+
     pub fn contains(self, position: PixelPosition) -> bool {
         let PixelRegion {
             position: PixelPosition { x, y },
@@ -737,6 +734,12 @@ impl PixelRegion {
 pub struct PixelSize {
     pub width: u16,
     pub height: u16,
+}
+
+impl PixelSize {
+    pub fn area(self) -> u32 {
+        self.width as u32 * self.height as u32
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
