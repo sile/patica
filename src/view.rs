@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    model::{Command, Marker, Model, PixelPosition, PixelRegion, PixelSize},
+    model::{Background, Command, Marker, Model, PixelPosition, PixelRegion, PixelSize},
 };
 use pagurus::{
     event::{Event, KeyEvent},
@@ -10,9 +10,6 @@ use pagurus::{
 };
 use std::sync::Arc;
 use std::time::Duration;
-
-const COLOR_BG0: Color = Color::rgb(100, 100, 100);
-const COLOR_BG1: Color = Color::rgb(200, 200, 200);
 
 #[derive(Debug)]
 pub struct ViewContext {
@@ -53,18 +50,26 @@ pub struct View {
 
 impl View {
     pub fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        self.render_background(canvas);
+        self.render_background(ctx, canvas);
         self.canvas.render(ctx, canvas);
     }
 
-    fn render_background(&self, canvas: &mut Canvas) {
-        for position in canvas.drawing_region().iter() {
-            let color = if (position.x + position.y) % 2 == 0 {
-                COLOR_BG0
-            } else {
-                COLOR_BG1
-            };
-            canvas.draw_pixel(position, color);
+    fn render_background(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+        match ctx.model.background() {
+            Background::Color(c) => {
+                canvas.fill_color(*c);
+            }
+            Background::Checkerboard(c) => {
+                let n = c.dot_size.get() as i32;
+                for position in canvas.drawing_region().iter() {
+                    let color = if (position.x / n + position.y / n) % 2 == 0 {
+                        c.color1
+                    } else {
+                        c.color2
+                    };
+                    canvas.draw_pixel(position, color);
+                }
+            }
         }
     }
 

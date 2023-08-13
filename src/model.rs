@@ -1,6 +1,9 @@
 use pagurus::{failure::OrFail, image::Color, spatial::Position};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
+use std::{
+    collections::{BTreeMap, HashSet},
+    num::NonZeroUsize,
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct Model {
@@ -11,6 +14,7 @@ pub struct Model {
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     names: BTreeMap<String, NameKind>,
     marker: Option<Marker>,
+    background: Background,
     stash_buffer: StashBuffer,
     anchors: BTreeMap<AnchorName, PixelPosition>,
     applied_commands: Vec<Command>, // dirty_commands (?)
@@ -221,8 +225,15 @@ impl Model {
                     self.camera.position = self.cursor.position + *position;
                 }
             },
+            SetCommand::Background(bg) => {
+                self.background = bg.clone();
+            }
         }
         Ok(())
+    }
+
+    pub fn background(&self) -> &Background {
+        &self.background
     }
 
     fn get_anchor_position(&self, name: &AnchorName) -> pagurus::Result<PixelPosition> {
@@ -368,6 +379,7 @@ pub enum SetCommand {
     Color(ColorName),
     Cursor(AnchorName),
     Camera(CameraPosition),
+    Background(Background),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -421,12 +433,9 @@ pub enum Command {
     //---------------
 
     // {"embed": {}}
-    // {"anchor": "name"}
 
     // {"rotate": {"color": 1}},
 
-    // {"define": {"colors": ...}}
-    // {"define": {"anchors": ...}}
     // {"define": {"frames": ...}}
     // {"rename": {"colors": ...}}
     // {"remove": {"colors": ["red", "blue"]}}
@@ -436,43 +445,12 @@ pub enum Command {
     // {"embed": "frame_name"}
     // Stash(commands)
     // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
-    // Mark (color)
 
     //
     // [0, 0] | "anchor_name" | {"anchor_name": [0, 0]}
     //
     //
     // checkpoint (chronological)
-    // anchor (spatial)
-    // {"anchor": {
-    //     "foo": {"position": [0,10], "anchor": "origin"}
-    // }
-    // {"anchor": {"foo": {}}}
-
-    //------------------
-    // Compound commands
-    //------------------
-    // move_up = {"set": {"cursor": [0, 1]}}
-
-    // TODO: SetDotColorByIndex
-
-    // Cut,
-    // Paste,
-    // TuplePastePreview,
-    // Copy = [Cut, Paste, TublePastePreview],
-
-    // Cut = [CopyToClipboard, Erase]
-
-    // SetClipboard(Commands)
-    // ShowClipboard or preview
-    // HideClipboard or unpreview
-    // ClearClipboard
-
-    // CopyToClipboard
-    // StartClipboard
-    // EndClipboard
-    // ShowClipboard
-    // PasteClipboard
 
     // bg or frame (iframe)
     // {"set_background": [{"color": [0,0,0], "size": [100,100]}, {"file": {"path": "path/to/image.png", "position": [0, 0], "size": [100, 100]}}]
@@ -757,4 +735,54 @@ impl PixelRegion {
 pub struct PixelSize {
     pub width: u16,
     pub height: u16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Background {
+    Color(Color),
+    Checkerboard(Checkerboard),
+}
+
+impl Default for Background {
+    fn default() -> Self {
+        Self::Checkerboard(Checkerboard::default())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Checkerboard {
+    #[serde(default = "Checkerboard::default_dot_size")]
+    pub dot_size: NonZeroUsize,
+
+    #[serde(default = "Checkerboard::default_color1")]
+    pub color1: Color,
+
+    #[serde(default = "Checkerboard::default_color2")]
+    pub color2: Color,
+}
+
+impl Checkerboard {
+    fn default_dot_size() -> NonZeroUsize {
+        NonZeroUsize::new(1).expect("unreachable")
+    }
+
+    fn default_color1() -> Color {
+        Color::rgb(100, 100, 100)
+    }
+
+    fn default_color2() -> Color {
+        Color::rgb(200, 200, 200)
+    }
+}
+
+impl Default for Checkerboard {
+    fn default() -> Self {
+        Self {
+            dot_size: Self::default_dot_size(),
+            color1: Self::default_color1(),
+            color2: Self::default_color2(),
+        }
+    }
 }
