@@ -17,8 +17,9 @@ pub struct Model {
     background: Background,
     stash_buffer: StashBuffer,
     anchors: BTreeMap<AnchorName, PixelPosition>,
+    commands_len: usize,
+    tags: BTreeMap<usize, Tag>,
     applied_commands: Vec<Command>, // dirty_commands (?)
-                                    // anchors: Vec<(usize,Anchor)>
 }
 
 impl Model {
@@ -80,7 +81,9 @@ impl Model {
             marker.handle_command(command, self);
             self.marker = Some(marker);
         }
-
+        if applied {
+            self.commands_len += 1;
+        }
         Ok(applied)
     }
 
@@ -131,6 +134,9 @@ impl Model {
             }
             Command::Anchor(c) => {
                 self.handle_anchor_command(c).or_fail()?;
+            }
+            Command::Tag(tag) => {
+                self.tags.insert(self.commands_len, tag.clone());
             }
         }
         Ok(true)
@@ -428,6 +434,8 @@ pub enum Command {
     Rotate(RotateCommand),
 
     Anchor(AnchorName),
+
+    Tag(Tag),
     //---------------
     // Basic commands
     //---------------
@@ -440,8 +448,6 @@ pub enum Command {
     // {"rename": {"colors": ...}}
     // {"remove": {"colors": ["red", "blue"]}}
     //
-    // {"tag": "foo"}
-    //
     // {"embed": "frame_name"}
     // Stash(commands)
     // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
@@ -451,10 +457,6 @@ pub enum Command {
     //
     //
     // checkpoint (chronological)
-
-    // bg or frame (iframe)
-    // {"set_background": [{"color": [0,0,0], "size": [100,100]}, {"file": {"path": "path/to/image.png", "position": [0, 0], "size": [100, 100]}}]
-    // animation frame
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -786,3 +788,6 @@ impl Default for Checkerboard {
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tag(serde_json::Value);
