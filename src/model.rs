@@ -214,11 +214,26 @@ impl Model {
                     .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
                 matches!(kind, NameKind::Color).or_fail().map_err(|f| {
                     f.message(format!(
-                        "The name '{}' is defined as a {kind} name, not a color name",
+                        "The name '{}' is defined as {kind} name, not a color name",
                         name.0,
                     ))
                 })?;
                 self.dot_color = self.palette.get_index(name).or_fail()?;
+            }
+            SetCommand::Cursor(name) => {
+                let kind = self
+                    .names
+                    .get(&name.0)
+                    .copied()
+                    .or_fail()
+                    .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
+                matches!(kind, NameKind::Anchor).or_fail().map_err(|f| {
+                    f.message(format!(
+                        "The name '{}' is defined as {kind} name, not an anchor name",
+                        name.0,
+                    ))
+                })?;
+                self.cursor.position = self.anchors.get(name).copied().or_fail()?;
             }
         }
         Ok(())
@@ -275,8 +290,8 @@ enum NameKind {
 impl std::fmt::Display for NameKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NameKind::Color => write!(f, "color"),
-            NameKind::Anchor => write!(f, "anchor"),
+            NameKind::Color => write!(f, "a color"),
+            NameKind::Anchor => write!(f, "an anchor"),
         }
     }
 }
@@ -349,13 +364,13 @@ impl<T: Clone> TryFrom<BTreeMap<String, T>> for NameAndValue<T> {
 #[serde(rename_all = "snake_case")]
 pub enum SetCommand {
     Color(ColorName),
-    // Cursor
+    Cursor(AnchorName),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RotateCommand {
-    Color(RotateDelta), // Cursor
+    Color(RotateDelta), // TODO: Cursor
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
