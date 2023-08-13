@@ -1,20 +1,22 @@
 [package]
-name = "dotedit"
-version = "0.1.0"
+name = "de"
+version = "0.0.1"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "A terminal based pixel art editor"
+homepage = "https://github.com/sile/de"
+repository = "https://github.com/sile/de"
+readme = "README.md"
+exclude = ["/palettes/"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
-pagurus = { version = "0.7.0", features = ["image", "serde"] }
-pagurus_tui = "0.7.0"
+pagurus = { version = "0.7.2", features = ["image", "serde"] }
+pagurus_tui = "0.7.2"
 serde = { version = "1.0.182", features = ["derive"] }
 serde_json = "1.0.104"
 
 [dev-dependencies]
 copic_colors = "0.1"
-
-[patch.crates-io]
-pagurus = { path = "../pagurus/" }
-pagurus_tui = { path = "../pagurus/tui/" }

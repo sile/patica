@@ -126,8 +126,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5be0893b09636e9458e4f8439a2d3e8e3b21b21c60e2cd5ef57f95c91ce40eb"
 
 [[package]]
-name = "dotedit"
-version = "0.1.0"
+name = "de"
+version = "0.0.1"
 dependencies = [
  "clap",
  "copic_colors",
@@ -222,7 +222,9 @@ dependencies = [
 
 [[package]]
 name = "pagurus"
-version = "0.7.1"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b1120191b448df6ae3c1a869858839b5ef15b73d0fcb67ba8a414d5b751878"
 dependencies = [
  "orfail",
  "rand_chacha",
@@ -231,7 +233,9 @@ dependencies = [
 
 [[package]]
 name = "pagurus_tui"
-version = "0.7.1"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfbfda120c1465b5c284aa98f4f85ee443fc01ffcfd6fcc79cc095fb3070a90e"
 dependencies = [
  "pagurus",
  "termion",
