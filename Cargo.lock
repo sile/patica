@@ -126,18 +126,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f5be0893b09636e9458e4f8439a2d3e8e3b21b21c60e2cd5ef57f95c91ce40eb"
 
 [[package]]
-name = "de"
-version = "0.0.1"
-dependencies = [
- "clap",
- "copic_colors",
- "pagurus",
- "pagurus_tui",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "errno"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -239,6 +227,18 @@ checksum = "dfbfda120c1465b5c284aa98f4f85ee443fc01ffcfd6fcc79cc095fb3070a90e"
 dependencies = [
  "pagurus",
  "termion",
+]
+
+[[package]]
+name = "patica"
+version = "0.0.1"
+dependencies = [
+ "clap",
+ "copic_colors",
+ "pagurus",
+ "pagurus_tui",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
