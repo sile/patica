@@ -13,22 +13,7 @@ use std::{
 
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
-pub struct Args {
-    // TODO: move
-    file: PathBuf,
-
-    #[clap(subcommand)]
-    command: Command,
-}
-
-impl Args {
-    pub fn run(&self) -> pagurus::Result<()> {
-        self.command.run(&self.file).or_fail()
-    }
-}
-
-#[derive(Debug, clap::Subcommand)]
-enum Command {
+pub enum Args {
     Open(OpenCommand),
     Apply(ApplyCommand),
     Export(ExportCommand),
@@ -37,22 +22,24 @@ enum Command {
     // Compaction or GC
 }
 
-impl Command {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+impl Args {
+    pub fn run(&self) -> pagurus::Result<()> {
         match self {
-            Command::Open(cmd) => cmd.run(path).or_fail(),
-            Command::Apply(cmd) => cmd.run(path).or_fail(),
-            Command::Export(cmd) => cmd.run(path).or_fail(),
+            Self::Open(cmd) => cmd.run().or_fail(),
+            Self::Apply(cmd) => cmd.run().or_fail(),
+            Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
 }
 
 #[derive(Debug, clap::Args)]
-struct ApplyCommand;
+pub struct ApplyCommand {
+    path: PathBuf,
+}
 
 impl ApplyCommand {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open_if_exists(path).or_fail()?;
+    fn run(&self) -> pagurus::Result<()> {
+        let mut journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
         let mut commands = Vec::new();
         let stdin = std::io::stdin();
 
@@ -75,13 +62,15 @@ impl ApplyCommand {
 }
 
 #[derive(Debug, clap::Args)]
-struct OpenCommand;
+pub struct OpenCommand {
+    path: PathBuf,
+}
 
 impl OpenCommand {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
+    fn run(&self) -> pagurus::Result<()> {
         let config = Config::load_config_file().or_fail()?.unwrap_or_default();
 
-        let mut journal = JournaledModel::open_or_create(path).or_fail()?;
+        let mut journal = JournaledModel::open_or_create(&self.path).or_fail()?;
         if journal.commands_len() == 0 {
             for command in config.init.clone().into_iter() {
                 journal.model_mut().apply(command).or_fail()?;
@@ -110,7 +99,9 @@ impl OpenCommand {
 }
 
 #[derive(Debug, clap::Args)]
-struct ExportCommand {
+pub struct ExportCommand {
+    path: PathBuf,
+
     #[clap(short, long)]
     output: Option<PathBuf>,
 
@@ -120,12 +111,12 @@ struct ExportCommand {
 }
 
 impl ExportCommand {
-    fn run(&self, path: &PathBuf) -> pagurus::Result<()> {
-        let journal = JournaledModel::open_if_exists(path).or_fail()?;
+    fn run(&self) -> pagurus::Result<()> {
+        let journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
         let output = self
             .output
             .clone()
-            .unwrap_or_else(|| path.with_extension("bmp"));
+            .unwrap_or_else(|| self.path.with_extension("bmp"));
 
         let mut empty = true;
         let mut min_x = i16::MAX;

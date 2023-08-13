@@ -1,5 +1,5 @@
 use clap::Parser;
-use dotedit::cli::Args;
+use de::cli::Args;
 use pagurus::failure::OrFail;
 use std::fs::OpenOptions;
 use std::io::Write;
