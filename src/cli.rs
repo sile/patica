@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     journal::JournaledModel,
-    model::{CommandOrCommands, PixelRegion},
+    model::{Command, CommandOrCommands, PixelRegion},
 };
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::TuiSystem;
@@ -72,6 +72,10 @@ impl OpenCommand {
 
         let mut journal = JournaledModel::open_or_create(&self.path).or_fail()?;
         if journal.commands_len() == 0 {
+            journal
+                .model_mut()
+                .apply(Command::Header(Default::default()))
+                .or_fail()?;
             for command in config.init.clone().into_iter() {
                 journal.model_mut().apply(command).or_fail()?;
             }

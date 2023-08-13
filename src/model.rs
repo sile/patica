@@ -162,6 +162,9 @@ impl Model {
                 self.handle_embed_command(c.0.name.clone(), c.0.value.clone())
                     .or_fail()?;
             }
+            Command::Header(_) => {
+                // TODO: check type and version
+            }
         }
         Ok(true)
     }
@@ -461,6 +464,8 @@ pub struct RotateDelta(isize);
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    Header(HeaderCommand),
+
     // "quit"
     Quit,
 
@@ -1007,5 +1012,21 @@ impl GameClock {
 impl Default for GameClock {
     fn default() -> Self {
         Self::new(NonZeroU64::new(30).expect("unreachable"))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct HeaderCommand {
+    pub format_version: String,
+    pub content_type: String,
+}
+
+impl Default for HeaderCommand {
+    fn default() -> Self {
+        Self {
+            format_version: env!("CARGO_PKG_VERSION").to_owned(),
+            content_type: "image/patica".to_owned(),
+        }
     }
 }
