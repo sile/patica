@@ -45,6 +45,8 @@
         {"define": {"green": [  0, 255,   0]}},
         {"define": {"blue":  [  0,   0, 255]}},
 
-        {"set_dot_color": "black"}
+        {"anchor": "origin"},
+        
+        {"set": {"color": "black"}}
     ]
 }

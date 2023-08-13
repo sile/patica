@@ -16,6 +16,7 @@ pub struct Model {
     names: BTreeMap<String, NameKind>,
     marker: Option<Marker>,
     stash_buffer: StashBuffer,
+    anchors: BTreeMap<AnchorName, PixelPosition>,
     applied_commands: Vec<Command>, // dirty_commands (?)
                                     // anchors: Vec<(usize,Anchor)>
 }
@@ -103,9 +104,6 @@ impl Model {
                 self.handle_define_command(c.0.name.clone(), c.0.value.clone())
                     .or_fail()?;
             }
-            Command::Anchor(_) => {
-                // Do nothing
-            }
             Command::Mark(kind) => {
                 self.marker = Some(Marker::new(*kind, self));
                 self.stash_buffer.clear();
@@ -137,8 +135,18 @@ impl Model {
             Command::Paste => {
                 self.handle_paste_command().or_fail()?;
             }
+            Command::Anchor(c) => {
+                self.handle_anchor_command(c).or_fail()?;
+            }
         }
         Ok(true)
+    }
+
+    fn handle_anchor_command(&mut self, name: &AnchorName) -> pagurus::Result<()> {
+        let position = self.cursor.position;
+        self.anchors.insert(name.clone(), position);
+        self.names.insert(name.0.clone(), NameKind::Anchor);
+        Ok(())
     }
 
     fn handle_paste_command(&mut self) -> pagurus::Result<()> {
@@ -261,12 +269,14 @@ impl Model {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum NameKind {
     Color,
+    Anchor,
 }
 
 impl std::fmt::Display for NameKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             NameKind::Color => write!(f, "color"),
+            NameKind::Anchor => write!(f, "anchor"),
         }
     }
 }
@@ -387,6 +397,7 @@ pub enum Command {
     // {"rotate": {"color": 1}},
     Rotate(RotateCommand),
 
+    Anchor(AnchorName),
     //---------------
     // Basic commands
     //---------------
@@ -448,10 +459,6 @@ pub enum Command {
     // bg or frame (iframe)
     // {"set_background": [{"color": [0,0,0], "size": [100,100]}, {"file": {"path": "path/to/image.png", "position": [0, 0], "size": [100, 100]}}]
     // animation frame
-
-    //Pick,
-    //Quit,
-    Anchor(serde_json::Value), // TODO: Add timestamp field (?)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -567,7 +574,6 @@ impl From<PixelPosition> for Position {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(transparent)]
 pub struct ColorName(pub String);
 
 impl From<String> for ColorName {
@@ -685,3 +691,6 @@ impl StashBuffer {
         self.pixels.insert(position, color);
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct AnchorName(pub String);
