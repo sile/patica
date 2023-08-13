@@ -138,6 +138,9 @@ impl Model {
             Command::Tag(tag) => {
                 self.tags.insert(self.commands_len, tag.clone());
             }
+            Command::Comment(_) => {
+                // Do nothing.
+            }
         }
         Ok(true)
     }
@@ -432,6 +435,8 @@ pub enum Command {
     Anchor(AnchorName),
 
     Tag(Tag),
+
+    Comment(serde_json::Value),
     //---------------
     // Basic commands
     //---------------

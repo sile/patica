@@ -33,7 +33,6 @@ enum Command {
     Export(ExportCommand),
     // Include (set-origin -> cut -> reset-origin)
     // Summary
-    // ConvertToPng(?) or render or export
     // Compaction or GC
 }
 
