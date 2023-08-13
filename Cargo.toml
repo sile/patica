@@ -4,8 +4,8 @@ version = "0.0.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A terminal based pixel art editor"
-homepage = "https://github.com/sile/de"
-repository = "https://github.com/sile/de"
+homepage = "https://github.com/sile/patica"
+repository = "https://github.com/sile/patica"
 readme = "README.md"
 exclude = ["/palettes/"]
 
