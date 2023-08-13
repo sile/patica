@@ -1,12 +1,12 @@
 use crate::{
     config::Config,
-    model::{Command, Marker, Model},
+    model::{Command, Marker, Model, PixelPosition, PixelRegion, PixelSize},
 };
 use pagurus::{
     event::{Event, KeyEvent},
     failure::OrFail,
     image::{Canvas, Color},
-    spatial::{Contains, Position, Region, Size},
+    spatial::{Position, Size},
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -21,6 +21,29 @@ pub struct ViewContext {
     pub model: Model,
     pub config: Arc<Config>,
     pub quit: bool,
+}
+
+impl ViewContext {
+    fn to_canvas_position(&self, pixel_position: PixelPosition) -> Position {
+        let center = self.window_size.to_region().center();
+        (Position::from(pixel_position) + center) - Position::from(self.model.camera().position)
+    }
+
+    fn visible_pixel_region(&self) -> PixelRegion {
+        let center = self.window_size.to_region().center();
+        let mut region = self.window_size.to_region();
+        region.position = (region.position - center) + Position::from(self.model.camera().position);
+        PixelRegion {
+            position: PixelPosition {
+                x: region.position.x as i16,
+                y: region.position.y as i16,
+            },
+            size: PixelSize {
+                width: region.size.width as u16,
+                height: region.size.height as u16,
+            },
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -69,10 +92,13 @@ impl PixelCanvas {
     }
 
     fn render_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        let center = ctx.window_size.to_region().center();
-        for (pixel_position, color) in ctx.model.visible_pixels(ctx.window_size) {
-            let position = Position::from(pixel_position) + center;
-            canvas.draw_pixel(position, color);
+        let region = ctx.visible_pixel_region();
+
+        // TODO: optimzie
+        for pixel_position in region.positions() {
+            if let Some(color) = ctx.model.get_pixel_color(pixel_position) {
+                canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
+            }
         }
     }
 
@@ -81,23 +107,15 @@ impl PixelCanvas {
             return;
         }
 
-        let center = ctx.window_size.to_region().center(); // TODO: consider camera
         for (pixel_position, color) in ctx.model.stashed_pixels() {
-            let position = Position::from(pixel_position) + center;
-            canvas.draw_pixel(position, color);
+            canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
         }
     }
 
     fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, marker: &Marker) {
-        // TODO: Use a method to be defined in ctx
-        let center = ctx.window_size.to_region().center();
-        let region = Region::new(
-            Position::from(ctx.model.camera().position) - center,
-            ctx.window_size,
-        );
-
+        let region = ctx.visible_pixel_region();
         for pixel_position in marker.marked_pixels() {
-            if !region.contains(&Position::from(pixel_position)) {
+            if !region.contains(pixel_position) {
                 continue;
             }
 
@@ -107,8 +125,10 @@ impl PixelCanvas {
                 continue;
             }
 
-            let position = Position::from(pixel_position) + center;
-            canvas.draw_pixel(position, ctx.model.dot_color());
+            canvas.draw_pixel(
+                ctx.to_canvas_position(pixel_position),
+                ctx.model.dot_color(),
+            );
         }
     }
 
@@ -123,11 +143,7 @@ impl PixelCanvas {
     }
 
     fn cursor_position(&self, ctx: &ViewContext) -> Position {
-        // TODO: consider camera position
-        let mut position = ctx.window_size.to_region().center();
-        position.x += ctx.model.cursor().x() as i32;
-        position.y += ctx.model.cursor().y() as i32;
-        position
+        ctx.to_canvas_position(ctx.model.cursor().position())
     }
 
     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {

@@ -1,8 +1,4 @@
-use pagurus::{
-    failure::OrFail,
-    image::Color,
-    spatial::{Position, Region, Size},
-};
+use pagurus::{failure::OrFail, image::Color, spatial::Position};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 
@@ -53,22 +49,16 @@ impl Model {
             .map(|(p, &color_index)| (self.cursor.position + *p, self.palette.get(color_index)))
     }
 
-    pub fn visible_pixels(
-        &self,
-        window_size: Size,
-    ) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
-        let region = Region::new(
-            Position::from(self.camera.position) - window_size.to_region().center(),
-            window_size,
-        );
+    pub fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
+        self.pixels
+            .iter()
+            .map(move |(p, &color_index)| (*p, self.palette.get(color_index)))
+    }
 
-        // TODO: optimize
-        region.iter().filter_map(|p| {
-            let pixel_position = PixelPosition::from((p.x as i16, p.y as i16));
-            self.pixels
-                .get(&pixel_position)
-                .map(|&color_index| (pixel_position, self.palette.get(color_index)))
-        })
+    pub fn get_pixel_color(&self, position: PixelPosition) -> Option<Color> {
+        self.pixels
+            .get(&position)
+            .map(|&color_index| self.palette.get(color_index))
     }
 
     pub fn marker(&self) -> Option<&Marker> {
@@ -221,22 +211,34 @@ impl Model {
                 self.dot_color = self.palette.get_index(name).or_fail()?;
             }
             SetCommand::Cursor(name) => {
-                let kind = self
-                    .names
-                    .get(&name.0)
-                    .copied()
-                    .or_fail()
-                    .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
-                matches!(kind, NameKind::Anchor).or_fail().map_err(|f| {
-                    f.message(format!(
-                        "The name '{}' is defined as {kind} name, not an anchor name",
-                        name.0,
-                    ))
-                })?;
-                self.cursor.position = self.anchors.get(name).copied().or_fail()?;
+                self.cursor.position = self.get_anchor_position(name).or_fail()?;
             }
+            SetCommand::Camera(c) => match c {
+                CameraPosition::Anchor(name) => {
+                    self.camera.position = self.get_anchor_position(name).or_fail()?;
+                }
+                CameraPosition::Pixel(position) => {
+                    self.camera.position = self.cursor.position + *position;
+                }
+            },
         }
         Ok(())
+    }
+
+    fn get_anchor_position(&self, name: &AnchorName) -> pagurus::Result<PixelPosition> {
+        let kind = self
+            .names
+            .get(&name.0)
+            .copied()
+            .or_fail()
+            .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
+        matches!(kind, NameKind::Anchor).or_fail().map_err(|f| {
+            f.message(format!(
+                "The name '{}' is defined as {kind} name, not an anchor name",
+                name.0,
+            ))
+        })?;
+        self.anchors.get(name).copied().or_fail()
     }
 
     fn handle_draw_command(&mut self) -> pagurus::Result<()> {
@@ -365,6 +367,7 @@ impl<T: Clone> TryFrom<BTreeMap<String, T>> for NameAndValue<T> {
 pub enum SetCommand {
     Color(ColorName),
     Cursor(AnchorName),
+    Camera(CameraPosition),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -501,6 +504,10 @@ impl Cursor {
 
     pub const fn y(self) -> i16 {
         self.position.y
+    }
+
+    pub const fn position(self) -> PixelPosition {
+        self.position
     }
 
     pub fn move_x(&mut self, delta: i16) {
@@ -709,3 +716,45 @@ impl StashBuffer {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct AnchorName(pub String);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CameraPosition {
+    Anchor(AnchorName),
+    Pixel(PixelPositionDelta),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PixelRegion {
+    pub position: PixelPosition,
+    pub size: PixelSize,
+}
+
+impl PixelRegion {
+    pub fn contains(self, position: PixelPosition) -> bool {
+        let PixelRegion {
+            position: PixelPosition { x, y },
+            size: PixelSize { width, height },
+        } = self;
+        x <= position.x
+            && position.x < x + width as i16
+            && y <= position.y
+            && position.y < y + height as i16
+    }
+
+    pub fn positions(self) -> impl Iterator<Item = PixelPosition> {
+        (self.position.y..)
+            .take(self.size.height as usize)
+            .flat_map(move |y| {
+                (self.position.x..)
+                    .take(self.size.width as usize)
+                    .map(move |x| PixelPosition { x, y })
+            })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct PixelSize {
+    pub width: u16,
+    pub height: u16,
+}
