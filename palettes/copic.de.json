@@ -1,0 +1,716 @@
+{"comment":{"code":"BV0000","family":"BlueViolet","group":"S0","name":"Pale Thistle","value":"B000"}}
+{"define":{"copic.bv0000":[238,236,245]}}
+{"comment":{"code":"BV000","family":"BlueViolet","group":"S0","name":"Iridescent Mauve","value":"B00"}}
+{"define":{"copic.bv000":[238,231,241]}}
+{"comment":{"code":"BV00","family":"BlueViolet","group":"S0","name":"Mauve Shadow","value":"B0"}}
+{"define":{"copic.bv00":[233,227,240]}}
+{"comment":{"code":"BV01","family":"BlueViolet","group":"S0","name":"Viola","value":"B1"}}
+{"define":{"copic.bv01":[200,196,223]}}
+{"comment":{"code":"BV02","family":"BlueViolet","group":"S0","name":"Prune","value":"B2"}}
+{"define":{"copic.bv02":[190,196,223]}}
+{"comment":{"code":"BV04","family":"BlueViolet","group":"S0","name":"Blue Berry","value":"B4"}}
+{"define":{"copic.bv04":[146,164,206]}}
+{"comment":{"code":"BV08","family":"BlueViolet","group":"S0","name":"Blue Violet","value":"B8"}}
+{"define":{"copic.bv08":[176,140,185]}}
+{"comment":{"code":"BV11","family":"BlueViolet","group":"S1","name":"Soft Violet","value":"B1"}}
+{"define":{"copic.bv11":[224,220,236]}}
+{"comment":{"code":"BV13","family":"BlueViolet","group":"S1","name":"Hydrangea Blue","value":"B3"}}
+{"define":{"copic.bv13":[152,158,201]}}
+{"comment":{"code":"BV17","family":"BlueViolet","group":"S1","name":"Deep Reddish Blue","value":"B7"}}
+{"define":{"copic.bv17":[126,144,189]}}
+{"comment":{"code":"BV20","family":"BlueViolet","group":"S2","name":"Dull Lavender","value":"B0"}}
+{"define":{"copic.bv20":[220,227,242]}}
+{"comment":{"code":"BV23","family":"BlueViolet","group":"S2","name":"Grayish Lavender","value":"B3"}}
+{"define":{"copic.bv23":[196,205,225]}}
+{"comment":{"code":"BV25","family":"BlueViolet","group":"S2","name":"Grayish Violet","value":"B5"}}
+{"define":{"copic.bv25":[144,143,172]}}
+{"comment":{"code":"BV29","family":"BlueViolet","group":"S2","name":"Slate","value":"B9"}}
+{"define":{"copic.bv29":[46,66,86]}}
+{"comment":{"code":"BV31","family":"BlueViolet","group":"S3","name":"Pale Lavender","value":"B1"}}
+{"define":{"copic.bv31":[230,232,244]}}
+{"comment":{"code":"BV34","family":"BlueViolet","group":"S3","name":"Bluebell","value":"B4"}}
+{"define":{"copic.bv34":[127,146,189]}}
+{"comment":{"code":"V0000","family":"Violet","group":"S0","name":"Rose Quartz","value":"B000"}}
+{"define":{"copic.v0000":[243,241,248]}}
+{"comment":{"code":"V000","family":"Violet","group":"S0","name":"Pale Heath","value":"B00"}}
+{"define":{"copic.v000":[247,242,247]}}
+{"comment":{"code":"V01","family":"Violet","group":"S0","name":"Heath","value":"B1"}}
+{"define":{"copic.v01":[237,204,222]}}
+{"comment":{"code":"V04","family":"Violet","group":"S0","name":"Lilac","value":"B4"}}
+{"define":{"copic.v04":[237,185,209]}}
+{"comment":{"code":"V05","family":"Violet","group":"S0","name":"Azalea","value":"B5"}}
+{"define":{"copic.v05":[236,180,206]}}
+{"comment":{"code":"V06","family":"Violet","group":"S0","name":"Lavender","value":"B6"}}
+{"define":{"copic.v06":[219,165,198]}}
+{"comment":{"code":"V09","family":"Violet","group":"S0","name":"Violet","value":"B9"}}
+{"define":{"copic.v09":[151,89,154]}}
+{"comment":{"code":"V12","family":"Violet","group":"S1","name":"Pale Lilac","value":"B2"}}
+{"define":{"copic.v12":[242,223,235]}}
+{"comment":{"code":"V15","family":"Violet","group":"S1","name":"Mallow","value":"B5"}}
+{"define":{"copic.v15":[224,182,209]}}
+{"comment":{"code":"V17","family":"Violet","group":"S1","name":"Amethyst","value":"B7"}}
+{"define":{"copic.v17":[179,161,199]}}
+{"comment":{"code":"V20","family":"Violet","group":"S2","name":"Wisteria","value":"B0"}}
+{"define":{"copic.v20":[213,204,214]}}
+{"comment":{"code":"V22","family":"Violet","group":"S2","name":"Ash Lavender","value":"B2"}}
+{"define":{"copic.v22":[123,111,144]}}
+{"comment":{"code":"V25","family":"Violet","group":"S2","name":"Pale Blackberry","value":"B5"}}
+{"define":{"copic.v25":[182,174,198]}}
+{"comment":{"code":"V28","family":"Violet","group":"S2","name":"Eggplant","value":"B8"}}
+{"define":{"copic.v28":[120,122,160]}}
+{"comment":{"code":"V91","family":"Violet","group":"S9","name":"Pale Grape","value":"B1"}}
+{"define":{"copic.v91":[239,208,216]}}
+{"comment":{"code":"V93","family":"Violet","group":"S9","name":"Early Grape","value":"B3"}}
+{"define":{"copic.v93":[237,205,223]}}
+{"comment":{"code":"V95","family":"Violet","group":"S9","name":"Light Grape","value":"B5"}}
+{"define":{"copic.v95":[197,137,170]}}
+{"comment":{"code":"V99","family":"Violet","group":"S9","name":"Aubergine","value":"B9"}}
+{"define":{"copic.v99":[79,51,77]}}
+{"comment":{"code":"RV0000","family":"RedViolet","group":"S0","name":"Evening Primrose","value":"B000"}}
+{"define":{"copic.rv0000":[246,239,246]}}
+{"comment":{"code":"RV000","family":"RedViolet","group":"S0","name":"Pale Purple","value":"B00"}}
+{"define":{"copic.rv000":[247,233,241]}}
+{"comment":{"code":"RV00","family":"RedViolet","group":"S0","name":"Water Lily","value":"B0"}}
+{"define":{"copic.rv00":[243,211,233]}}
+{"comment":{"code":"RV02","family":"RedViolet","group":"S0","name":"Sugared Almond Pink","value":"B2"}}
+{"define":{"copic.rv02":[252,222,233]}}
+{"comment":{"code":"RV04","family":"RedViolet","group":"S0","name":"Shock Pink","value":"B4"}}
+{"define":{"copic.rv04":[249,176,197]}}
+{"comment":{"code":"RV06","family":"RedViolet","group":"S0","name":"Cerise","value":"B6"}}
+{"define":{"copic.rv06":[238,134,174]}}
+{"comment":{"code":"RV09","family":"RedViolet","group":"S0","name":"Fuchsia","value":"B9"}}
+{"define":{"copic.rv09":[232,124,172]}}
+{"comment":{"code":"RV10","family":"RedViolet","group":"S1","name":"Pale Pink","value":"B0"}}
+{"define":{"copic.rv10":[254,241,245]}}
+{"comment":{"code":"RV11","family":"RedViolet","group":"S1","name":"Pink","value":"B1"}}
+{"define":{"copic.rv11":[252,223,227]}}
+{"comment":{"code":"RV13","family":"RedViolet","group":"S1","name":"Tender Pink","value":"B3"}}
+{"define":{"copic.rv13":[252,211,222]}}
+{"comment":{"code":"RV14","family":"RedViolet","group":"S1","name":"Begonia Pink","value":"B4"}}
+{"define":{"copic.rv14":[248,160,188]}}
+{"comment":{"code":"RV17","family":"RedViolet","group":"S1","name":"Deep Magenta","value":"B7"}}
+{"define":{"copic.rv17":[229,139,181]}}
+{"comment":{"code":"RV19","family":"RedViolet","group":"S1","name":"Red Violet","value":"B9"}}
+{"define":{"copic.rv19":[222,115,167]}}
+{"comment":{"code":"RV21","family":"RedViolet","group":"S2","name":"Light Pink","value":"B1"}}
+{"define":{"copic.rv21":[254,238,237]}}
+{"comment":{"code":"RV23","family":"RedViolet","group":"S2","name":"Pure Pink","value":"B3"}}
+{"define":{"copic.rv23":[251,198,207]}}
+{"comment":{"code":"RV25","family":"RedViolet","group":"S2","name":"Dog Rose Flower","value":"B5"}}
+{"define":{"copic.rv25":[248,161,193]}}
+{"comment":{"code":"RV29","family":"RedViolet","group":"S2","name":"Crimson","value":"B9"}}
+{"define":{"copic.rv29":[241,74,129]}}
+{"comment":{"code":"RV32","family":"RedViolet","group":"S3","name":"Shadow Pink","value":"B2"}}
+{"define":{"copic.rv32":[253,220,215]}}
+{"comment":{"code":"RV34","family":"RedViolet","group":"S3","name":"Dark Pink","value":"B4"}}
+{"define":{"copic.rv34":[251,188,184]}}
+{"comment":{"code":"RV42","family":"RedViolet","group":"S4","name":"Salmon Pink","value":"B2"}}
+{"define":{"copic.rv42":[251,199,191]}}
+{"comment":{"code":"RV52","family":"RedViolet","group":"S5","name":"Cotton Candy","value":"B2"}}
+{"define":{"copic.rv52":[220,156,182]}}
+{"comment":{"code":"RV55","family":"RedViolet","group":"S5","name":"Hollyhock","value":"B5"}}
+{"define":{"copic.rv55":[217,97,150]}}
+{"comment":{"code":"RV63","family":"RedViolet","group":"S6","name":"Begonia","value":"B3"}}
+{"define":{"copic.rv63":[219,138,181]}}
+{"comment":{"code":"RV66","family":"RedViolet","group":"S6","name":"Raspberry","value":"B6"}}
+{"define":{"copic.rv66":[141,55,101]}}
+{"comment":{"code":"RV69","family":"RedViolet","group":"S6","name":"Peony","value":"B9"}}
+{"define":{"copic.rv69":[156,98,118]}}
+{"comment":{"code":"RV91","family":"RedViolet","group":"S9","name":"Grayish Cherry","value":"B1"}}
+{"define":{"copic.rv91":[237,222,232]}}
+{"comment":{"code":"RV93","family":"RedViolet","group":"S9","name":"Smoky Purple","value":"B3"}}
+{"define":{"copic.rv93":[238,195,210]}}
+{"comment":{"code":"RV95","family":"RedViolet","group":"S9","name":"Baby Blossoms","value":"B5"}}
+{"define":{"copic.rv95":[198,148,170]}}
+{"comment":{"code":"RV99","family":"RedViolet","group":"S9","name":"Argyle Purple","value":"B9"}}
+{"define":{"copic.rv99":[110,87,100]}}
+{"comment":{"code":"R0000","family":"Red","group":"S0","name":"Pink Beryl","value":"B000"}}
+{"define":{"copic.r0000":[252,246,242]}}
+{"comment":{"code":"R000","family":"Red","group":"S0","name":"Cherry White","value":"B00"}}
+{"define":{"copic.r000":[255,246,242]}}
+{"comment":{"code":"R00","family":"Red","group":"S0","name":"Pinkish White","value":"B0"}}
+{"define":{"copic.r00":[255,245,239]}}
+{"comment":{"code":"R01","family":"Red","group":"S0","name":"Pinkish Vanilla","value":"B1"}}
+{"define":{"copic.r01":[253,224,218]}}
+{"comment":{"code":"R02","family":"Red","group":"S0","name":"Rose Salmon","value":"B2"}}
+{"define":{"copic.r02":[254,220,208]}}
+{"comment":{"code":"R05","family":"Red","group":"S0","name":"Salmon Red","value":"B5"}}
+{"define":{"copic.r05":[248,157,133]}}
+{"comment":{"code":"R08","family":"Red","group":"S0","name":"Vermilion","value":"B8"}}
+{"define":{"copic.r08":[244,109,86]}}
+{"comment":{"code":"R11","family":"Red","group":"S1","name":"Pale Cherry Pink","value":"B1"}}
+{"define":{"copic.r11":[255,232,221]}}
+{"comment":{"code":"R12","family":"Red","group":"S1","name":"Light Tea Rose","value":"B2"}}
+{"define":{"copic.r12":[254,220,203]}}
+{"comment":{"code":"R14","family":"Red","group":"S1","name":"Light Rouge","value":"B4"}}
+{"define":{"copic.r14":[249,168,157]}}
+{"comment":{"code":"R17","family":"Red","group":"S1","name":"Lipstick Orange","value":"B7"}}
+{"define":{"copic.r17":[247,143,114]}}
+{"comment":{"code":"R20","family":"Red","group":"S2","name":"Blush","value":"B0"}}
+{"define":{"copic.r20":[254,224,217]}}
+{"comment":{"code":"R21","family":"Red","group":"S2","name":"Sardonyx","value":"B1"}}
+{"define":{"copic.r21":[252,182,172]}}
+{"comment":{"code":"R22","family":"Red","group":"S2","name":"Light Prawn","value":"B2"}}
+{"define":{"copic.r22":[255,153,153]}}
+{"comment":{"code":"R24","family":"Red","group":"S2","name":"Prawn","value":"B4"}}
+{"define":{"copic.r24":[245,127,130]}}
+{"comment":{"code":"R27","family":"Red","group":"S2","name":"Cadmium Red","value":"B7"}}
+{"define":{"copic.r27":[242,83,100]}}
+{"comment":{"code":"R29","family":"Red","group":"S2","name":"Lipstick Red","value":"B9"}}
+{"define":{"copic.r29":[239,0,71]}}
+{"comment":{"code":"R30","family":"Red","group":"S3","name":"Pale Yellowish Pink","value":"B0"}}
+{"define":{"copic.r30":[254,234,229]}}
+{"comment":{"code":"R32","family":"Red","group":"S3","name":"Peach","value":"B2"}}
+{"define":{"copic.r32":[252,204,196]}}
+{"comment":{"code":"R35","family":"Red","group":"S3","name":"Coral","value":"B5"}}
+{"define":{"copic.r35":[245,122,138]}}
+{"comment":{"code":"R37","family":"Red","group":"S3","name":"Carmine","value":"B7"}}
+{"define":{"copic.r37":[237,120,125]}}
+{"comment":{"code":"R39","family":"Red","group":"S3","name":"Garnet","value":"B9"}}
+{"define":{"copic.r39":[214,83,130]}}
+{"comment":{"code":"R43","family":"Red","group":"S4","name":"Bougainvillaea","value":"B3"}}
+{"define":{"copic.r43":[241,143,150]}}
+{"comment":{"code":"R46","family":"Red","group":"S4","name":"Strong Red","value":"B6"}}
+{"define":{"copic.r46":[230,80,109]}}
+{"comment":{"code":"R56","family":"Red","group":"S5","name":"Currant","value":"B6"}}
+{"define":{"copic.r56":[195,102,121]}}
+{"comment":{"code":"R59","family":"Red","group":"S5","name":"Cardinal","value":"B9"}}
+{"define":{"copic.r59":[197,95,124]}}
+{"comment":{"code":"R81","family":"Red","group":"S8","name":"Rose Pink","value":"B1"}}
+{"define":{"copic.r81":[246,212,220]}}
+{"comment":{"code":"R83","family":"Red","group":"S8","name":"Rose Mist","value":"B3"}}
+{"define":{"copic.r83":[245,170,191]}}
+{"comment":{"code":"R85","family":"Red","group":"S8","name":"Rose Red","value":"B5"}}
+{"define":{"copic.r85":[222,118,154]}}
+{"comment":{"code":"R89","family":"Red","group":"S8","name":"Dark Red","value":"B9"}}
+{"define":{"copic.r89":[145,53,77]}}
+{"comment":{"code":"YR0000","family":"YellowRed","group":"S0","name":"Pale Chiffon","value":"B000"}}
+{"define":{"copic.yr0000":[252,246,235]}}
+{"comment":{"code":"YR000","family":"YellowRed","group":"S0","name":"Silk","value":"B00"}}
+{"define":{"copic.yr000":[255,241,225]}}
+{"comment":{"code":"YR00","family":"YellowRed","group":"S0","name":"Powder Pink","value":"B0"}}
+{"define":{"copic.yr00":[254,223,199]}}
+{"comment":{"code":"YR01","family":"YellowRed","group":"S0","name":"Peach Puff","value":"B1"}}
+{"define":{"copic.yr01":[253,214,183]}}
+{"comment":{"code":"YR02","family":"YellowRed","group":"S0","name":"Light Orange","value":"B2"}}
+{"define":{"copic.yr02":[255,228,207]}}
+{"comment":{"code":"YR04","family":"YellowRed","group":"S0","name":"Chrome Orange","value":"B4"}}
+{"define":{"copic.yr04":[255,207,109]}}
+{"comment":{"code":"YR07","family":"YellowRed","group":"S0","name":"Cadmium Orange","value":"B7"}}
+{"define":{"copic.yr07":[246,120,51]}}
+{"comment":{"code":"YR09","family":"YellowRed","group":"S0","name":"Chinese Orange","value":"B7"}}
+{"define":{"copic.yr09":[243,87,0]}}
+{"comment":{"code":"YR12","family":"YellowRed","group":"S1","name":"Loquat","value":"B2"}}
+{"define":{"copic.yr12":[254,227,145]}}
+{"comment":{"code":"YR14","family":"YellowRed","group":"S1","name":"Caramel","value":"B4"}}
+{"define":{"copic.yr14":[255,211,76]}}
+{"comment":{"code":"YR15","family":"YellowRed","group":"S1","name":"Pumpkin Yellow","value":"B5"}}
+{"define":{"copic.yr15":[255,209,152]}}
+{"comment":{"code":"YR16","family":"YellowRed","group":"S1","name":"Apricot","value":"B6"}}
+{"define":{"copic.yr16":[255,196,23]}}
+{"comment":{"code":"YR18","family":"YellowRed","group":"S1","name":"Sanguine","value":"B8"}}
+{"define":{"copic.yr18":[245,115,53]}}
+{"comment":{"code":"YR20","family":"YellowRed","group":"S2","name":"Yellowish Shade","value":"B0"}}
+{"define":{"copic.yr20":[255,233,201]}}
+{"comment":{"code":"YR21","family":"YellowRed","group":"S2","name":"Cream","value":"B1"}}
+{"define":{"copic.yr21":[248,229,187]}}
+{"comment":{"code":"YR23","family":"YellowRed","group":"S2","name":"Yellow Ochre","value":"B3"}}
+{"define":{"copic.yr23":[242,219,152]}}
+{"comment":{"code":"YR24","family":"YellowRed","group":"S2","name":"Pale Sepia","value":"B4"}}
+{"define":{"copic.yr24":[246,220,107]}}
+{"comment":{"code":"YR27","family":"YellowRed","group":"S2","name":"Tuscan Orange","value":"B7"}}
+{"define":{"copic.yr27":[216,103,69]}}
+{"comment":{"code":"YR30","family":"YellowRed","group":"S3","name":"Macadamia nut","value":"B0"}}
+{"define":{"copic.yr30":[247,237,201]}}
+{"comment":{"code":"YR31","family":"YellowRed","group":"S3","name":"Light Reddish Yellow","value":"B1"}}
+{"define":{"copic.yr31":[255,230,178]}}
+{"comment":{"code":"YR61","family":"YellowRed","group":"S6","name":"Spring Orange","value":"B1"}}
+{"define":{"copic.yr61":[254,226,204]}}
+{"comment":{"code":"YR65","family":"YellowRed","group":"S6","name":"Atoll","value":"B5"}}
+{"define":{"copic.yr65":[254,187,101]}}
+{"comment":{"code":"YR68","family":"YellowRed","group":"S6","name":"Orange","value":"B8"}}
+{"define":{"copic.yr68":[246,119,0]}}
+{"comment":{"code":"YR82","family":"YellowRed","group":"S8","name":"Mellow Peach","value":"B2"}}
+{"define":{"copic.yr82":[255,209,152]}}
+{"comment":{"code":"Y0000","family":"Yellow","group":"S0","name":"Yellow Fluorite","value":"B000"}}
+{"define":{"copic.y0000":[255,254,247]}}
+{"comment":{"code":"Y000","family":"Yellow","group":"S0","name":"Pale Lemon","value":"B00"}}
+{"define":{"copic.y000":[255,255,246]}}
+{"comment":{"code":"Y00","family":"Yellow","group":"S0","name":"Barium Yellow","value":"B0"}}
+{"define":{"copic.y00":[255,254,229]}}
+{"comment":{"code":"Y02","family":"Yellow","group":"S0","name":"Canary Yellow","value":"B2"}}
+{"define":{"copic.y02":[249,245,160]}}
+{"comment":{"code":"Y04","family":"Yellow","group":"S0","name":"Acacia","value":"B4"}}
+{"define":{"copic.y04":[243,233,83]}}
+{"comment":{"code":"Y06","family":"Yellow","group":"S0","name":"Yellow","value":"B6"}}
+{"define":{"copic.y06":[255,247,114]}}
+{"comment":{"code":"Y08","family":"Yellow","group":"S0","name":"Acid Yellow","value":"B8"}}
+{"define":{"copic.y08":[255,245,0]}}
+{"comment":{"code":"Y11","family":"Yellow","group":"S1","name":"Pale Yellow","value":"B1"}}
+{"define":{"copic.y11":[255,252,211]}}
+{"comment":{"code":"Y13","family":"Yellow","group":"S1","name":"Lemon Yellow","value":"B3"}}
+{"define":{"copic.y13":[252,249,183]}}
+{"comment":{"code":"Y15","family":"Yellow","group":"S1","name":"Cadmium Yellow","value":"B5"}}
+{"define":{"copic.y15":[255,238,114]}}
+{"comment":{"code":"Y17","family":"Yellow","group":"S1","name":"Golden Yellow","value":"B7"}}
+{"define":{"copic.y17":[255,234,85]}}
+{"comment":{"code":"Y18","family":"Yellow","group":"S1","name":"Lightning Yellow","value":"B8"}}
+{"define":{"copic.y18":[255,242,87]}}
+{"comment":{"code":"Y19","family":"Yellow","group":"S1","name":"Napoli Yellow","value":"B9"}}
+{"define":{"copic.y19":[255,238,57]}}
+{"comment":{"code":"Y21","family":"Yellow","group":"S2","name":"Buttercup Yellow","value":"B1"}}
+{"define":{"copic.y21":[255,242,201]}}
+{"comment":{"code":"Y23","family":"Yellow","group":"S2","name":"Yellowish Beige","value":"B3"}}
+{"define":{"copic.y23":[253,234,190]}}
+{"comment":{"code":"Y26","family":"Yellow","group":"S2","name":"Mustard","value":"B6"}}
+{"define":{"copic.y26":[246,229,111]}}
+{"comment":{"code":"Y28","family":"Yellow","group":"S2","name":"Lionet Gold","value":"B8"}}
+{"define":{"copic.y28":[213,181,110]}}
+{"comment":{"code":"Y32","family":"Yellow","group":"S3","name":"Cashmere","value":"B2"}}
+{"define":{"copic.y32":[251,230,202]}}
+{"comment":{"code":"Y35","family":"Yellow","group":"S3","name":"Maize","value":"B5"}}
+{"define":{"copic.y35":[255,224,129]}}
+{"comment":{"code":"Y38","family":"Yellow","group":"S3","name":"Honey","value":"B8"}}
+{"define":{"copic.y38":[255,255,153]}}
+{"comment":{"code":"YG0000","family":"YellowGreen","group":"S0","name":"Lily White","value":"B000"}}
+{"define":{"copic.yg0000":[247,249,228]}}
+{"comment":{"code":"YG00","family":"YellowGreen","group":"S0","name":"Mimosa Yellow","value":"B0"}}
+{"define":{"copic.yg00":[238,235,166]}}
+{"comment":{"code":"YG01","family":"YellowGreen","group":"S0","name":"Green Bice","value":"B1"}}
+{"define":{"copic.yg01":[238,242,200]}}
+{"comment":{"code":"YG03","family":"YellowGreen","group":"S0","name":"Yellow Green","value":"B3"}}
+{"define":{"copic.yg03":[234,238,178]}}
+{"comment":{"code":"YG05","family":"YellowGreen","group":"S0","name":"Salad","value":"B5"}}
+{"define":{"copic.yg05":[226,233,153]}}
+{"comment":{"code":"YG06","family":"YellowGreen","group":"S0","name":"Yellowish Green","value":"B6"}}
+{"define":{"copic.yg06":[211,227,152]}}
+{"comment":{"code":"YG07","family":"YellowGreen","group":"S0","name":"Acid Green","value":"B7"}}
+{"define":{"copic.yg07":[182,209,53]}}
+{"comment":{"code":"YG09","family":"YellowGreen","group":"S0","name":"Lettuce Green","value":"B9"}}
+{"define":{"copic.yg09":[147,197,96]}}
+{"comment":{"code":"YG11","family":"YellowGreen","group":"S1","name":"Mignonette","value":"B1"}}
+{"define":{"copic.yg11":[236,243,213]}}
+{"comment":{"code":"YG13","family":"YellowGreen","group":"S1","name":"Chartreuse","value":"B3"}}
+{"define":{"copic.yg13":[223,233,166]}}
+{"comment":{"code":"YG17","family":"YellowGreen","group":"S1","name":"Grass Green","value":"B7"}}
+{"define":{"copic.yg17":[122,191,74]}}
+{"comment":{"code":"YG21","family":"YellowGreen","group":"S2","name":"Anise","value":"B1"}}
+{"define":{"copic.yg21":[249,248,198]}}
+{"comment":{"code":"YG23","family":"YellowGreen","group":"S2","name":"New Leaf","value":"B3"}}
+{"define":{"copic.yg23":[239,239,152]}}
+{"comment":{"code":"YG25","family":"YellowGreen","group":"S2","name":"Celadon Green","value":"B5"}}
+{"define":{"copic.yg25":[220,228,127]}}
+{"comment":{"code":"YG41","family":"YellowGreen","group":"S4","name":"Pale Cobalt Green","value":"B1"}}
+{"define":{"copic.yg41":[225,238,217]}}
+{"comment":{"code":"YG45","family":"YellowGreen","group":"S4","name":"Cobalt Green","value":"B5"}}
+{"define":{"copic.yg45":[197,224,190]}}
+{"comment":{"code":"YG61","family":"YellowGreen","group":"S6","name":"Pale Moss","value":"B1"}}
+{"define":{"copic.yg61":[183,202,144]}}
+{"comment":{"code":"YG63","family":"YellowGreen","group":"S6","name":"Pea Green","value":"B3"}}
+{"define":{"copic.yg63":[181,210,171]}}
+{"comment":{"code":"YG67","family":"YellowGreen","group":"S6","name":"Moss","value":"B7"}}
+{"define":{"copic.yg67":[151,197,146]}}
+{"comment":{"code":"YG91","family":"YellowGreen","group":"S9","name":"Putty","value":"B1"}}
+{"define":{"copic.yg91":[228,223,184]}}
+{"comment":{"code":"YG93","family":"YellowGreen","group":"S9","name":"Grayish Yellow","value":"B3"}}
+{"define":{"copic.yg93":[222,219,166]}}
+{"comment":{"code":"YG95","family":"YellowGreen","group":"S9","name":"Pale Olive","value":"B5"}}
+{"define":{"copic.yg95":[219,210,103]}}
+{"comment":{"code":"YG97","family":"YellowGreen","group":"S9","name":"Spanish Olive","value":"B7"}}
+{"define":{"copic.yg97":[170,160,0]}}
+{"comment":{"code":"YG99","family":"YellowGreen","group":"S9","name":"Marine Green","value":"B9"}}
+{"define":{"copic.yg99":[106,120,0]}}
+{"comment":{"code":"G0000","family":"Green","group":"S0","name":"Crystal Opal","value":"B000"}}
+{"define":{"copic.g0000":[246,250,246]}}
+{"comment":{"code":"G000","family":"Green","group":"S0","name":"Pale Green","value":"B00"}}
+{"define":{"copic.g000":[247,251,247]}}
+{"comment":{"code":"G00","family":"Green","group":"S0","name":"Jade Green","value":"B0"}}
+{"define":{"copic.g00":[234,245,246]}}
+{"comment":{"code":"G02","family":"Green","group":"S0","name":"Spectrum Green","value":"B2"}}
+{"define":{"copic.g02":[219,236,217]}}
+{"comment":{"code":"G03","family":"Green","group":"S0","name":"Meadow Green","value":"B3"}}
+{"define":{"copic.g03":[176,222,127]}}
+{"comment":{"code":"G05","family":"Green","group":"S0","name":"Emerald Green","value":"B5"}}
+{"define":{"copic.g05":[125,192,121]}}
+{"comment":{"code":"G07","family":"Green","group":"S0","name":"Nile Green","value":"B7"}}
+{"define":{"copic.g07":[143,198,118]}}
+{"comment":{"code":"G09","family":"Green","group":"S0","name":"Veronese Green","value":"B9"}}
+{"define":{"copic.g09":[143,196,96]}}
+{"comment":{"code":"G12","family":"Green","group":"S1","name":"Sea Green","value":"B2"}}
+{"define":{"copic.g12":[222,236,203]}}
+{"comment":{"code":"G14","family":"Green","group":"S1","name":"Apple Green","value":"B4"}}
+{"define":{"copic.g14":[170,210,148]}}
+{"comment":{"code":"G16","family":"Green","group":"S1","name":"Malachite","value":"B6"}}
+{"define":{"copic.g16":[118,193,156]}}
+{"comment":{"code":"G17","family":"Green","group":"S1","name":"Forest Green","value":"B7"}}
+{"define":{"copic.g17":[39,174,125]}}
+{"comment":{"code":"G19","family":"Green","group":"S1","name":"Bright Parrot Green","value":"B9"}}
+{"define":{"copic.g19":[73,182,138]}}
+{"comment":{"code":"G20","family":"Green","group":"S2","name":"Wax White","value":"B0"}}
+{"define":{"copic.g20":[242,247,224]}}
+{"comment":{"code":"G21","family":"Green","group":"S2","name":"Lime Green","value":"B1"}}
+{"define":{"copic.g21":[211,232,211]}}
+{"comment":{"code":"G24","family":"Green","group":"S2","name":"Willow","value":"B4"}}
+{"define":{"copic.g24":[209,228,187]}}
+{"comment":{"code":"G28","family":"Green","group":"S2","name":"Ocean Green","value":"B8"}}
+{"define":{"copic.g28":[35,150,101]}}
+{"comment":{"code":"G29","family":"Green","group":"S2","name":"Pine Tree Green","value":"B9"}}
+{"define":{"copic.g29":[62,134,103]}}
+{"comment":{"code":"G40","family":"Green","group":"S4","name":"Dim Green","value":"B0"}}
+{"define":{"copic.g40":[236,244,227]}}
+{"comment":{"code":"G43","family":"Green","group":"S4","name":"Pistachio","value":"B3"}}
+{"define":{"copic.g43":[146,179,92]}}
+{"comment":{"code":"G46","family":"Green","group":"S4","name":"Mistletoe","value":"B6"}}
+{"define":{"copic.g46":[84,137,93]}}
+{"comment":{"code":"G82","family":"Green","group":"S8","name":"Spring Dim Green","value":"B2"}}
+{"define":{"copic.g82":[219,226,196]}}
+{"comment":{"code":"G85","family":"Green","group":"S8","name":"Verdigris","value":"B5"}}
+{"define":{"copic.g85":[179,205,181]}}
+{"comment":{"code":"G94","family":"Green","group":"S9","name":"Grayish Olive","value":"B4"}}
+{"define":{"copic.g94":[170,179,142]}}
+{"comment":{"code":"G99","family":"Green","group":"S9","name":"Olive","value":"B9"}}
+{"define":{"copic.g99":[123,142,63]}}
+{"comment":{"code":"BG0000","family":"BlueGreen","group":"S0","name":"Snow Green","value":"B000"}}
+{"define":{"copic.bg0000":[245,249,246]}}
+{"comment":{"code":"BG000","family":"BlueGreen","group":"S0","name":"Pale Aqua","value":"B00"}}
+{"define":{"copic.bg000":[247,251,249]}}
+{"comment":{"code":"BG01","family":"BlueGreen","group":"S0","name":"Aqua Blue","value":"B1"}}
+{"define":{"copic.bg01":[214,235,248]}}
+{"comment":{"code":"BG02","family":"BlueGreen","group":"S0","name":"New Blue","value":"B2"}}
+{"define":{"copic.bg02":[212,235,237]}}
+{"comment":{"code":"BG05","family":"BlueGreen","group":"S0","name":"Holiday Blue","value":"B5"}}
+{"define":{"copic.bg05":[156,213,230]}}
+{"comment":{"code":"BG07","family":"BlueGreen","group":"S0","name":"Petroleum Blue","value":"B7"}}
+{"define":{"copic.bg07":[51,184,210]}}
+{"comment":{"code":"BG09","family":"BlueGreen","group":"S0","name":"Blue Green","value":"B9"}}
+{"define":{"copic.bg09":[9,177,205]}}
+{"comment":{"code":"BG10","family":"BlueGreen","group":"S1","name":"Cool Shadow","value":"B0"}}
+{"define":{"copic.bg10":[231,243,242]}}
+{"comment":{"code":"BG11","family":"BlueGreen","group":"S1","name":"Moon White","value":"B1"}}
+{"define":{"copic.bg11":[218,238,242]}}
+{"comment":{"code":"BG13","family":"BlueGreen","group":"S1","name":"Mint Green","value":"B3"}}
+{"define":{"copic.bg13":[211,234,235]}}
+{"comment":{"code":"BG15","family":"BlueGreen","group":"S1","name":"Aqua","value":"B5"}}
+{"define":{"copic.bg15":[181,221,214]}}
+{"comment":{"code":"BG18","family":"BlueGreen","group":"S1","name":"Teal Blue","value":"B8"}}
+{"define":{"copic.bg18":[86,190,179]}}
+{"comment":{"code":"BG23","family":"BlueGreen","group":"S2","name":"Coral Sea","value":"B3"}}
+{"define":{"copic.bg23":[205,231,224]}}
+{"comment":{"code":"BG32","family":"BlueGreen","group":"S3","name":"Aqua Mint","value":"B2"}}
+{"define":{"copic.bg32":[204,230,219]}}
+{"comment":{"code":"BG34","family":"BlueGreen","group":"S3","name":"Horizon Green","value":"B4"}}
+{"define":{"copic.bg34":[184,222,219]}}
+{"comment":{"code":"BG45","family":"BlueGreen","group":"S4","name":"Nile Blue","value":"B5"}}
+{"define":{"copic.bg45":[193,226,227]}}
+{"comment":{"code":"BG49","family":"BlueGreen","group":"S4","name":"Duck Blue","value":"B9"}}
+{"define":{"copic.bg49":[21,178,188]}}
+{"comment":{"code":"BG53","family":"BlueGreen","group":"S5","name":"Ice Mint","value":"B3"}}
+{"define":{"copic.bg53":[92,182,189]}}
+{"comment":{"code":"BG57","family":"BlueGreen","group":"S5","name":"Jasper","value":"B7"}}
+{"define":{"copic.bg57":[4,162,173]}}
+{"comment":{"code":"BG70","family":"BlueGreen","group":"S7","name":"Ocean Mist","value":"B0"}}
+{"define":{"copic.bg70":[229,238,227]}}
+{"comment":{"code":"BG72","family":"BlueGreen","group":"S7","name":"Ice Ocean","value":"B2"}}
+{"define":{"copic.bg72":[136,190,193]}}
+{"comment":{"code":"BG75","family":"BlueGreen","group":"S7","name":"Abyss Green","value":"B5"}}
+{"define":{"copic.bg75":[181,221,214]}}
+{"comment":{"code":"BG78","family":"BlueGreen","group":"S7","name":"Bronze","value":"B8"}}
+{"define":{"copic.bg78":[72,117,107]}}
+{"comment":{"code":"BG90","family":"BlueGreen","group":"S9","name":"Gray Sky","value":"B0"}}
+{"define":{"copic.bg90":[209,204,184]}}
+{"comment":{"code":"BG93","family":"BlueGreen","group":"S9","name":"Green Gray","value":"B3"}}
+{"define":{"copic.bg93":[203,206,196]}}
+{"comment":{"code":"BG96","family":"BlueGreen","group":"S9","name":"Bush","value":"B6"}}
+{"define":{"copic.bg96":[154,176,158]}}
+{"comment":{"code":"BG99","family":"BlueGreen","group":"S9","name":"Flagstone Blue","value":"B9"}}
+{"define":{"copic.bg99":[137,169,150]}}
+{"comment":{"code":"B0000","family":"Blue","group":"S0","name":"Pale Celestine","value":"B000"}}
+{"define":{"copic.b0000":[246,251,254]}}
+{"comment":{"code":"B000","family":"Blue","group":"S0","name":"Pale Porcelain Blue","value":"B00"}}
+{"define":{"copic.b000":[237,246,246]}}
+{"comment":{"code":"B00","family":"Blue","group":"S0","name":"Frost Blue","value":"B0"}}
+{"define":{"copic.b00":[234,246,249]}}
+{"comment":{"code":"B01","family":"Blue","group":"S0","name":"Mint Blue","value":"B1"}}
+{"define":{"copic.b01":[225,241,243]}}
+{"comment":{"code":"B02","family":"Blue","group":"S0","name":"Robin's Egg Blue","value":"B2"}}
+{"define":{"copic.b02":[197,230,240]}}
+{"comment":{"code":"B04","family":"Blue","group":"S0","name":"Tahitian Blue","value":"B4"}}
+{"define":{"copic.b04":[141,209,231]}}
+{"comment":{"code":"B05","family":"Blue","group":"S0","name":"Process Blue","value":"B5"}}
+{"define":{"copic.b05":[100,197,229]}}
+{"comment":{"code":"B06","family":"Blue","group":"S0","name":"Peacock Blue","value":"B6"}}
+{"define":{"copic.b06":[0,172,226]}}
+{"comment":{"code":"B12","family":"Blue","group":"S1","name":"Ice Blue","value":"B2"}}
+{"define":{"copic.b12":[214,234,240]}}
+{"comment":{"code":"B14","family":"Blue","group":"S1","name":"Light Blue","value":"B4"}}
+{"define":{"copic.b14":[141,209,235]}}
+{"comment":{"code":"B16","family":"Blue","group":"S1","name":"Chanine Blue","value":"B6"}}
+{"define":{"copic.b16":[1,186,231]}}
+{"comment":{"code":"B18","family":"Blue","group":"S1","name":"Lapis Lazuli","value":"B8"}}
+{"define":{"copic.b18":[41,145,201]}}
+{"comment":{"code":"B21","family":"Blue","group":"S2","name":"Baby Blue","value":"B1"}}
+{"define":{"copic.b21":[230,241,250]}}
+{"comment":{"code":"B23","family":"Blue","group":"S2","name":"Phthalo Blue","value":"B3"}}
+{"define":{"copic.b23":[171,203,233]}}
+{"comment":{"code":"B24","family":"Blue","group":"S2","name":"Sky","value":"B4"}}
+{"define":{"copic.b24":[163,213,241]}}
+{"comment":{"code":"B26","family":"Blue","group":"S2","name":"Cobalt Blue","value":"B6"}}
+{"define":{"copic.b26":[127,187,227]}}
+{"comment":{"code":"B28","family":"Blue","group":"S2","name":"Royal Blue","value":"B8"}}
+{"define":{"copic.b28":[21,113,176]}}
+{"comment":{"code":"B29","family":"Blue","group":"S2","name":"Ultramarine","value":"B9"}}
+{"define":{"copic.b29":[0,119,186]}}
+{"comment":{"code":"B32","family":"Blue","group":"S3","name":"Pale Blue","value":"B2"}}
+{"define":{"copic.b32":[234,243,247]}}
+{"comment":{"code":"B34","family":"Blue","group":"S3","name":"Manganese Blue","value":"B4"}}
+{"define":{"copic.b34":[155,203,235]}}
+{"comment":{"code":"B37","family":"Blue","group":"S3","name":"Antwerp Blue","value":"B7"}}
+{"define":{"copic.b37":[4,114,163]}}
+{"comment":{"code":"B39","family":"Blue","group":"S3","name":"Prussian Blue","value":"B9"}}
+{"define":{"copic.b39":[40,106,167]}}
+{"comment":{"code":"B41","family":"Blue","group":"S4","name":"Powder Blue","value":"B1"}}
+{"define":{"copic.b41":[234,243,251]}}
+{"comment":{"code":"B45","family":"Blue","group":"S4","name":"Smoky Blue","value":"B5"}}
+{"define":{"copic.b45":[143,199,234]}}
+{"comment":{"code":"B52","family":"Blue","group":"S5","name":"Soft Greenish Blue","value":"B2"}}
+{"define":{"copic.b52":[193,214,225]}}
+{"comment":{"code":"B60","family":"Blue","group":"S6","name":"Pale Blue Gray","value":"B0"}}
+{"define":{"copic.b60":[228,232,244]}}
+{"comment":{"code":"B63","family":"Blue","group":"S6","name":"Light Hydrangea","value":"B3"}}
+{"define":{"copic.b63":[188,198,226]}}
+{"comment":{"code":"B66","family":"Blue","group":"S6","name":"Clematis","value":"B3"}}
+{"define":{"copic.b66":[100,115,180]}}
+{"comment":{"code":"B69","family":"Blue","group":"S6","name":"Stratospheric Blue","value":"B9"}}
+{"define":{"copic.b69":[25,103,167]}}
+{"comment":{"code":"B79","family":"Blue","group":"S7","name":"Iris","value":"B9"}}
+{"define":{"copic.b79":[49,65,143]}}
+{"comment":{"code":"B91","family":"Blue","group":"S9","name":"Pale Grayish Blue","value":"B1"}}
+{"define":{"copic.b91":[225,233,237]}}
+{"comment":{"code":"B93","family":"Blue","group":"S9","name":"Light Crockery Blue","value":"B3"}}
+{"define":{"copic.b93":[171,203,223]}}
+{"comment":{"code":"B95","family":"Blue","group":"S9","name":"Light Grayish Cobalt","value":"B5"}}
+{"define":{"copic.b95":[136,176,202]}}
+{"comment":{"code":"B97","family":"Blue","group":"S9","name":"Night Blue","value":"B7"}}
+{"define":{"copic.b97":[69,128,157]}}
+{"comment":{"code":"B99","family":"Blue","group":"S9","name":"Agate","value":"B9"}}
+{"define":{"copic.b99":[0,77,122]}}
+{"comment":{"code":"E0000","family":"Earth","group":"S0","name":"Floral White","value":"B000"}}
+{"define":{"copic.e0000":[255,250,243]}}
+{"comment":{"code":"E000","family":"Earth","group":"S0","name":"Pale Fruit Pink","value":"B00"}}
+{"define":{"copic.e000":[255,248,241]}}
+{"comment":{"code":"E00","family":"Earth","group":"S0","name":"Cotton Pearl","value":"B0"}}
+{"define":{"copic.e00":[255,246,238]}}
+{"comment":{"code":"E01","family":"Earth","group":"S0","name":"Pink Flamingo","value":"B1"}}
+{"define":{"copic.e01":[255,242,233]}}
+{"comment":{"code":"E02","family":"Earth","group":"S0","name":"Fruit Pink","value":"B2"}}
+{"define":{"copic.e02":[255,241,230]}}
+{"comment":{"code":"E04","family":"Earth","group":"S0","name":"Lipstick Rose","value":"B4"}}
+{"define":{"copic.e04":[236,202,206]}}
+{"comment":{"code":"E07","family":"Earth","group":"S0","name":"Light Mahogany","value":"B7"}}
+{"define":{"copic.e07":[217,146,120]}}
+{"comment":{"code":"E08","family":"Earth","group":"S0","name":"Brown","value":"B8"}}
+{"define":{"copic.e08":[213,116,92]}}
+{"comment":{"code":"E09","family":"Earth","group":"S0","name":"Burnt Sienna","value":"B9"}}
+{"define":{"copic.e09":[226,116,83]}}
+{"comment":{"code":"E11","family":"Earth","group":"S1","name":"Barley Beige","value":"B1"}}
+{"define":{"copic.e11":[255,239,222]}}
+{"comment":{"code":"E13","family":"Earth","group":"S1","name":"Desert Sand","value":"B3"}}
+{"define":{"copic.e13":[239,210,187]}}
+{"comment":{"code":"E15","family":"Earth","group":"S1","name":"Earthenware","value":"B5"}}
+{"define":{"copic.e15":[253,199,151]}}
+{"comment":{"code":"E17","family":"Earth","group":"S1","name":"Reddish Brass","value":"B7"}}
+{"define":{"copic.e17":[196,102,85]}}
+{"comment":{"code":"E18","family":"Earth","group":"S1","name":"Copper","value":"B8"}}
+{"define":{"copic.e18":[151,86,74]}}
+{"comment":{"code":"E19","family":"Earth","group":"S1","name":"Redwood","value":"B9"}}
+{"define":{"copic.e19":[206,84,37]}}
+{"comment":{"code":"E21","family":"Earth","group":"S2","name":"Soft Sun","value":"B1"}}
+{"define":{"copic.e21":[255,233,210]}}
+{"comment":{"code":"E23","family":"Earth","group":"S2","name":"Hazelnut","value":"B3"}}
+{"define":{"copic.e23":[170,106,75]}}
+{"comment":{"code":"E25","family":"Earth","group":"S2","name":"Caribe Cocoa","value":"B5"}}
+{"define":{"copic.e25":[223,182,147]}}
+{"comment":{"code":"E27","family":"Earth","group":"S2","name":"Milk Chocolate","value":"B7"}}
+{"define":{"copic.e27":[172,134,109]}}
+{"comment":{"code":"E29","family":"Earth","group":"S2","name":"Burnt Umber","value":"B9"}}
+{"define":{"copic.e29":[144,63,10]}}
+{"comment":{"code":"E30","family":"Earth","group":"S3","name":"Bisque","value":"B0"}}
+{"define":{"copic.e30":[247,239,207]}}
+{"comment":{"code":"E31","family":"Earth","group":"S3","name":"Brick Beige","value":"B1"}}
+{"define":{"copic.e31":[246,236,215]}}
+{"comment":{"code":"E33","family":"Earth","group":"S3","name":"Sand","value":"B3"}}
+{"define":{"copic.e33":[246,220,189]}}
+{"comment":{"code":"E34","family":"Earth","group":"S3","name":"Toast","value":"B4"}}
+{"define":{"copic.e34":[245,215,179]}}
+{"comment":{"code":"E35","family":"Earth","group":"S3","name":"Chamois","value":"B5"}}
+{"define":{"copic.e35":[238,210,178]}}
+{"comment":{"code":"E37","family":"Earth","group":"S3","name":"Sepia","value":"B7"}}
+{"define":{"copic.e37":[217,165,102]}}
+{"comment":{"code":"E39","family":"Earth","group":"S3","name":"Leather","value":"B9"}}
+{"define":{"copic.e39":[210,125,51]}}
+{"comment":{"code":"E40","family":"Earth","group":"S4","name":"Brick White","value":"B0"}}
+{"define":{"copic.e40":[247,240,229]}}
+{"comment":{"code":"E41","family":"Earth","group":"S4","name":"Pearl White","value":"B1"}}
+{"define":{"copic.e41":[255,244,232]}}
+{"comment":{"code":"E42","family":"Earth","group":"S4","name":"Sand White","value":"B2"}}
+{"define":{"copic.e42":[242,232,211]}}
+{"comment":{"code":"E43","family":"Earth","group":"S4","name":"Dull Ivory","value":"B3"}}
+{"define":{"copic.e43":[240,230,203]}}
+{"comment":{"code":"E44","family":"Earth","group":"S4","name":"Clay","value":"B4"}}
+{"define":{"copic.e44":[212,201,182]}}
+{"comment":{"code":"E47","family":"Earth","group":"S4","name":"Dark Brown","value":"B7"}}
+{"define":{"copic.e47":[154,130,108]}}
+{"comment":{"code":"E49","family":"Earth","group":"S4","name":"Dark Bark","value":"B9"}}
+{"define":{"copic.e49":[122,93,69]}}
+{"comment":{"code":"E50","family":"Earth","group":"S5","name":"Egg Shell","value":"B0"}}
+{"define":{"copic.e50":[247,240,241]}}
+{"comment":{"code":"E51","family":"Earth","group":"S5","name":"Milky White","value":"B1"}}
+{"define":{"copic.e51":[255,241,222]}}
+{"comment":{"code":"E53","family":"Earth","group":"S5","name":"Raw Silk","value":"B3"}}
+{"define":{"copic.e53":[246,236,204]}}
+{"comment":{"code":"E55","family":"Earth","group":"S5","name":"Light Camel","value":"B5"}}
+{"define":{"copic.e55":[245,230,196]}}
+{"comment":{"code":"E57","family":"Earth","group":"S5","name":"Light Walnut","value":"B7"}}
+{"define":{"copic.e57":[194,154,106]}}
+{"comment":{"code":"E59","family":"Earth","group":"S5","name":"Walnut","value":"B9"}}
+{"define":{"copic.e59":[173,144,118]}}
+{"comment":{"code":"E70","family":"Earth","group":"S7","name":"Ash Rose","value":"B0"}}
+{"define":{"copic.e70":[241,233,226]}}
+{"comment":{"code":"E71","family":"Earth","group":"S7","name":"Champagne","value":"B1"}}
+{"define":{"copic.e71":[235,225,218]}}
+{"comment":{"code":"E74","family":"Earth","group":"S7","name":"Cocoa Brown","value":"B4"}}
+{"define":{"copic.e74":[181,153,140]}}
+{"comment":{"code":"E77","family":"Earth","group":"S7","name":"Maroon","value":"B7"}}
+{"define":{"copic.e77":[148,113,87]}}
+{"comment":{"code":"E79","family":"Earth","group":"S7","name":"Cashew","value":"B9"}}
+{"define":{"copic.e79":[82,56,45]}}
+{"comment":{"code":"E81","family":"Earth","group":"S8","name":"Ivory","value":"B1"}}
+{"define":{"copic.e81":[220,205,152]}}
+{"comment":{"code":"E84","family":"Earth","group":"S8","name":"Khaki","value":"B4"}}
+{"define":{"copic.e84":[180,149,95]}}
+{"comment":{"code":"E87","family":"Earth","group":"S8","name":"Fig","value":"B7"}}
+{"define":{"copic.e87":[91,77,56]}}
+{"comment":{"code":"E89","family":"Earth","group":"S8","name":"Pecan","value":"B9"}}
+{"define":{"copic.e89":[123,116,106]}}
+{"comment":{"code":"E93","family":"Earth","group":"S9","name":"Tea Rose","value":"B3"}}
+{"define":{"copic.e93":[254,219,194]}}
+{"comment":{"code":"E95","family":"Earth","group":"S9","name":"Tea Orange","value":"B5"}}
+{"define":{"copic.e95":[254,199,136]}}
+{"comment":{"code":"E97","family":"Earth","group":"S9","name":"Deep Orange","value":"B7"}}
+{"define":{"copic.e97":[243,169,98]}}
+{"comment":{"code":"E99","family":"Earth","group":"S9","name":"Baked Clay","value":"B9"}}
+{"define":{"copic.e99":[192,101,8]}}
+{"comment":{"code":"C-00","family":"CoolGray","group":"Undefined","name":"Cool Gray No.00","value":"B0"}}
+{"define":{"copic.c-00":[241,244,246]}}
+{"comment":{"code":"C-0","family":"CoolGray","group":"Undefined","name":"Cool Gray No.0","value":"B00"}}
+{"define":{"copic.c-0":[237,242,244]}}
+{"comment":{"code":"C-1","family":"CoolGray","group":"Undefined","name":"Cool Gray No.1","value":"B0"}}
+{"define":{"copic.c-1":[228,234,237]}}
+{"comment":{"code":"C-2","family":"CoolGray","group":"Undefined","name":"Cool Gray No.2","value":"B1"}}
+{"define":{"copic.c-2":[217,224,228]}}
+{"comment":{"code":"C-3","family":"CoolGray","group":"Undefined","name":"Cool Gray No.3","value":"B2"}}
+{"define":{"copic.c-3":[208,213,218]}}
+{"comment":{"code":"C-4","family":"CoolGray","group":"Undefined","name":"Cool Gray No.4","value":"B3"}}
+{"define":{"copic.c-4":[185,193,199]}}
+{"comment":{"code":"C-5","family":"CoolGray","group":"Undefined","name":"Cool Gray No.5","value":"B4"}}
+{"define":{"copic.c-5":[164,174,178]}}
+{"comment":{"code":"C-6","family":"CoolGray","group":"Undefined","name":"Cool Gray No.6","value":"B5"}}
+{"define":{"copic.c-6":[147,155,161]}}
+{"comment":{"code":"C-7","family":"CoolGray","group":"Undefined","name":"Cool Gray No.7","value":"B6"}}
+{"define":{"copic.c-7":[119,127,131]}}
+{"comment":{"code":"C-8","family":"CoolGray","group":"Undefined","name":"Cool Gray No.8","value":"B7"}}
+{"define":{"copic.c-8":[99,105,109]}}
+{"comment":{"code":"C-9","family":"CoolGray","group":"Undefined","name":"Cool Gray No.9","value":"B8"}}
+{"define":{"copic.c-9":[83,81,80]}}
+{"comment":{"code":"C-10","family":"CoolGray","group":"Undefined","name":"Cool Gray No.10","value":"B9"}}
+{"define":{"copic.c-10":[31,30,30]}}
+{"comment":{"code":"N-0","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.0","value":"B00"}}
+{"define":{"copic.n-0":[242,242,242]}}
+{"comment":{"code":"N-1","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.1","value":"B0"}}
+{"define":{"copic.n-1":[235,235,235]}}
+{"comment":{"code":"N-2","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.2","value":"B1"}}
+{"define":{"copic.n-2":[227,227,227]}}
+{"comment":{"code":"N-3","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.3","value":"B2"}}
+{"define":{"copic.n-3":[220,220,220]}}
+{"comment":{"code":"N-4","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.4","value":"B3"}}
+{"define":{"copic.n-4":[201,201,201]}}
+{"comment":{"code":"N-5","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.5","value":"B4"}}
+{"define":{"copic.n-5":[183,182,182]}}
+{"comment":{"code":"N-6","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.6","value":"B5"}}
+{"define":{"copic.n-6":[164,164,164]}}
+{"comment":{"code":"N-7","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.7","value":"B6"}}
+{"define":{"copic.n-7":[133,132,133]}}
+{"comment":{"code":"N-8","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.8","value":"B7"}}
+{"define":{"copic.n-8":[111,110,110]}}
+{"comment":{"code":"N-9","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.9","value":"B8"}}
+{"define":{"copic.n-9":[83,81,80]}}
+{"comment":{"code":"N-10","family":"NeutralGray","group":"Undefined","name":"Neutral Gray No.10","value":"B9"}}
+{"define":{"copic.n-10":[31,30,30]}}
+{"comment":{"code":"T-0","family":"TonerGray","group":"Undefined","name":"Toner Gray No.0","value":"B00"}}
+{"define":{"copic.t-0":[242,242,242]}}
+{"comment":{"code":"T-1","family":"TonerGray","group":"Undefined","name":"Toner Gray No.1","value":"B0"}}
+{"define":{"copic.t-1":[240,240,238]}}
+{"comment":{"code":"T-2","family":"TonerGray","group":"Undefined","name":"Toner Gray No.2","value":"B1"}}
+{"define":{"copic.t-2":[233,233,230]}}
+{"comment":{"code":"T-3","family":"TonerGray","group":"Undefined","name":"Toner Gray No.3","value":"B2"}}
+{"define":{"copic.t-3":[221,220,215]}}
+{"comment":{"code":"T-4","family":"TonerGray","group":"Undefined","name":"Toner Gray No.4","value":"B3"}}
+{"define":{"copic.t-4":[202,200,196]}}
+{"comment":{"code":"T-5","family":"TonerGray","group":"Undefined","name":"Toner Gray No.5","value":"B4"}}
+{"define":{"copic.t-5":[184,181,176]}}
+{"comment":{"code":"T-6","family":"TonerGray","group":"Undefined","name":"Toner Gray No.6","value":"B5"}}
+{"define":{"copic.t-6":[164,162,158]}}
+{"comment":{"code":"T-7","family":"TonerGray","group":"Undefined","name":"Toner Gray No.7","value":"B6"}}
+{"define":{"copic.t-7":[133,131,128]}}
+{"comment":{"code":"T-8","family":"TonerGray","group":"Undefined","name":"Toner Gray No.8","value":"B7"}}
+{"define":{"copic.t-8":[111,109,106]}}
+{"comment":{"code":"T-9","family":"TonerGray","group":"Undefined","name":"Toner Gray No.9","value":"B8"}}
+{"define":{"copic.t-9":[83,80,77]}}
+{"comment":{"code":"T-10","family":"TonerGray","group":"Undefined","name":"Toner Gray No.10","value":"B9"}}
+{"define":{"copic.t-10":[31,30,30]}}
+{"comment":{"code":"W-00","family":"WarmGray","group":"Undefined","name":"Warm Gray No.00","value":"B00"}}
+{"define":{"copic.w-00":[247,247,241]}}
+{"comment":{"code":"W-0","family":"WarmGray","group":"Undefined","name":"Warm Gray No.0","value":"B00"}}
+{"define":{"copic.w-0":[247,246,240]}}
+{"comment":{"code":"W-1","family":"WarmGray","group":"Undefined","name":"Warm Gray No.1","value":"B0"}}
+{"define":{"copic.w-1":[238,237,231]}}
+{"comment":{"code":"W-2","family":"WarmGray","group":"Undefined","name":"Warm Gray No.2","value":"B1"}}
+{"define":{"copic.w-2":[238,237,233]}}
+{"comment":{"code":"W-3","family":"WarmGray","group":"Undefined","name":"Warm Gray No.3","value":"B2"}}
+{"define":{"copic.w-3":[221,220,213]}}
+{"comment":{"code":"W-4","family":"WarmGray","group":"Undefined","name":"Warm Gray No.4","value":"B3"}}
+{"define":{"copic.w-4":[202,201,194]}}
+{"comment":{"code":"W-5","family":"WarmGray","group":"Undefined","name":"Warm Gray No.5","value":"B4"}}
+{"define":{"copic.w-5":[184,182,176]}}
+{"comment":{"code":"W-6","family":"WarmGray","group":"Undefined","name":"Warm Gray No.6","value":"B5"}}
+{"define":{"copic.w-6":[164,163,156]}}
+{"comment":{"code":"W-7","family":"WarmGray","group":"Undefined","name":"Warm Gray No.7","value":"B6"}}
+{"define":{"copic.w-7":[134,132,127]}}
+{"comment":{"code":"W-8","family":"WarmGray","group":"Undefined","name":"Warm Gray No.8","value":"B7"}}
+{"define":{"copic.w-8":[111,110,105]}}
+{"comment":{"code":"W-9","family":"WarmGray","group":"Undefined","name":"Warm Gray No.9","value":"B8"}}
+{"define":{"copic.w-9":[83,80,76]}}
+{"comment":{"code":"W-10","family":"WarmGray","group":"Undefined","name":"Warm Gray No.10","value":"B9"}}
+{"define":{"copic.w-10":[31,30,29]}}
+{"comment":{"code":"0","family":"Achromatic","group":"Undefined","name":"Colorless Blender","value":"Undefined"}}
+{"define":{"copic.0":[255,255,255]}}
+{"comment":{"code":"100","family":"Achromatic","group":"S0","name":"Black","value":"B0"}}
+{"define":{"copic.100":[1,1,1]}}
+{"comment":{"code":"110","family":"Achromatic","group":"S1","name":"Special Black","value":"B0"}}
+{"define":{"copic.110":[1,1,1]}}
+{"comment":{"code":"FV","family":"Flourescent","group":"Undefined","name":"Fluorescent Violet","value":"Undefined"}}
+{"define":{"copic.fv":[1,1,1]}}
+{"comment":{"code":"FRV","family":"Flourescent","group":"Undefined","name":"Fluorescent Pink","value":"Undefined"}}
+{"define":{"copic.frv":[249,176,203]}}
+{"comment":{"code":"FYR","family":"Flourescent","group":"Undefined","name":"Fluorescent Orange","value":"Undefined"}}
+{"define":{"copic.fyr":[255,215,164]}}
+{"comment":{"code":"FY","family":"Flourescent","group":"Undefined","name":"Fluorescent Yellow","value":"Undefined"}}
+{"define":{"copic.fy":[255,249,160]}}
+{"comment":{"code":"FYG","family":"Flourescent","group":"Undefined","name":"Fluorescent Yellow Green","value":"Undefined"}}
+{"define":{"copic.fyg":[220,228,170]}}
+{"comment":{"code":"FG","family":"Flourescent","group":"Undefined","name":"Fluorescent Green","value":"Undefined"}}
+{"define":{"copic.fg":[175,206,21]}}
+{"comment":{"code":"FBG","family":"Flourescent","group":"Undefined","name":"Fluorescent Blue Green","value":"Undefined"}}
+{"define":{"copic.fbg":[128,205,231]}}
+{"comment":{"code":"FB","family":"Flourescent","group":"Undefined","name":"Fluorescent Blue","value":"Undefined"}}
+{"define":{"copic.fb":[11,147,205]}}

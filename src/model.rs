@@ -355,6 +355,12 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DefineCommand(NameAndValue<Color>);
 
+impl DefineCommand {
+    pub fn new(name: String, color: Color) -> Self {
+        Self(NameAndValue { name, value: color })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "BTreeMap<String, T>", into = "BTreeMap<String, T>")]
 pub struct NameAndValue<T: Clone> {

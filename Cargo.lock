@@ -120,10 +120,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "copic_colors"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5be0893b09636e9458e4f8439a2d3e8e3b21b21c60e2cd5ef57f95c91ce40eb"
+
+[[package]]
 name = "dotedit"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "copic_colors",
  "pagurus",
  "pagurus_tui",
  "serde",
