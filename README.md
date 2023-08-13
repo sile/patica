@@ -1,33 +1,8 @@
-dotedit
-=======
+de
+==
 
-- auto-revert-tail-mode
+[![de](https://img.shields.io/crates/v/de.svg)](https://crates.io/crates/de)
+[![Actions Status](https://github.com/sile/de/workflows/CI/badge.svg)](https://github.com/sile/de/actions)
+![License](https://img.shields.io/crates/l/de)
 
-Rerequisities
--------------
-
-- Full color support by terminal emulator
-- Font 
-
-Known issues
-------------
-
-- Cannot get key input such as "Ctrl+ " as `termion` dosen't recognize that
-
-Tips
-----
-
-### Undo / Redo
-
-Remove or comment out the tail lines using a text editor:
-```
-$ emacs ...
-```
-
-### Include other image
-
-Just append the target file to the editing one:
-
-```console
-$ cut ... >> ...
-```
+A terminal based pixel art editor.
