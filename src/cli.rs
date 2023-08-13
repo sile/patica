@@ -14,6 +14,7 @@ use std::{
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
 pub struct Args {
+    // TODO: move
     file: PathBuf,
 
     #[clap(subcommand)]

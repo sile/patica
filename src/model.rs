@@ -1,11 +1,13 @@
+use crate::journal::JournaledModel;
 use pagurus::{failure::OrFail, image::Color, spatial::Position};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashSet},
-    num::NonZeroUsize,
+    num::{NonZeroU64, NonZeroUsize},
+    path::PathBuf,
 };
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
@@ -19,10 +21,25 @@ pub struct Model {
     anchors: BTreeMap<AnchorName, PixelPosition>,
     commands_len: usize,
     tags: BTreeMap<usize, Tag>,
+    external_models: BTreeMap<PathBuf, JournaledModel>,
+    frames: BTreeMap<FrameName, Frame>,
     applied_commands: Vec<Command>, // dirty_commands (?)
 }
 
 impl Model {
+    pub fn sync_external_models(&mut self) -> pagurus::Result<()> {
+        for model in self.external_models.values_mut() {
+            model.sync_model().or_fail()?;
+        }
+        Ok(())
+    }
+
+    pub fn active_frames(&self, clock: GameClock) -> impl '_ + Iterator<Item = FramePixels> {
+        self.frames
+            .values()
+            .filter_map(move |f| f.to_pixels_if_active(clock, self))
+    }
+
     pub fn cursor(&self) -> Cursor {
         self.cursor
     }
@@ -141,11 +158,43 @@ impl Model {
             Command::Comment(_) => {
                 // Do nothing.
             }
+            Command::Embed(c) => {
+                self.handle_embed_command(c.0.name.clone(), c.0.value.clone())
+                    .or_fail()?;
+            }
         }
         Ok(true)
     }
 
+    fn handle_embed_command(&mut self, name: String, value: Embed) -> pagurus::Result<()> {
+        matches!(self.names.get(&name), None | Some(NameKind::Frame))
+            .or_fail()
+            .map_err(|f| {
+                f.message(format!(
+                    "The name '{name}' is already in used by as {} name",
+                    self.names[&name]
+                ))
+            })?;
+
+        let model = JournaledModel::open_if_exists(&value.path).or_fail()?;
+        self.external_models.insert(value.path.clone(), model);
+        let frame = Frame::new(self.cursor.position, value);
+        self.frames.insert(FrameName(name.clone()), frame);
+
+        self.names.insert(name, NameKind::Frame);
+        Ok(())
+    }
+
     fn handle_anchor_command(&mut self, name: &AnchorName) -> pagurus::Result<()> {
+        matches!(self.names.get(&name.0), None | Some(NameKind::Anchor))
+            .or_fail()
+            .map_err(|f| {
+                f.message(format!(
+                    "The name '{}' is already in used by as {} name",
+                    name.0, self.names[&name.0]
+                ))
+            })?;
+
         let position = self.cursor.position;
         self.anchors.insert(name.clone(), position);
         self.names.insert(name.0.clone(), NameKind::Anchor);
@@ -286,7 +335,7 @@ impl Model {
             .or_fail()
             .map_err(|f| {
                 f.message(format!(
-                    "The name '{name}' is already in used by as a {} name",
+                    "The name '{name}' is already in used by as {} name",
                     self.names[&name]
                 ))
             })?;
@@ -307,6 +356,7 @@ impl Model {
 enum NameKind {
     Color,
     Anchor,
+    Frame,
 }
 
 impl std::fmt::Display for NameKind {
@@ -314,6 +364,7 @@ impl std::fmt::Display for NameKind {
         match self {
             NameKind::Color => write!(f, "a color"),
             NameKind::Anchor => write!(f, "an anchor"),
+            NameKind::Frame => write!(f, "a frame"),
         }
     }
 }
@@ -440,21 +491,11 @@ pub enum Command {
 
     Anchor(AnchorName),
 
+    Embed(EmbedCommand),
+
     Tag(Tag),
 
     Comment(serde_json::Value),
-    //---------------
-    // Basic commands
-    //---------------
-
-    // {"embed": {}}
-
-    // {"define": {"frames": ...}}
-    // {"rename": {"colors": ...}}
-    // {"remove": {"colors": ["red", "blue"]}}
-    //
-    // {"embed": "frame_name"}
-    // Embed: {"embed": {"foo": {path: "foo.de", "anchor": "name", "frames": [-1, 1, -29], "fps": 30,"position": [0,0],  "size": [100, 100]}}}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -555,6 +596,25 @@ impl std::ops::Add<PixelPositionDelta> for PixelPosition {
             x: self.x + delta.x,
             y: self.y + delta.y,
         }
+    }
+}
+
+impl std::ops::Add for PixelPosition {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+}
+
+impl std::ops::Sub<PixelPosition> for PixelPosition {
+    type Output = PixelPositionDelta;
+
+    fn sub(self, other: PixelPosition) -> Self::Output {
+        PixelPositionDelta::from_xy(self.x - other.x, self.y - other.y)
     }
 }
 
@@ -741,7 +801,8 @@ impl PixelRegion {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(into = "(u16,u16)", from = "(u16,u16)")]
 pub struct PixelSize {
     pub width: u16,
     pub height: u16,
@@ -750,6 +811,18 @@ pub struct PixelSize {
 impl PixelSize {
     pub fn area(self) -> u32 {
         self.width as u32 * self.height as u32
+    }
+}
+
+impl From<(u16, u16)> for PixelSize {
+    fn from((width, height): (u16, u16)) -> Self {
+        Self { width, height }
+    }
+}
+
+impl From<PixelSize> for (u16, u16) {
+    fn from(size: PixelSize) -> Self {
+        (size.width, size.height)
     }
 }
 
@@ -805,3 +878,134 @@ impl Default for Checkerboard {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tag(serde_json::Value);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmbedCommand(NameAndValue<Embed>);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Embed {
+    // TODO: make it possible to refer to the editing file itself.
+    pub path: PathBuf,
+
+    pub size: PixelSize,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub position: Option<PixelPosition>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<AnchorName>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub animation: Option<Animation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Animation {
+    pub timeline: Vec<FrameState>,
+    pub fps: NonZeroUsize,
+}
+
+impl Default for Animation {
+    fn default() -> Self {
+        // Always show the frame.
+        Self {
+            timeline: vec![FrameState::Show(1)],
+            fps: NonZeroUsize::new(1).expect("unreachable"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FrameState {
+    Show(usize),
+    Hide(usize),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct FrameName(pub String);
+
+#[derive(Debug, Clone)]
+pub struct Frame {
+    pub path: PathBuf,
+    pub src_region: PixelRegion,
+    pub dst_position: PixelPosition,
+    pub anchor: Option<AnchorName>,
+    pub animation: Animation,
+}
+
+impl Frame {
+    fn new(dst_position: PixelPosition, embed: Embed) -> Self {
+        Self {
+            path: embed.path,
+            src_region: PixelRegion {
+                position: embed.position.unwrap_or_default(),
+                size: embed.size,
+            },
+            dst_position,
+            anchor: embed.anchor,
+            animation: embed.animation.unwrap_or_default(),
+        }
+    }
+
+    fn to_pixels_if_active<'a>(
+        &'a self,
+        _clock: GameClock,
+        model: &'a Model,
+    ) -> Option<FramePixels> {
+        // TODO: animation handling
+        let model = model.external_models.get(&self.path)?.model(); // TODO: handle error
+        Some(FramePixels { frame: self, model })
+    }
+}
+
+#[derive(Debug)]
+pub struct FramePixels<'a> {
+    frame: &'a Frame,
+    model: &'a Model,
+}
+
+impl<'a> FramePixels<'a> {
+    pub fn pixels(self) -> impl 'a + Iterator<Item = (PixelPosition, Color)> {
+        let mut src_region = self.frame.src_region;
+        if let Some(anchor_position) = self
+            .frame
+            .anchor
+            .as_ref()
+            .and_then(|a| self.model.anchors.get(&a).copied())
+        {
+            src_region.position = src_region.position + anchor_position;
+        } else {
+            src_region.position = src_region.position + self.model.cursor().position();
+        }
+        let src_origin = src_region.position;
+        src_region.positions().filter_map(move |p| {
+            let dst_position = self.frame.dst_position + (p - src_origin);
+            Some((dst_position, self.model.get_pixel_color(p)?))
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct GameClock {
+    pub ticks: u64,
+    pub fps: NonZeroU64,
+}
+
+impl GameClock {
+    pub const fn new(fps: NonZeroU64) -> Self {
+        Self { ticks: 0, fps }
+    }
+
+    pub fn tick(&mut self) {
+        self.ticks += 1;
+    }
+}
+
+impl Default for GameClock {
+    fn default() -> Self {
+        Self::new(NonZeroU64::new(30).expect("unreachable"))
+    }
+}

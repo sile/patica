@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    model::Model,
+    model::{GameClock, Model},
     view::{View, ViewContext},
 };
 use pagurus::{
@@ -22,6 +22,7 @@ pub struct Game {
     view: View,
     model: Option<Model>,
     config: Arc<Config>,
+    clock: GameClock,
 }
 
 impl Game {
@@ -53,6 +54,7 @@ impl Game {
             model: self.model.take().or_fail()?,
             config: Arc::clone(&self.config),
             quit: false,
+            clock: self.clock,
         })
     }
 }
@@ -71,6 +73,12 @@ impl<S: System> pagurus::Game<S> for Game {
                 self.render(system).or_fail()?;
             }
             Event::Timeout(RENDER_TIMEOUT_TAG) => {
+                self.clock.tick();
+                self.model
+                    .as_mut()
+                    .or_fail()?
+                    .sync_external_models()
+                    .or_fail()?;
                 self.render(system).or_fail()?;
                 system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
                 return Ok(true);

@@ -1,6 +1,6 @@
 use crate::{
     config::Config,
-    model::{Background, Command, Marker, Model, PixelPosition, PixelRegion, PixelSize},
+    model::{Background, Command, GameClock, Marker, Model, PixelPosition, PixelRegion, PixelSize},
 };
 use pagurus::{
     event::{Event, KeyEvent},
@@ -18,6 +18,7 @@ pub struct ViewContext {
     pub model: Model,
     pub config: Arc<Config>,
     pub quit: bool,
+    pub clock: GameClock,
 }
 
 impl ViewContext {
@@ -51,7 +52,16 @@ pub struct View {
 impl View {
     pub fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         self.render_background(ctx, canvas);
+        self.render_frames(ctx, canvas);
         self.canvas.render(ctx, canvas);
+    }
+
+    fn render_frames(&self, ctx: &ViewContext, canvas: &mut Canvas) {
+        for frame in ctx.model.active_frames(ctx.clock) {
+            for (pixel_position, color) in frame.pixels() {
+                canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
+            }
+        }
     }
 
     fn render_background(&self, ctx: &ViewContext, canvas: &mut Canvas) {
