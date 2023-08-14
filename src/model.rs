@@ -74,6 +74,24 @@ impl Model {
             .map(|(p, &color_index)| (self.cursor.position + *p, self.palette.get(color_index)))
     }
 
+    pub fn pixels_region(&self) -> PixelRegion {
+        if self.pixels.is_empty() {
+            return PixelRegion::default();
+        }
+
+        let mut min_x = i16::MAX;
+        let mut min_y = i16::MAX;
+        let mut max_x = i16::MIN;
+        let mut max_y = i16::MIN;
+        for position in self.pixels.iter() {
+            min_x = min_x.min(position.0.x);
+            min_y = min_y.min(position.0.y);
+            max_x = max_x.max(position.0.x);
+            max_y = max_y.max(position.0.y);
+        }
+        PixelRegion::from_corners(min_x, min_y, max_x, max_y)
+    }
+
     pub fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
         self.pixels
             .iter()
@@ -722,7 +740,7 @@ pub enum CameraPosition {
     Pixel(PixelPositionDelta),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PixelRegion {
     pub position: PixelPosition,
     pub size: PixelSize,
@@ -761,7 +779,7 @@ impl PixelRegion {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(into = "(u16,u16)", from = "(u16,u16)")]
 pub struct PixelSize {
     pub width: u16,

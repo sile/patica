@@ -1,14 +1,14 @@
-use std::collections::HashSet;
-
-use crate::model::{Command, Model, PixelPosition};
+use crate::model::{Command, Model, PixelPosition, PixelRegion};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MarkKind {
     Line,
     Stroke,
-    // Fill, SameColor, InnerEdge, OuterEdge,
+    Fill,
+    //  SameColor, InnerEdge, OuterEdge,
     // Rectangle, Ellipse
 }
 
@@ -16,6 +16,7 @@ pub enum MarkKind {
 pub enum Marker {
     Line(LineMarker),
     Stroke(StrokeMarker),
+    Fill(FillMarker),
 }
 
 impl Marker {
@@ -23,20 +24,23 @@ impl Marker {
         match mark_kind {
             MarkKind::Line => Self::Line(LineMarker::new(model)),
             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
+            MarkKind::Fill => Self::Fill(FillMarker::new(model)),
         }
     }
 
     pub fn handle_command(&mut self, command: &Command, model: &Model) {
         match self {
-            Self::Line(tool) => tool.handle_command(command, model),
-            Self::Stroke(tool) => tool.handle_command(command, model),
+            Self::Line(m) => m.handle_command(command, model),
+            Self::Stroke(m) => m.handle_command(command, model),
+            Self::Fill(m) => m.handle_command(command, model),
         }
     }
 
     pub fn marked_pixels(&self) -> Box<dyn '_ + Iterator<Item = PixelPosition>> {
         match self {
-            Self::Line(tool) => Box::new(tool.marked_pixels()),
-            Self::Stroke(tool) => Box::new(tool.marked_pixels()),
+            Self::Line(m) => Box::new(m.marked_pixels()),
+            Self::Stroke(m) => Box::new(m.marked_pixels()),
+            Self::Fill(m) => Box::new(m.marked_pixels()),
         }
     }
 }
@@ -140,5 +144,71 @@ impl StrokeMarker {
 
     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
         self.stroke.iter().copied()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FillMarker {
+    cursor: PixelPosition,
+    pixels: HashSet<PixelPosition>,
+    region: PixelRegion,
+    to_be_filled: bool,
+}
+
+impl FillMarker {
+    fn new(model: &Model) -> Self {
+        let mut this = Self {
+            cursor: model.cursor().position(),
+            pixels: HashSet::new(),
+            region: model.pixels_region(),
+            to_be_filled: false,
+        };
+        this.calc_pixels_to_be_filled(model);
+        this
+    }
+
+    fn handle_command(&mut self, _command: &Command, model: &Model) {
+        self.cursor = model.cursor().position();
+        if !self.pixels.contains(&model.cursor().position()) {
+            self.calc_pixels_to_be_filled(model);
+        }
+    }
+
+    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
+        self.to_be_filled
+            .then(|| self.pixels.iter().copied())
+            .into_iter()
+            .flatten()
+    }
+
+    fn calc_pixels_to_be_filled(&mut self, model: &Model) {
+        self.pixels.clear();
+        self.to_be_filled = true;
+
+        let color = model.get_pixel_color(self.cursor);
+        let mut stack = vec![self.cursor];
+        while let Some(p) = stack.pop() {
+            if self.pixels.contains(&p) {
+                continue;
+            }
+            if model.get_pixel_color(p) != color {
+                continue;
+            }
+            if !self.region.contains(p) {
+                self.to_be_filled = false;
+                break;
+            }
+
+            self.pixels.insert(p);
+            stack.extend(
+                [
+                    PixelPosition::from_xy(p.x - 1, p.y),
+                    PixelPosition::from_xy(p.x + 1, p.y),
+                    PixelPosition::from_xy(p.x, p.y - 1),
+                    PixelPosition::from_xy(p.x, p.y + 1),
+                ]
+                .into_iter(),
+            );
+        }
     }
 }
