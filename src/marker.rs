@@ -8,6 +8,7 @@ pub enum MarkKind {
     Line,
     Stroke,
     Fill,
+    Rectangle,
     //  SameColor, InnerEdge, OuterEdge,
     // Rectangle, Ellipse
 }
@@ -17,6 +18,7 @@ pub enum Marker {
     Line(LineMarker),
     Stroke(StrokeMarker),
     Fill(FillMarker),
+    Rectangle(RectangleMarker),
 }
 
 impl Marker {
@@ -25,6 +27,7 @@ impl Marker {
             MarkKind::Line => Self::Line(LineMarker::new(model)),
             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
             MarkKind::Fill => Self::Fill(FillMarker::new(model)),
+            MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
         }
     }
 
@@ -33,6 +36,7 @@ impl Marker {
             Self::Line(m) => m.handle_command(command, model),
             Self::Stroke(m) => m.handle_command(command, model),
             Self::Fill(m) => m.handle_command(command, model),
+            Self::Rectangle(m) => m.handle_command(command, model),
         }
     }
 
@@ -41,6 +45,7 @@ impl Marker {
             Self::Line(m) => Box::new(m.marked_pixels()),
             Self::Stroke(m) => Box::new(m.marked_pixels()),
             Self::Fill(m) => Box::new(m.marked_pixels()),
+            Self::Rectangle(m) => Box::new(m.marked_pixels()),
         }
     }
 }
@@ -200,15 +205,37 @@ impl FillMarker {
             }
 
             self.pixels.insert(p);
-            stack.extend(
-                [
-                    PixelPosition::from_xy(p.x - 1, p.y),
-                    PixelPosition::from_xy(p.x + 1, p.y),
-                    PixelPosition::from_xy(p.x, p.y - 1),
-                    PixelPosition::from_xy(p.x, p.y + 1),
-                ]
-                .into_iter(),
-            );
+            stack.push(PixelPosition::from_xy(p.x - 1, p.y));
+            stack.push(PixelPosition::from_xy(p.x + 1, p.y));
+            stack.push(PixelPosition::from_xy(p.x, p.y - 1));
+            stack.push(PixelPosition::from_xy(p.x, p.y + 1));
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RectangleMarker {
+    start: PixelPosition,
+    end: PixelPosition,
+}
+
+impl RectangleMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            start: model.cursor().position(),
+            end: model.cursor().position(),
+        }
+    }
+
+    fn handle_command(&mut self, _command: &Command, model: &Model) {
+        self.end = model.cursor().position();
+    }
+
+    fn marked_pixels(&self) -> impl Iterator<Item = PixelPosition> {
+        let min_x = self.start.x.min(self.end.x);
+        let min_y = self.start.y.min(self.end.y);
+        let max_x = self.start.x.max(self.end.x);
+        let max_y = self.start.y.max(self.end.y);
+        PixelRegion::from_corners(min_x, min_y, max_x, max_y).edge_pixels()
     }
 }

@@ -777,6 +777,25 @@ impl PixelRegion {
                     .map(move |x| PixelPosition { x, y })
             })
     }
+
+    pub fn edge_pixels(self) -> impl Iterator<Item = PixelPosition> {
+        let x0 = self.position.x;
+        let y0 = self.position.y;
+        let x1 = x0 + self.size.width as i16;
+        let y1 = y0 + self.size.height as i16;
+        (self.size.height > 0)
+            .then(|| (x0..x1).map(move |x| PixelPosition { x, y: y0 }))
+            .into_iter()
+            .flatten()
+            .chain(
+                (self.size.height > 1)
+                    .then(|| (x0..x1).map(move |x| PixelPosition { x, y: y1 - 1 }))
+                    .into_iter()
+                    .flatten(),
+            )
+            .chain((y0 + 1..y1 - 1).map(move |y| PixelPosition { x: x0, y }))
+            .chain((y0 + 1..y1 - 1).map(move |y| PixelPosition { x: x1 - 1, y }))
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
