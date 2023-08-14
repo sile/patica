@@ -1,8 +1,11 @@
-use crate::journal::JournaledModel;
+use crate::{
+    journal::JournaledModel,
+    marker::{MarkKind, Marker},
+};
 use pagurus::{failure::OrFail, image::Color, spatial::Position};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::BTreeMap,
     num::{NonZeroU64, NonZeroUsize},
     path::PathBuf,
 };
@@ -449,6 +452,7 @@ pub enum SetCommand {
     Cursor(AnchorName),
     Camera(CameraPosition),
     Background(Background),
+    // Scale
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -500,15 +504,8 @@ pub enum Command {
 
     Tag(Tag),
 
+    // switch or case or if
     Comment(serde_json::Value),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum MarkKind {
-    Stroke,
-    // Fill, SameColor, InnerEdge, OuterEdge,
-    // Line, Rectangle, Ellipse
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -588,6 +585,10 @@ pub struct PixelPosition {
 }
 
 impl PixelPosition {
+    pub fn from_xy(x: i16, y: i16) -> Self {
+        Self { x, y }
+    }
+
     pub fn delta(self, other: Self) -> PixelPositionDelta {
         PixelPositionDelta::from_xy(other.x - self.x, other.y - self.y)
     }
@@ -693,52 +694,6 @@ impl Palette {
             .map(ColorIndex)
             .or_fail()
             .map_err(|f| f.message(format!("Color '{}' is not found", color_name.0)))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Marker {
-    Stroke(StrokeMarker),
-}
-
-impl Marker {
-    fn new(mark_kind: MarkKind, model: &Model) -> Self {
-        match mark_kind {
-            MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
-        }
-    }
-
-    fn handle_command(&mut self, command: &Command, model: &Model) {
-        match self {
-            Self::Stroke(tool) => tool.handle_command(command, model),
-        }
-    }
-
-    pub fn marked_pixels(&self) -> Box<dyn '_ + Iterator<Item = PixelPosition>> {
-        match self {
-            Self::Stroke(tool) => Box::new(tool.marked_pixels()),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct StrokeMarker {
-    stroke: HashSet<PixelPosition>,
-}
-
-impl StrokeMarker {
-    fn new(model: &Model) -> Self {
-        Self {
-            stroke: [model.cursor.position].into_iter().collect(),
-        }
-    }
-
-    fn handle_command(&mut self, _command: &Command, model: &Model) {
-        self.stroke.insert(model.cursor.position);
-    }
-
-    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
-        self.stroke.iter().copied()
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::{
     config::Config,
-    model::{Background, Command, GameClock, Marker, Model, PixelPosition, PixelRegion, PixelSize},
+    marker::Marker,
+    model::{Background, Command, GameClock, Model, PixelPosition, PixelRegion, PixelSize},
 };
 use pagurus::{
     event::{Event, KeyEvent},

@@ -27,6 +27,6 @@ fn file_println(msg: &str) {
     let _ = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("dotedit.log")
+        .open("patica.log")
         .and_then(|mut file| writeln!(file, "{}", msg));
 }
