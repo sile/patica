@@ -41,7 +41,11 @@ impl Marker {
     }
 }
 
-#[derive(Debug, Clone)]
+fn line(start: PixelPosition, end: PixelPosition) -> impl Iterator<Item = PixelPosition> {
+    LineMarker { start, end }.marked_pixels()
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct LineMarker {
     start: PixelPosition,
     end: PixelPosition,
@@ -59,7 +63,7 @@ impl LineMarker {
         self.end = model.cursor().position();
     }
 
-    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
+    fn marked_pixels(self) -> impl Iterator<Item = PixelPosition> {
         let p0 = self.start;
         let p1 = self.end;
         let dx = (p1.x - p0.x).abs() + 1;
@@ -115,17 +119,23 @@ fn yx(y: i16, x: i16) -> PixelPosition {
 #[derive(Debug, Clone)]
 pub struct StrokeMarker {
     stroke: HashSet<PixelPosition>,
+    last: PixelPosition,
 }
 
 impl StrokeMarker {
     fn new(model: &Model) -> Self {
         Self {
             stroke: [model.cursor().position()].into_iter().collect(),
+            last: model.cursor().position(),
         }
     }
 
     fn handle_command(&mut self, _command: &Command, model: &Model) {
-        self.stroke.insert(model.cursor().position());
+        if self.last != model.cursor().position() {
+            self.stroke
+                .extend(line(self.last, model.cursor().position()));
+            self.last = model.cursor().position();
+        }
     }
 
     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
