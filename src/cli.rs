@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
     journal::JournaledModel,
-    model::{Command, CommandOrCommands, PixelRegion},
+    model::{Command, CommandOrCommands},
 };
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::TuiSystem;
@@ -49,7 +49,7 @@ impl ApplyCommand {
             commands.extend(
                 serde_json::from_str::<CommandOrCommands>(&line)
                     .or_fail()?
-                    .into_iter(),
+                    .into_commands(),
             );
         }
 
@@ -77,7 +77,7 @@ impl OpenCommand {
                 .model_mut()
                 .apply(Command::Header(Default::default()))
                 .or_fail()?;
-            for command in config.init.clone().into_iter() {
+            for command in config.init.clone().into_commands() {
                 journal.model_mut().apply(command).or_fail()?;
             }
             journal.append_applied_commands().or_fail()?;
@@ -123,23 +123,9 @@ impl ExportCommand {
             .clone()
             .unwrap_or_else(|| self.path.with_extension("bmp"));
 
-        let mut empty = true;
-        let mut min_x = i16::MAX;
-        let mut min_y = i16::MAX;
-        let mut max_x = i16::MIN;
-        let mut max_y = i16::MIN;
-        for (position, _color) in journal.model().pixels() {
-            min_x = min_x.min(position.x);
-            min_y = min_y.min(position.y);
-            max_x = max_x.max(position.x);
-            max_y = max_y.max(position.y);
-            empty = false;
-        }
-        (!empty).or_fail()?;
-
         crate::bmp::write_image(
             BufWriter::new(std::fs::File::create(&output).or_fail()?),
-            PixelRegion::from_corners(min_x, min_y, max_x, max_y),
+            journal.model().pixels_region(),
             journal.model().pixels(),
         )
         .or_fail()?;

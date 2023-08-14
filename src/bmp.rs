@@ -8,7 +8,7 @@ pub fn write_image<W: Write>(
     pixels: impl Iterator<Item = (PixelPosition, Color)>,
 ) -> pagurus::Result<()> {
     let image_data_offset: u32 = 54;
-    let file_size: u32 = image_data_offset + region.size.area() as u32 * 4;
+    let file_size: u32 = image_data_offset + region.size.area() * 4;
 
     // File header.
     writer.write_all(b"BM").or_fail()?;
@@ -30,7 +30,7 @@ pub fn write_image<W: Write>(
     writer.write_all(&[32, 0]).or_fail()?; // Bits per pixel.
     writer.write_all(&[0, 0, 0, 0]).or_fail()?; // No compression.
     writer
-        .write_all(&(region.size.area() as u32 * 4).to_le_bytes())
+        .write_all(&(region.size.area() * 4).to_le_bytes())
         .or_fail()?; // Image size.
     writer.write_all(&[0, 0, 0, 0]).or_fail()?; // Horizontal resolution.
     writer.write_all(&[0, 0, 0, 0]).or_fail()?; // Vertical resolution.

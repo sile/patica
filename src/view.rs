@@ -163,9 +163,8 @@ impl PixelCanvas {
     }
 
     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
-        match event {
-            Event::Key(event) => self.handle_key_event(ctx, event).or_fail()?,
-            _ => {}
+        if let Event::Key(event) = event {
+            self.handle_key_event(ctx, event).or_fail()?;
         }
         Ok(())
     }
@@ -174,7 +173,7 @@ impl PixelCanvas {
         match ctx.config.key.get_command(key) {
             None => {}
             Some(commands) => {
-                for command in commands.into_iter() {
+                for command in commands.into_commands() {
                     if matches!(command, Command::Quit) {
                         ctx.quit = true;
                     }

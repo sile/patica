@@ -136,7 +136,7 @@ impl Model {
                 self.cursor.move_delta(*delta)
             }
             Command::Define(c) => {
-                self.handle_define_command(c.0.name.clone(), c.0.value.clone())
+                self.handle_define_command(c.0.name.clone(), c.0.value)
                     .or_fail()?;
             }
             Command::Mark(kind) => {
@@ -263,14 +263,14 @@ impl Model {
                     self.palette
                         .colors()
                         .skip_while(|c| *c != name)
-                        .nth((delta.0.abs() as usize) % self.palette.len())
+                        .nth((delta.0.unsigned_abs()) % self.palette.len())
                         .or_fail()?
                 } else {
                     self.palette
                         .colors()
                         .rev()
                         .skip_while(|c| *c != name)
-                        .nth((delta.0.abs() as usize) % self.palette.len())
+                        .nth((delta.0.unsigned_abs()) % self.palette.len())
                         .or_fail()?
                 };
                 self.dot_color = self.palette.get_index(rotated_name).or_fail()?;
@@ -401,7 +401,7 @@ pub enum CommandOrCommands {
 }
 
 impl CommandOrCommands {
-    pub fn into_iter(self) -> impl Iterator<Item = Command> {
+    pub fn into_commands(self) -> impl Iterator<Item = Command> {
         match self {
             Self::Commands(commands) => commands.into_iter(),
             Self::Command(command) => vec![command].into_iter(),
@@ -952,7 +952,7 @@ impl<'a> FramePixels<'a> {
             .frame
             .anchor
             .as_ref()
-            .and_then(|a| self.model.anchors.get(&a).copied())
+            .and_then(|a| self.model.anchors.get(a).copied())
         {
             src_region.position = src_region.position + anchor_position;
         } else {
