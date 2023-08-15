@@ -293,26 +293,24 @@ impl ColorMarker {
 
 #[derive(Debug, Clone)]
 pub struct EllipseMarker {
-    color: Option<Color>,
+    start: PixelPosition,
+    cursor: PixelPosition,
     pixels: HashSet<PixelPosition>,
 }
 
 impl EllipseMarker {
     fn new(model: &Model) -> Self {
-        let color = model.get_pixel_color(model.cursor().position());
-        let mut this = Self {
-            color,
-            pixels: HashSet::new(),
-        };
-        this.calc_pixels(model);
-        this
+        Self {
+            start: model.cursor().position(),
+            cursor: model.cursor().position(),
+            pixels: vec![model.cursor().position()].into_iter().collect(),
+        }
     }
 
     fn handle_command(&mut self, _command: &Command, model: &Model) {
-        let color = model.get_pixel_color(model.cursor().position());
-        if self.color != color {
-            self.color = color;
-            self.calc_pixels(model);
+        if self.cursor != model.cursor().position() {
+            self.cursor = model.cursor().position();
+            self.calc_pixels();
         }
     }
 
@@ -320,15 +318,57 @@ impl EllipseMarker {
         self.pixels.iter().copied()
     }
 
-    fn calc_pixels(&mut self, model: &Model) {
+    fn calc_pixels(&mut self) {
         self.pixels.clear();
-        let Some(color) = self.color else {
-            return;
+
+        let region = PixelRegion::from_corners(
+            self.start.x.min(self.cursor.x) - 1,
+            self.start.y.min(self.cursor.y) - 1,
+            self.start.x.max(self.cursor.x),
+            self.start.y.max(self.cursor.y),
+        );
+
+        let x_radius = (region.end().x as f32 - region.start().x as f32) / 2.0;
+        let y_radius = (region.end().y as f32 - region.start().y as f32) / 2.0;
+        let x_radius2 = x_radius.powi(2);
+        let y_radius2 = y_radius.powi(2);
+        let center_x = x_radius + region.start().x as f32;
+        let center_y = y_radius + region.start().y as f32;
+
+        let ratio = |xi: f32, yi: f32| {
+            let mut count = 0;
+            for xj in 0..=10 {
+                for yj in 0..=10 {
+                    let xv = (xi + 0.1 * xj as f32).powi(2) / x_radius2;
+                    let yv = (yi + 0.1 * yj as f32).powi(2) / y_radius2;
+                    if xv + yv <= 1.0 {
+                        count += 1;
+                    }
+                }
+            }
+            count as f32 / (11 * 11) as f32
         };
-        self.pixels = model
-            .pixels()
-            .filter(|p| p.1 == color)
-            .map(|p| p.0)
-            .collect();
+
+        let mut xi = x_radius.fract();
+        let mut yi = y_radius - 1.0;
+        while xi < x_radius && yi >= 0.0 {
+            let px = (center_x + xi) as i16;
+            let mx = (center_x - xi) as i16;
+            let py = (center_y + yi) as i16;
+            let my = (center_y - yi) as i16;
+            self.pixels.insert(PixelPosition::from_xy(px, py));
+            self.pixels.insert(PixelPosition::from_xy(mx, my));
+            self.pixels.insert(PixelPosition::from_xy(px, my));
+            self.pixels.insert(PixelPosition::from_xy(mx, py));
+
+            if ratio(xi + 1.0, yi) >= 0.5 {
+                xi += 1.0;
+            } else if ratio(xi + 1.0, yi - 1.0) >= 0.5 {
+                xi += 1.0;
+                yi -= 1.0;
+            } else {
+                yi -= 1.0;
+            }
+        }
     }
 }

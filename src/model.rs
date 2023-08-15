@@ -502,7 +502,7 @@ pub enum Command {
     Cancel,
     Draw,
     Erase,
-
+    // Convert {rotate, flip, scale}
     Cut,
     Paste,
 
@@ -747,6 +747,17 @@ pub struct PixelRegion {
 }
 
 impl PixelRegion {
+    pub fn start(self) -> PixelPosition {
+        self.position
+    }
+
+    pub fn end(self) -> PixelPosition {
+        let mut p = self.position;
+        p.x += self.size.width as i16;
+        p.y += self.size.height as i16;
+        p
+    }
+
     pub fn from_corners(min_x: i16, min_y: i16, max_x: i16, max_y: i16) -> Self {
         Self {
             position: PixelPosition { x: min_x, y: min_y },
