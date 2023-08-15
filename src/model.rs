@@ -1081,7 +1081,9 @@ pub enum Mode {
 impl Mode {
     pub fn take_marker(&mut self) -> Option<Marker> {
         if matches!(self, Self::Marking(_)) {
-            let Self::Marking(m) = std::mem::take(self) else { unreachable!() };
+            let Self::Marking(m) = std::mem::take(self) else {
+                unreachable!()
+            };
             Some(m)
         } else {
             None
