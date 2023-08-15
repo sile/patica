@@ -10,6 +10,7 @@ use std::{
     path::PathBuf,
 };
 
+// TODO: support undo
 #[derive(Debug, Default)]
 pub struct Model {
     cursor: Cursor,
@@ -18,14 +19,13 @@ pub struct Model {
     palette: Palette,
     pixels: BTreeMap<PixelPosition, ColorIndex>,
     names: BTreeMap<String, NameKind>,
-    marker: Option<Marker>,
     background: Background,
-    stash_buffer: StashBuffer,
     anchors: BTreeMap<AnchorName, PixelPosition>,
     commands_len: usize,
     tags: BTreeMap<usize, Tag>,
     external_models: BTreeMap<PathBuf, JournaledModel>,
     frames: BTreeMap<FrameName, Frame>,
+    mode: Mode,
     applied_commands: Vec<Command>, // dirty_commands (?)
 }
 
@@ -64,14 +64,13 @@ impl Model {
     }
 
     pub fn has_stashed_pixels(&self) -> bool {
-        !self.stash_buffer.pixels.is_empty()
+        matches!(self.mode, Mode::Editing(_))
     }
 
     pub fn stashed_pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
-        self.stash_buffer
-            .pixels
-            .iter()
-            .map(|(p, &color_index)| (self.cursor.position + *p, self.palette.get(color_index)))
+        self.mode
+            .editing_pixels()
+            .map(|(p, color_index)| (self.cursor.position + p, self.palette.get(color_index)))
     }
 
     pub fn pixels_region(&self) -> PixelRegion {
@@ -105,7 +104,11 @@ impl Model {
     }
 
     pub fn marker(&self) -> Option<&Marker> {
-        self.marker.as_ref()
+        if let Mode::Marking(m) = &self.mode {
+            Some(m)
+        } else {
+            None
+        }
     }
 
     pub fn dot_color(&self) -> Color {
@@ -115,9 +118,9 @@ impl Model {
     pub fn redo(&mut self, command: &Command) -> pagurus::Result<bool> {
         let applied = self.redo_command(command).or_fail()?;
 
-        if let Some(mut marker) = self.marker.take() {
+        if let Some(mut marker) = self.mode.take_marker() {
             marker.handle_command(command, self);
-            self.marker = Some(marker);
+            self.mode = Mode::Marking(marker);
         }
         if applied {
             self.commands_len += 1;
@@ -140,12 +143,10 @@ impl Model {
                     .or_fail()?;
             }
             Command::Mark(kind) => {
-                self.marker = Some(Marker::new(*kind, self));
-                self.stash_buffer.clear();
+                self.mode = Mode::Marking(Marker::new(*kind, self));
             }
             Command::Cancel => {
-                self.marker = None;
-                self.stash_buffer.clear();
+                self.mode = Mode::Neutral;
             }
             Command::Draw => {
                 self.handle_draw_command().or_fail()?;
@@ -186,8 +187,30 @@ impl Model {
             Command::Header(_) => {
                 // TODO: check type and version
             }
+            Command::If(c) => self.handle_if_command(c).or_fail()?,
         }
         Ok(true)
+    }
+
+    fn handle_if_command(&mut self, c: &IfCommand) -> pagurus::Result<()> {
+        match self.mode {
+            Mode::Neutral => {
+                for command in &c.neutral {
+                    self.redo_command(command).or_fail()?;
+                }
+            }
+            Mode::Marking(_) => {
+                for command in &c.marking {
+                    self.redo_command(command).or_fail()?;
+                }
+            }
+            Mode::Editing(_) => {
+                for command in &c.editing {
+                    self.redo_command(command).or_fail()?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn handle_embed_command(&mut self, name: String, value: Embed) -> pagurus::Result<()> {
@@ -227,10 +250,9 @@ impl Model {
 
     fn handle_paste_command(&mut self) -> pagurus::Result<()> {
         let pixels = self
-            .stash_buffer
-            .pixels
-            .iter()
-            .map(|(p, &color_index)| (self.cursor.position + *p, color_index));
+            .mode
+            .editing_pixels()
+            .map(|(p, color_index)| (self.cursor.position + p, color_index));
 
         for (position, color) in pixels {
             // TODO: validate whether the index exists
@@ -240,17 +262,19 @@ impl Model {
     }
 
     fn handle_cut_command(&mut self) -> pagurus::Result<()> {
-        let Some(marker) = self.marker.take() else {
+        let Some(marker) = self.mode.take_marker() else {
             return Ok(());
         };
 
-        self.stash_buffer.clear();
+        let mut buffer = StashBuffer::default();
         for pixel in marker.marked_pixels() {
             if let Some(color) = self.pixels.remove(&pixel) {
-                self.stash_buffer
-                    .store(self.cursor.position.delta(pixel), color);
+                buffer
+                    .pixels
+                    .insert(self.cursor.position.delta(pixel), color);
             }
         }
+        self.mode = Mode::Editing(buffer);
 
         Ok(())
     }
@@ -335,7 +359,7 @@ impl Model {
     }
 
     fn handle_draw_command(&mut self) -> pagurus::Result<()> {
-        let Some(marker) = self.marker.take() else {
+        let Some(marker) = self.mode.take_marker() else {
             return Ok(());
         };
         for pixel in marker.marked_pixels() {
@@ -345,7 +369,7 @@ impl Model {
     }
 
     fn handle_erase_command(&mut self) -> pagurus::Result<()> {
-        let Some(marker) = self.marker.take() else {
+        let Some(marker) = self.mode.take_marker() else {
             return Ok(());
         };
         for pixel in marker.marked_pixels() {
@@ -393,6 +417,7 @@ impl std::fmt::Display for NameKind {
     }
 }
 
+// TODO: remove
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged, try_from = "serde_json::Value")]
 pub enum CommandOrCommands {
@@ -524,6 +549,13 @@ pub enum Command {
 
     // switch or case or if
     Comment(serde_json::Value),
+
+    If(IfCommand),
+    // "d": {"if": {
+    //     "neutral": [],
+    //     "marking": [],
+    //     "editing": []
+    // }},
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -715,19 +747,10 @@ impl Palette {
     }
 }
 
+// TODO: rename
 #[derive(Debug, Default, Clone)]
 pub struct StashBuffer {
     pixels: BTreeMap<PixelPositionDelta, ColorIndex>,
-}
-
-impl StashBuffer {
-    fn clear(&mut self) {
-        self.pixels.clear();
-    }
-
-    fn store(&mut self, position: PixelPositionDelta, color: ColorIndex) {
-        self.pixels.insert(position, color);
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -1031,5 +1054,47 @@ impl Default for HeaderCommand {
             format_version: env!("CARGO_PKG_VERSION").to_owned(),
             content_type: "image/patica".to_owned(),
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct IfCommand {
+    #[serde(default)]
+    pub neutral: Vec<Command>,
+
+    #[serde(default)]
+    pub marking: Vec<Command>,
+
+    #[serde(default)]
+    pub editing: Vec<Command>,
+}
+
+#[derive(Debug, Default)]
+pub enum Mode {
+    #[default]
+    Neutral,
+    Marking(Marker),
+    Editing(StashBuffer),
+}
+
+impl Mode {
+    pub fn take_marker(&mut self) -> Option<Marker> {
+        if matches!(self, Self::Marking(_)) {
+            let Self::Marking(m) = std::mem::take(self) else { unreachable!() };
+            Some(m)
+        } else {
+            None
+        }
+    }
+
+    pub fn editing_pixels(&self) -> impl '_ + Iterator<Item = (PixelPositionDelta, ColorIndex)> {
+        if let Self::Editing(buffer) = self {
+            Some(buffer.pixels.iter().map(|(p, c)| (*p, *c)))
+        } else {
+            None
+        }
+        .into_iter()
+        .flatten()
     }
 }

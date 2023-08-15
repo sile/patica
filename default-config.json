@@ -28,15 +28,17 @@
 
         "p": "pick",
         "c": "cut",
-        "v": ["paste", "cancel"],
 
         "m": {"mark": "stroke"},
         "Esc": "cancel",
-        "d": "draw",
         "e": "erase",
         "Backspace": [{"mark": "stroke"}, "erase"],
 
-        " ": [{"mark": "stroke"}, "draw"],
+        " ": {"if": {
+            "neutral": [{"mark": "stroke"}, "draw"],
+            "marking": ["draw"],
+            "editing": ["paste", "cancel"]
+        }},
 
         "q": "quit",
         "Ctrl+c": "quit"
