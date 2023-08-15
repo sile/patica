@@ -1,5 +1,5 @@
-use dotedit::model::{Command, DefineCommand};
 use pagurus::{failure::OrFail, image::Color};
+use patica::model::{Command, DefineCommand};
 use std::io::Write;
 
 fn main() -> pagurus::Result<()> {
