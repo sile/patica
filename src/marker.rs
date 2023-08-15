@@ -1,4 +1,5 @@
 use crate::model::{Command, Model, PixelPosition, PixelRegion};
+use pagurus::image::Color;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -9,8 +10,8 @@ pub enum MarkKind {
     Stroke,
     Fill,
     Rectangle,
-    //  SameColor, InnerEdge, OuterEdge,
-    // Rectangle, Ellipse
+    Color,
+    Ellipse,
 }
 
 #[derive(Debug, Clone)]
@@ -19,6 +20,8 @@ pub enum Marker {
     Stroke(StrokeMarker),
     Fill(FillMarker),
     Rectangle(RectangleMarker),
+    Color(ColorMarker),
+    Ellipse(EllipseMarker),
 }
 
 impl Marker {
@@ -28,6 +31,8 @@ impl Marker {
             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
             MarkKind::Fill => Self::Fill(FillMarker::new(model)),
             MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
+            MarkKind::Color => Self::Color(ColorMarker::new(model)),
+            MarkKind::Ellipse => Self::Ellipse(EllipseMarker::new(model)),
         }
     }
 
@@ -37,6 +42,8 @@ impl Marker {
             Self::Stroke(m) => m.handle_command(command, model),
             Self::Fill(m) => m.handle_command(command, model),
             Self::Rectangle(m) => m.handle_command(command, model),
+            Self::Color(m) => m.handle_command(command, model),
+            Self::Ellipse(m) => m.handle_command(command, model),
         }
     }
 
@@ -46,6 +53,8 @@ impl Marker {
             Self::Stroke(m) => Box::new(m.marked_pixels()),
             Self::Fill(m) => Box::new(m.marked_pixels()),
             Self::Rectangle(m) => Box::new(m.marked_pixels()),
+            Self::Color(m) => Box::new(m.marked_pixels()),
+            Self::Ellipse(m) => Box::new(m.marked_pixels()),
         }
     }
 }
@@ -237,5 +246,89 @@ impl RectangleMarker {
         let max_x = self.start.x.max(self.end.x);
         let max_y = self.start.y.max(self.end.y);
         PixelRegion::from_corners(min_x, min_y, max_x, max_y).edge_pixels()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ColorMarker {
+    color: Option<Color>,
+    pixels: HashSet<PixelPosition>,
+}
+
+impl ColorMarker {
+    fn new(model: &Model) -> Self {
+        let color = model.get_pixel_color(model.cursor().position());
+        let mut this = Self {
+            color,
+            pixels: HashSet::new(),
+        };
+        this.calc_pixels(model);
+        this
+    }
+
+    fn handle_command(&mut self, _command: &Command, model: &Model) {
+        let color = model.get_pixel_color(model.cursor().position());
+        if self.color != color {
+            self.color = color;
+            self.calc_pixels(model);
+        }
+    }
+
+    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
+        self.pixels.iter().copied()
+    }
+
+    fn calc_pixels(&mut self, model: &Model) {
+        self.pixels.clear();
+        let Some(color) = self.color else {
+            return;
+        };
+        self.pixels = model
+            .pixels()
+            .filter(|p| p.1 == color)
+            .map(|p| p.0)
+            .collect();
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct EllipseMarker {
+    color: Option<Color>,
+    pixels: HashSet<PixelPosition>,
+}
+
+impl EllipseMarker {
+    fn new(model: &Model) -> Self {
+        let color = model.get_pixel_color(model.cursor().position());
+        let mut this = Self {
+            color,
+            pixels: HashSet::new(),
+        };
+        this.calc_pixels(model);
+        this
+    }
+
+    fn handle_command(&mut self, _command: &Command, model: &Model) {
+        let color = model.get_pixel_color(model.cursor().position());
+        if self.color != color {
+            self.color = color;
+            self.calc_pixels(model);
+        }
+    }
+
+    fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
+        self.pixels.iter().copied()
+    }
+
+    fn calc_pixels(&mut self, model: &Model) {
+        self.pixels.clear();
+        let Some(color) = self.color else {
+            return;
+        };
+        self.pixels = model
+            .pixels()
+            .filter(|p| p.1 == color)
+            .map(|p| p.0)
+            .collect();
     }
 }
