@@ -10,6 +10,7 @@ pub enum MarkKind {
     Stroke,
     Fill,
     Rectangle,
+    FillRectangle,
     Color,
     Ellipse,
 }
@@ -20,6 +21,7 @@ pub enum Marker {
     Stroke(StrokeMarker),
     Fill(FillMarker),
     Rectangle(RectangleMarker),
+    FillRectangle(FillRectangleMarker),
     Color(ColorMarker),
     Ellipse(EllipseMarker),
 }
@@ -31,6 +33,7 @@ impl Marker {
             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
             MarkKind::Fill => Self::Fill(FillMarker::new(model)),
             MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
+            MarkKind::FillRectangle => Self::FillRectangle(FillRectangleMarker::new(model)),
             MarkKind::Color => Self::Color(ColorMarker::new(model)),
             MarkKind::Ellipse => Self::Ellipse(EllipseMarker::new(model)),
         }
@@ -42,6 +45,7 @@ impl Marker {
             Self::Stroke(m) => m.handle_command(command, model),
             Self::Fill(m) => m.handle_command(command, model),
             Self::Rectangle(m) => m.handle_command(command, model),
+            Self::FillRectangle(m) => m.handle_command(command, model),
             Self::Color(m) => m.handle_command(command, model),
             Self::Ellipse(m) => m.handle_command(command, model),
         }
@@ -53,6 +57,7 @@ impl Marker {
             Self::Stroke(m) => Box::new(m.marked_pixels()),
             Self::Fill(m) => Box::new(m.marked_pixels()),
             Self::Rectangle(m) => Box::new(m.marked_pixels()),
+            Self::FillRectangle(m) => Box::new(m.marked_pixels()),
             Self::Color(m) => Box::new(m.marked_pixels()),
             Self::Ellipse(m) => Box::new(m.marked_pixels()),
         }
@@ -223,6 +228,27 @@ impl FillMarker {
 }
 
 #[derive(Debug, Clone)]
+pub struct FillRectangleMarker {
+    inner: RectangleMarker,
+}
+
+impl FillRectangleMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            inner: RectangleMarker::new(model),
+        }
+    }
+
+    fn handle_command(&mut self, command: &Command, model: &Model) {
+        self.inner.handle_command(command, model);
+    }
+
+    fn marked_pixels(&self) -> impl Iterator<Item = PixelPosition> {
+        self.inner.region().positions()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct RectangleMarker {
     start: PixelPosition,
     end: PixelPosition,
@@ -241,11 +267,15 @@ impl RectangleMarker {
     }
 
     fn marked_pixels(&self) -> impl Iterator<Item = PixelPosition> {
+        self.region().edge_pixels()
+    }
+
+    fn region(&self) -> PixelRegion {
         let min_x = self.start.x.min(self.end.x);
         let min_y = self.start.y.min(self.end.y);
         let max_x = self.start.x.max(self.end.x);
         let max_y = self.start.y.max(self.end.y);
-        PixelRegion::from_corners(min_x, min_y, max_x, max_y).edge_pixels()
+        PixelRegion::from_corners(min_x, min_y, max_x, max_y)
     }
 }
 
