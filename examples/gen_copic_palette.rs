@@ -137,8 +137,6 @@ fn main() -> pagurus::Result<()> {
     for color in [
         copic_colors::COLOR_0,
         copic_colors::COLOR_0,
-        copic_colors::COLOR_0,
-        copic_colors::COLOR_0,
         copic_colors::COLOR_FV,
         copic_colors::COLOR_FRV,
         copic_colors::COLOR_FYR,
@@ -147,6 +145,8 @@ fn main() -> pagurus::Result<()> {
         copic_colors::COLOR_FG,
         copic_colors::COLOR_FBG,
         copic_colors::COLOR_FB,
+        copic_colors::COLOR_100,
+        copic_colors::COLOR_110,
     ] {
         let color_name = ColorName(format!("copic.{}", color.code.to_lowercase()));
         write_command(Command::Mark(MarkKind::Line)).or_fail()?;
