@@ -115,7 +115,12 @@ impl TryFrom<String> for Key {
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let mut ctrl = false;
         let mut alt = false;
-        let mut tokens = s.split('+').collect::<Vec<_>>();
+        let mut tokens = if s == "+" {
+            // TODO
+            vec!["+"]
+        } else {
+            s.split('+').collect::<Vec<_>>()
+        };
 
         let last = tokens
             .pop()
@@ -133,7 +138,40 @@ impl TryFrom<String> for Key {
             "BackTab" => pagurus::event::Key::BackTab,
             "Esc" => pagurus::event::Key::Esc,
             _ if last.chars().count() == 1 => match last.chars().next().or_fail()? {
-                c @ ('a'..='z' | 'A'..='Z' | '0'..='9' | ' ') => pagurus::event::Key::Char(c),
+                c @ ('a'..='z'
+                | 'A'..='Z'
+                | '0'..='9'
+                | ' '
+                | '+'
+                | '-'
+                | '_'
+                | '('
+                | ')'
+                | '{'
+                | '}'
+                | '['
+                | ']'
+                | '<'
+                | '>'
+                | ';'
+                | ':'
+                | '='
+                | '.'
+                | ','
+                | '!'
+                | '?'
+                | '/'
+                | '@'
+                | '#'
+                | '$'
+                | '%'
+                | '^'
+                | '&'
+                | '*'
+                | '"'
+                | '\''
+                | '`'
+                | '~') => pagurus::event::Key::Char(c),
                 _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
             },
             _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),

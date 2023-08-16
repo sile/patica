@@ -23,14 +23,24 @@ pub struct ViewContext {
 }
 
 impl ViewContext {
+    fn scaled_window_size(&self) -> Size {
+        self.window_size / self.scale() as u32
+    }
+
+    fn scale(&self) -> usize {
+        self.model.scale().get()
+    }
+
     fn to_canvas_position(&self, pixel_position: PixelPosition) -> Position {
-        let center = self.window_size.to_region().center();
-        (Position::from(pixel_position) + center) - Position::from(self.model.camera().position)
+        let center = self.scaled_window_size().to_region().center();
+        let position = (Position::from(pixel_position) + center)
+            - Position::from(self.model.camera().position);
+        position * self.scale() as u32
     }
 
     fn visible_pixel_region(&self) -> PixelRegion {
-        let center = self.window_size.to_region().center();
-        let mut region = self.window_size.to_region();
+        let center = self.scaled_window_size().to_region().center();
+        let mut region = self.scaled_window_size().to_region();
         region.position = (region.position - center) + Position::from(self.model.camera().position);
         PixelRegion {
             position: PixelPosition {
@@ -41,6 +51,15 @@ impl ViewContext {
                 width: region.size.width as u16,
                 height: region.size.height as u16,
             },
+        }
+    }
+}
+
+fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: PixelPosition, color: Color) {
+    let p = ctx.to_canvas_position(pixel_position);
+    for y in 0..ctx.scale() {
+        for x in 0..ctx.scale() {
+            canvas.draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
         }
     }
 }
@@ -60,7 +79,7 @@ impl View {
     fn render_frames(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         for frame in ctx.model.active_frames(ctx.clock) {
             for (pixel_position, color) in frame.pixels() {
-                canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
+                draw_pixel(ctx, canvas, pixel_position, color);
             }
         }
     }
@@ -71,14 +90,14 @@ impl View {
                 canvas.fill_color(*c);
             }
             Background::Checkerboard(c) => {
-                let n = c.dot_size.get() as i32;
-                for position in canvas.drawing_region().iter() {
-                    let color = if (position.x / n + position.y / n) % 2 == 0 {
+                let n = c.dot_size.get() as i16;
+                for pixel_position in ctx.visible_pixel_region().positions() {
+                    let color = if (pixel_position.x / n + pixel_position.y / n) % 2 == 0 {
                         c.color1
                     } else {
                         c.color2
                     };
-                    canvas.draw_pixel(position, color);
+                    draw_pixel(ctx, canvas, pixel_position, color);
                 }
             }
         }
@@ -113,7 +132,7 @@ impl PixelCanvas {
         // TODO: optimzie
         for pixel_position in region.positions() {
             if let Some(color) = ctx.model.get_pixel_color(pixel_position) {
-                canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
+                draw_pixel(ctx, canvas, pixel_position, color);
             }
         }
     }
@@ -124,7 +143,7 @@ impl PixelCanvas {
         }
 
         for (pixel_position, color) in ctx.model.stashed_pixels() {
-            canvas.draw_pixel(ctx.to_canvas_position(pixel_position), color);
+            draw_pixel(ctx, canvas, pixel_position, color);
         }
     }
 
@@ -141,10 +160,7 @@ impl PixelCanvas {
                 continue;
             }
 
-            canvas.draw_pixel(
-                ctx.to_canvas_position(pixel_position),
-                ctx.model.dot_color(),
-            );
+            draw_pixel(ctx, canvas, pixel_position, ctx.model.dot_color());
         }
     }
 
@@ -155,11 +171,7 @@ impl PixelCanvas {
             let c = color.to_rgba();
             color = Color::rgba(255 - c.r, 255 - c.g, 255 - c.b, c.a);
         };
-        canvas.draw_pixel(self.cursor_position(ctx), color);
-    }
-
-    fn cursor_position(&self, ctx: &ViewContext) -> Position {
-        ctx.to_canvas_position(ctx.model.cursor().position())
+        draw_pixel(ctx, canvas, ctx.model.cursor().position(), color);
     }
 
     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {

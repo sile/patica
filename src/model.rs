@@ -26,6 +26,7 @@ pub struct Model {
     external_models: BTreeMap<PathBuf, JournaledModel>,
     frames: BTreeMap<FrameName, Frame>,
     mode: Mode,
+    scale: Scale,
     applied_commands: Vec<Command>, // dirty_commands (?)
 }
 
@@ -41,6 +42,10 @@ impl Model {
         self.frames
             .values()
             .filter_map(move |f| f.to_pixels_if_active(clock, self))
+    }
+
+    pub fn scale(&self) -> Scale {
+        self.scale
     }
 
     pub fn cursor(&self) -> Cursor {
@@ -188,8 +193,15 @@ impl Model {
                 // TODO: check type and version
             }
             Command::If(c) => self.handle_if_command(c).or_fail()?,
+            Command::Scale(n) => self.handle_scale_command(*n).or_fail()?,
         }
         Ok(true)
+    }
+
+    fn handle_scale_command(&mut self, n: isize) -> pagurus::Result<()> {
+        let n = self.scale.0.get() as isize + n;
+        self.scale.0 = NonZeroUsize::new(n.max(1).min(100) as usize).or_fail()?;
+        Ok(())
     }
 
     fn handle_if_command(&mut self, c: &IfCommand) -> pagurus::Result<()> {
@@ -495,12 +507,12 @@ pub enum SetCommand {
     Cursor(AnchorName),
     Camera(CameraPosition),
     Background(Background),
-    // Scale
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RotateCommand {
+    // TODO: rotate within history (back / forward)
     Color(RotateDelta), // TODO: Cursor
 }
 
@@ -549,6 +561,9 @@ pub enum Command {
 
     // switch or case or if
     Comment(serde_json::Value),
+
+    // TODO: move to "set"? ({"set": {"scale": {"delta": 1}}})
+    Scale(isize),
 
     If(IfCommand),
     // "d": {"if": {
@@ -1098,5 +1113,20 @@ impl Mode {
         }
         .into_iter()
         .flatten()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Scale(pub NonZeroUsize);
+
+impl Scale {
+    pub const fn get(self) -> usize {
+        self.0.get()
+    }
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Self(NonZeroUsize::new(1).expect("unreachable"))
     }
 }
