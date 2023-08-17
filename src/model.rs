@@ -172,10 +172,10 @@ impl Model {
                 self.handle_set_command(c).or_fail()?;
             }
             Command::Pick => {
+                // TODO: consider alpha
                 if let Some(color) = self.pixels.get(&self.cursor.position).copied() {
                     self.dot_color = Some(color);
                 } else {
-                    // TODO
                     for frame in self.frames.values() {
                         if let Some(color) = frame.get_pixel_color(self.cursor.position) {
                             self.dot_color = Some(color);
@@ -210,8 +210,13 @@ impl Model {
             Command::Scale(n) => self.handle_scale_command(*n).or_fail()?,
             Command::Undo => self.handle_undo_command().or_fail()?,
             Command::Redo => self.handle_redo_command().or_fail()?,
+            Command::Flip(c) => self.handle_flip_command(*c).or_fail()?,
         }
         Ok(true)
+    }
+
+    fn handle_flip_command(&mut self, orientation: Orientation) -> pagurus::Result<()> {
+        todo!()
     }
 
     fn handle_undo_command(&mut self) -> pagurus::Result<()> {
@@ -467,6 +472,7 @@ pub enum SetCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    // TODO: rename to "open"
     Header(HeaderCommand),
 
     // "quit"
@@ -475,7 +481,7 @@ pub enum Command {
     // {"move": [0, 1]}
     Move(PixelPositionDelta),
 
-    // {"remove": "black"},
+    // TODO: {"remove": {"anchor":"black"}},
     Mark(MarkKind),
     Cancel,
     Draw,
@@ -483,6 +489,7 @@ pub enum Command {
     // Convert {rotate, flip, scale}
     Cut,
     Paste,
+    Flip(Orientation),
 
     Pick,
 
@@ -493,11 +500,12 @@ pub enum Command {
 
     Anchor(AnchorName),
 
+    // TODO: {"import": ...}
     Embed(EmbedCommand),
 
     Tag(Tag),
 
-    // switch or case or if
+    // TODO: remove(?)
     Comment(serde_json::Value),
 
     // TODO: move to "set"? ({"set": {"scale": {"delta": 1}}})
@@ -506,6 +514,13 @@ pub enum Command {
     If(IfCommand),
     Undo,
     Redo,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Orientation {
+    Horizontal,
+    Vertical,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]

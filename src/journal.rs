@@ -12,7 +12,7 @@ pub struct JournaledModel {
     reader: BufReader<File>,
     writer: BufWriter<File>,
     model: Model,
-    commands_len: usize,
+    commands_len: usize, // TODO: Use model.commands_len() instead of this
     frames: BTreeMap<FrameName, JournaledFrame>,
 }
 
@@ -64,6 +64,7 @@ impl JournaledModel {
         {
             self.model = Model::default();
             self.commands_len = 0;
+            self.frames.clear();
             self.reader.seek(SeekFrom::Start(0)).or_fail()?;
             pagurus::println!("Reloaded");
         }
