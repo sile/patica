@@ -84,7 +84,7 @@ impl JournaledModel {
         for (name, embedded_frame) in self.model.frames() {
             if self
                 .frames
-                .get(&name)
+                .get(name)
                 .map_or(true, |f| !f.frame.is_same_settings(&embedded_frame.frame))
             {
                 self.frames
