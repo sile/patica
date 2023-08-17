@@ -1,7 +1,4 @@
-use crate::{
-    journal::JournaledModel,
-    marker::{MarkKind, Marker},
-};
+use crate::marker::{MarkKind, Marker};
 use pagurus::{failure::OrFail, image::Color, spatial::Position};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -10,7 +7,7 @@ use std::{
     path::PathBuf,
 };
 
-// TODO: support undo
+// TODO: Rename to `PaticaCanvas`
 #[derive(Debug, Default)]
 pub struct Model {
     cursor: Cursor,
@@ -19,13 +16,11 @@ pub struct Model {
     // TODO: use Rgba instead
     dot_color: Option<Color>,
     pixels: BTreeMap<PixelPosition, Color>,
-    names: BTreeMap<String, NameKind>,
     background: Background,
     anchors: BTreeMap<AnchorName, PixelPosition>,
     commands_len: usize,
     tags: BTreeMap<usize, Tag>,
-    external_models: BTreeMap<PathBuf, JournaledModel>,
-    frames: BTreeMap<FrameName, Frame>,
+    frames: BTreeMap<FrameName, EmbeddedFrame>,
     mode: Mode,
     scale: Scale,
     applied_commands: Vec<Command>, // dirty_commands (?)
@@ -34,17 +29,39 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn sync_external_models(&mut self) -> pagurus::Result<()> {
-        for model in self.external_models.values_mut() {
-            model.sync_model().or_fail()?;
+    pub fn get_frame_pixels(&self, frame: &Frame) -> pagurus::Result<FramePixels> {
+        let start = self.anchors.get(&frame.start).or_fail()?;
+        let end = self.anchors.get(&frame.end).or_fail()?;
+        let region = PixelRegion::from_corners(
+            start.x.min(end.x),
+            start.y.min(end.y),
+            start.x.max(end.x),
+            start.y.max(end.y),
+        );
+
+        let mut rows = Vec::new();
+        let mut line = Vec::new();
+        let mut y = region.position.y;
+        for p in region.positions() {
+            if p.y != y {
+                rows.push(line);
+                line = Vec::new();
+                y = p.y;
+            }
+            line.push(self.get_pixel_color(p));
         }
-        Ok(())
+        rows.push(line);
+
+        Ok(FramePixels(rows))
     }
 
-    pub fn active_frames(&self, clock: GameClock) -> impl '_ + Iterator<Item = FramePixels> {
-        self.frames
-            .values()
-            .filter_map(move |f| f.to_pixels_if_active(clock, self))
+    // TODO: remove
+    pub fn active_frames(&self, clock: GameClock) -> impl '_ + Iterator<Item = &EmbeddedFrame> {
+        self.frames.values().filter(move |f| f.is_active(clock))
+    }
+
+    pub fn frames(&self) -> impl '_ + Iterator<Item = (&FrameName, &EmbeddedFrame)> {
+        self.frames.iter()
     }
 
     pub fn scale(&self) -> Scale {
@@ -244,38 +261,18 @@ impl Model {
         Ok(())
     }
 
-    fn handle_embed_command(&mut self, name: String, value: Embed) -> pagurus::Result<()> {
-        matches!(self.names.get(&name), None | Some(NameKind::Frame))
-            .or_fail()
-            .map_err(|f| {
-                f.message(format!(
-                    "The name '{name}' is already in used by as {} name",
-                    self.names[&name]
-                ))
-            })?;
-
-        let model = JournaledModel::open_if_exists(&value.path).or_fail()?;
-        self.external_models.insert(value.path.clone(), model);
-        let frame = Frame::new(self.cursor.position, value);
-        self.frames.insert(FrameName(name.clone()), frame);
-
-        self.names.insert(name, NameKind::Frame);
+    fn handle_embed_command(&mut self, name: String, frame: Frame) -> pagurus::Result<()> {
+        let frame = EmbeddedFrame {
+            position: self.cursor.position(),
+            frame,
+        };
+        self.frames.insert(FrameName(name), frame);
         Ok(())
     }
 
     fn handle_anchor_command(&mut self, name: &AnchorName) -> pagurus::Result<()> {
-        matches!(self.names.get(&name.0), None | Some(NameKind::Anchor))
-            .or_fail()
-            .map_err(|f| {
-                f.message(format!(
-                    "The name '{}' is already in used by as {} name",
-                    name.0, self.names[&name.0]
-                ))
-            })?;
-
         let position = self.cursor.position;
         self.anchors.insert(name.clone(), position);
-        self.names.insert(name.0.clone(), NameKind::Anchor);
         Ok(())
     }
 
@@ -343,18 +340,6 @@ impl Model {
     }
 
     fn get_anchor_position(&self, name: &AnchorName) -> pagurus::Result<PixelPosition> {
-        let kind = self
-            .names
-            .get(&name.0)
-            .copied()
-            .or_fail()
-            .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
-        matches!(kind, NameKind::Anchor).or_fail().map_err(|f| {
-            f.message(format!(
-                "The name '{}' is defined as {kind} name, not an anchor name",
-                name.0,
-            ))
-        })?;
         self.anchors.get(name).copied().or_fail()
     }
 
@@ -395,22 +380,6 @@ impl Model {
             self.applied_commands.push(command);
         }
         Ok(())
-    }
-}
-
-// TODO: delete
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum NameKind {
-    Anchor,
-    Frame,
-}
-
-impl std::fmt::Display for NameKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NameKind::Anchor => write!(f, "an anchor"),
-            NameKind::Frame => write!(f, "a frame"),
-        }
     }
 }
 
@@ -764,6 +733,15 @@ impl PixelSize {
     pub fn area(self) -> u32 {
         self.width as u32 * self.height as u32
     }
+
+    pub fn positions(self) -> impl Iterator<Item = PixelPosition> {
+        (0..self.height).flat_map(move |y| {
+            (0..self.width).map(move |x| PixelPosition {
+                x: x as i16,
+                y: y as i16,
+            })
+        })
+    }
 }
 
 impl From<(u16, u16)> for PixelSize {
@@ -832,27 +810,15 @@ impl Default for Checkerboard {
 pub struct Tag(serde_json::Value);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmbedCommand(NameAndValue<Embed>);
+pub struct EmbedCommand(NameAndValue<Frame>);
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct Embed {
-    // TODO: make it possible to refer to the editing file itself.
-    pub path: PathBuf,
-
-    pub size: PixelSize,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub position: Option<PixelPosition>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub anchor: Option<AnchorName>,
-
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub animation: Option<Animation>,
+impl EmbedCommand {
+    pub fn new(name: String, value: Frame) -> Self {
+        Self(NameAndValue { name, value })
+    }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Animation {
     pub timeline: Vec<FrameState>,
@@ -869,7 +835,7 @@ impl Default for Animation {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FrameState {
     Show(usize),
@@ -879,65 +845,61 @@ pub enum FrameState {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct FrameName(pub String);
 
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FramePixels(Vec<Vec<Option<Color>>>);
+
+impl FramePixels {
+    fn size(&self) -> PixelSize {
+        let width = self.0.get(0).map(|row| row.len()).unwrap_or(0) as u16;
+        let height = self.0.len() as u16;
+        PixelSize { width, height }
+    }
+}
+
 #[derive(Debug, Clone)]
+pub struct EmbeddedFrame {
+    pub position: PixelPosition,
+    pub frame: Frame,
+}
+
+impl EmbeddedFrame {
+    fn is_active(&self, _clock: GameClock) -> bool {
+        // TODO: Consider animation
+        true
+    }
+
+    pub fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
+        self.frame.pixels().map(|(p, c)| (p + self.position, c))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Frame {
     pub path: PathBuf,
-    pub src_region: PixelRegion,
-    pub dst_position: PixelPosition,
-    pub anchor: Option<AnchorName>,
+    pub start: AnchorName,
+    pub end: AnchorName,
+    #[serde(default)]
     pub animation: Animation,
-    // TODO: pixels
+
+    // TODO: validation (widthxheight)
+    #[serde(default)]
+    pub pixels: FramePixels,
 }
 
 impl Frame {
-    fn new(dst_position: PixelPosition, embed: Embed) -> Self {
-        Self {
-            path: embed.path,
-            src_region: PixelRegion {
-                position: embed.position.unwrap_or_default(),
-                size: embed.size,
-            },
-            dst_position,
-            anchor: embed.anchor,
-            animation: embed.animation.unwrap_or_default(),
-        }
-    }
-
-    fn to_pixels_if_active<'a>(
-        &'a self,
-        _clock: GameClock,
-        model: &'a Model,
-    ) -> Option<FramePixels> {
-        // TODO: animation handling
-        let model = model.external_models.get(&self.path)?.model(); // TODO: handle error
-        Some(FramePixels { frame: self, model })
-    }
-}
-
-#[derive(Debug)]
-pub struct FramePixels<'a> {
-    frame: &'a Frame,
-    model: &'a Model,
-}
-
-impl<'a> FramePixels<'a> {
-    pub fn pixels(self) -> impl 'a + Iterator<Item = (PixelPosition, Color)> {
-        let mut src_region = self.frame.src_region;
-        if let Some(anchor_position) = self
-            .frame
-            .anchor
-            .as_ref()
-            .and_then(|a| self.model.anchors.get(a).copied())
-        {
-            src_region.position = src_region.position + anchor_position;
-        } else {
-            src_region.position = src_region.position + self.model.cursor().position();
-        }
-        let src_origin = src_region.position;
-        src_region.positions().filter_map(move |p| {
-            let dst_position = self.frame.dst_position + (p - src_origin);
-            Some((dst_position, self.model.get_pixel_color(p)?))
+    fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
+        let size = self.pixels.size();
+        size.positions().filter_map(|position| {
+            self.pixels.0[position.y as usize][position.x as usize].map(|color| (position, color))
         })
+    }
+
+    pub fn is_same_settings(&self, other: &Self) -> bool {
+        self.path == other.path
+            && self.start == other.start
+            && self.end == other.end
+            && self.animation == other.animation
     }
 }
 

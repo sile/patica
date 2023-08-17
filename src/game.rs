@@ -74,11 +74,6 @@ impl<S: System> pagurus::Game<S> for Game {
             }
             Event::Timeout(RENDER_TIMEOUT_TAG) => {
                 self.clock.tick();
-                self.model
-                    .as_mut()
-                    .or_fail()?
-                    .sync_external_models()
-                    .or_fail()?;
                 self.render(system).or_fail()?;
                 system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
                 return Ok(true);

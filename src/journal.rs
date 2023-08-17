@@ -1,6 +1,7 @@
-use crate::model::{Command, Model};
+use crate::model::{Command, EmbedCommand, EmbeddedFrame, Frame, FrameName, Model};
 use pagurus::failure::OrFail;
 use std::{
+    collections::BTreeMap,
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
     path::Path,
@@ -12,6 +13,7 @@ pub struct JournaledModel {
     writer: BufWriter<File>,
     model: Model,
     commands_len: usize,
+    frames: BTreeMap<FrameName, JournaledFrame>,
 }
 
 impl JournaledModel {
@@ -42,6 +44,7 @@ impl JournaledModel {
             writer: BufWriter::new(file),
             model: Model::default(),
             commands_len: 0,
+            frames: BTreeMap::new(),
         };
         this.sync_model().or_fail()?;
         Ok(this)
@@ -75,6 +78,30 @@ impl JournaledModel {
         while let Some(command) = self.next_command().or_fail()? {
             self.model.redo(&command).or_fail()?;
             self.commands_len += 1;
+        }
+
+        let mut commands = Vec::new();
+        for (name, embedded_frame) in self.model.frames() {
+            if self
+                .frames
+                .get(&name)
+                .map_or(true, |f| !f.frame.is_same_settings(&embedded_frame.frame))
+            {
+                self.frames
+                    .insert(name.clone(), JournaledFrame::new(embedded_frame).or_fail()?);
+            }
+
+            let frame = self.frames.get_mut(name).or_fail()?;
+            if let Some(new_frame) = frame.sync(embedded_frame) {
+                let cursor = self.model.cursor().position();
+                commands.push(Command::Move(embedded_frame.position - cursor));
+                commands.push(Command::Embed(EmbedCommand::new(name.0.clone(), new_frame)));
+                commands.push(Command::Move(cursor - embedded_frame.position));
+            }
+        }
+
+        for command in commands {
+            self.model.apply(command).or_fail()?;
         }
 
         Ok(())
@@ -111,6 +138,40 @@ impl JournaledModel {
                 self.reader.seek_relative(-(n as i64)).or_fail()?;
                 return Ok(None);
             }
+        }
+    }
+}
+
+#[derive(Debug)]
+struct JournaledFrame {
+    model: JournaledModel,
+    frame: Frame,
+    last_commands_len: usize,
+}
+
+impl JournaledFrame {
+    fn new(embedded_frame: &EmbeddedFrame) -> pagurus::Result<Self> {
+        // TODO: allow error
+        let model = JournaledModel::open_if_exists(&embedded_frame.frame.path).or_fail()?;
+        Ok(Self {
+            model,
+            frame: embedded_frame.frame.clone(),
+            last_commands_len: 0,
+        })
+    }
+
+    fn sync(&mut self, embedded_frame: &EmbeddedFrame) -> Option<Frame> {
+        self.model.sync_model().ok()?;
+        if self.last_commands_len == self.model.commands_len() {
+            return None;
+        }
+
+        self.last_commands_len = self.model.commands_len();
+        self.frame.pixels = self.model.model.get_frame_pixels(&self.frame).ok()?; // TODO: error handling?
+        if self.frame.pixels != embedded_frame.frame.pixels {
+            Some(self.frame.clone())
+        } else {
+            None
         }
     }
 }
