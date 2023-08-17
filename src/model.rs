@@ -100,7 +100,7 @@ impl Model {
     }
 
     pub fn get_pixel_color(&self, position: PixelPosition) -> Option<Color> {
-        self.pixels.get(&position).map(|&color| color)
+        self.pixels.get(&position).copied()
     }
 
     pub fn marker(&self) -> Option<&Marker> {
@@ -1086,7 +1086,7 @@ impl EditHistory {
                 .redo_indices
                 .last()
                 .copied()
-                .unwrap_or_else(|| self.history.len());
+                .unwrap_or(self.history.len());
             self.redo_indices.push(start);
             Some(self.history[start..end].iter().copied().rev())
                 .into_iter()
@@ -1103,7 +1103,7 @@ impl EditHistory {
                 .redo_indices
                 .last()
                 .copied()
-                .unwrap_or_else(|| self.history.len());
+                .unwrap_or(self.history.len());
             Some(self.history[start..end].iter().copied())
                 .into_iter()
                 .flatten()
