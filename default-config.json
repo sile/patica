@@ -46,14 +46,6 @@
         "Ctrl+c": "quit"
     },
     "init": [
-        {"define": {"black": [  0,   0,   0]}},
-        {"define": {"white": [255, 255, 255]}},
-        {"define": {"red":   [255,   0,   0]}},
-        {"define": {"green": [  0, 255,   0]}},
-        {"define": {"blue":  [  0,   0, 255]}},
-
         {"anchor": "origin"},
-        
-        {"set": {"color": "black"}}
     ]
 }

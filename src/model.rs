@@ -18,7 +18,6 @@ pub struct Model {
     // TODO: impl Default for Color
     // TODO: use Rgba instead
     dot_color: Option<Color>,
-    palette: Palette,
     pixels: BTreeMap<PixelPosition, Color>,
     names: BTreeMap<String, NameKind>,
     background: Background,
@@ -58,10 +57,6 @@ impl Model {
 
     pub fn camera(&self) -> Camera {
         self.camera
-    }
-
-    pub fn palette(&self) -> &Palette {
-        &self.palette
     }
 
     pub fn take_applied_commands(&mut self) -> Vec<Command> {
@@ -143,10 +138,6 @@ impl Model {
             Command::Move(delta) => {
                 // TODO: aggregate consecutive moves in a certain period of time into one command
                 self.cursor.move_delta(*delta)
-            }
-            Command::Define(c) => {
-                self.handle_define_command(c.0.name.clone(), c.0.value)
-                    .or_fail()?;
             }
             Command::Mark(kind) => {
                 self.mode = Mode::Marking(Marker::new(*kind, self));
@@ -326,20 +317,8 @@ impl Model {
 
     fn handle_set_command(&mut self, c: &SetCommand) -> pagurus::Result<()> {
         match c {
-            SetCommand::Color(name) => {
-                let kind = self
-                    .names
-                    .get(&name.0)
-                    .copied()
-                    .or_fail()
-                    .map_err(|f| f.message(format!("The name '{}' is not defined", name.0)))?;
-                matches!(kind, NameKind::Color).or_fail().map_err(|f| {
-                    f.message(format!(
-                        "The name '{}' is defined as {kind} name, not a color name",
-                        name.0,
-                    ))
-                })?;
-                self.dot_color = Some(self.palette.get_color(name).or_fail()?);
+            SetCommand::Color(color) => {
+                self.dot_color = Some(*color);
             }
             SetCommand::Cursor(name) => {
                 self.cursor.position = self.get_anchor_position(name).or_fail()?;
@@ -411,20 +390,6 @@ impl Model {
         Ok(())
     }
 
-    fn handle_define_command(&mut self, name: String, color: Color) -> pagurus::Result<()> {
-        matches!(self.names.get(&name), None | Some(NameKind::Color))
-            .or_fail()
-            .map_err(|f| {
-                f.message(format!(
-                    "The name '{name}' is already in used by as {} name",
-                    self.names[&name]
-                ))
-            })?;
-        self.palette.set_color(ColorName(name.clone()), color);
-        self.names.insert(name, NameKind::Color);
-        Ok(())
-    }
-
     pub fn apply(&mut self, command: Command) -> pagurus::Result<()> {
         if self.redo(&command).or_fail()? {
             self.applied_commands.push(command);
@@ -433,9 +398,9 @@ impl Model {
     }
 }
 
+// TODO: delete
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum NameKind {
-    Color,
     Anchor,
     Frame,
 }
@@ -443,7 +408,6 @@ enum NameKind {
 impl std::fmt::Display for NameKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            NameKind::Color => write!(f, "a color"),
             NameKind::Anchor => write!(f, "an anchor"),
             NameKind::Frame => write!(f, "a frame"),
         }
@@ -486,15 +450,6 @@ impl TryFrom<serde_json::Value> for CommandOrCommands {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DefineCommand(NameAndValue<Color>);
-
-impl DefineCommand {
-    pub fn new(name: String, color: Color) -> Self {
-        Self(NameAndValue { name, value: color })
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "BTreeMap<String, T>", into = "BTreeMap<String, T>")]
 pub struct NameAndValue<T: Clone> {
     pub name: String,
@@ -524,7 +479,7 @@ impl<T: Clone> TryFrom<BTreeMap<String, T>> for NameAndValue<T> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SetCommand {
-    Color(ColorName),
+    Color(Color),
     Cursor(AnchorName),
     Camera(CameraPosition),
     Background(Background),
@@ -543,9 +498,6 @@ pub enum Command {
     // {"move": [0, 1]}
     Move(PixelPositionDelta),
 
-    // {"define": {"white": [255, 255, 255]}}
-    Define(DefineCommand),
-    // {"rename": {"black": "white"}},
     // {"remove": "black"},
     Mark(MarkKind),
     Cancel,
@@ -575,11 +527,6 @@ pub enum Command {
     Scale(isize),
 
     If(IfCommand),
-    // "d": {"if": {
-    //     "neutral": [],
-    //     "marking": [],
-    //     "editing": []
-    // }},
     Undo,
     Redo,
 }
@@ -712,31 +659,6 @@ impl From<PixelPosition> for Position {
             x: position.x as i32,
             y: position.y as i32,
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct ColorName(pub String);
-
-impl From<String> for ColorName {
-    fn from(s: String) -> Self {
-        Self(s)
-    }
-}
-
-// TODO: remove
-#[derive(Debug, Default, Clone)]
-pub struct Palette {
-    colors: BTreeMap<ColorName, Color>,
-}
-
-impl Palette {
-    fn set_color(&mut self, name: ColorName, color: Color) {
-        self.colors.insert(name, color);
-    }
-
-    fn get_color(&self, name: &ColorName) -> Option<Color> {
-        self.colors.get(name).copied()
     }
 }
 
