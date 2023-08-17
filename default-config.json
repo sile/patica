@@ -22,10 +22,6 @@
         "o": {"set": {"camera": [0, 0]}},
         "O": {"set": {"camera": "origin"}},
 
-        "1": {"rotate": {"color": -1}},
-        "2": {"set": {"color": "black"}},
-        "3": {"rotate": {"color": 1}},
-
         "p": "pick",
         "c": "cut",
 

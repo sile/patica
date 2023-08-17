@@ -15,9 +15,11 @@ use std::{
 pub struct Model {
     cursor: Cursor,
     camera: Camera,
-    dot_color: ColorIndex, // TODO: rename
+    // TODO: impl Default for Color
+    // TODO: use Rgba instead
+    dot_color: Option<Color>,
     palette: Palette,
-    pixels: BTreeMap<PixelPosition, ColorIndex>,
+    pixels: BTreeMap<PixelPosition, Color>,
     names: BTreeMap<String, NameKind>,
     background: Background,
     anchors: BTreeMap<AnchorName, PixelPosition>,
@@ -77,7 +79,7 @@ impl Model {
     pub fn stashed_pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
         self.mode
             .editing_pixels()
-            .map(|(p, color_index)| (self.cursor.position + p, self.palette.get(color_index)))
+            .map(|(p, color)| (self.cursor.position + p, color))
     }
 
     pub fn pixels_region(&self) -> PixelRegion {
@@ -99,15 +101,11 @@ impl Model {
     }
 
     pub fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
-        self.pixels
-            .iter()
-            .map(move |(p, &color_index)| (*p, self.palette.get(color_index)))
+        self.pixels.iter().map(move |(p, &color)| (*p, color))
     }
 
     pub fn get_pixel_color(&self, position: PixelPosition) -> Option<Color> {
-        self.pixels
-            .get(&position)
-            .map(|&color_index| self.palette.get(color_index))
+        self.pixels.get(&position).map(|&color| color)
     }
 
     pub fn marker(&self) -> Option<&Marker> {
@@ -119,7 +117,7 @@ impl Model {
     }
 
     pub fn dot_color(&self) -> Color {
-        self.palette.get(self.dot_color)
+        self.dot_color.unwrap_or(Color::BLACK)
     }
 
     // TOD: rename
@@ -167,12 +165,9 @@ impl Model {
             Command::Set(c) => {
                 self.handle_set_command(c).or_fail()?;
             }
-            Command::Rotate(c) => {
-                self.handle_rotate_command(c).or_fail()?;
-            }
             Command::Pick => {
                 if let Some(color) = self.pixels.get(&self.cursor.position).copied() {
-                    self.dot_color = color;
+                    self.dot_color = Some(color);
                 }
             }
             Command::Cut => {
@@ -329,30 +324,6 @@ impl Model {
         Ok(())
     }
 
-    fn handle_rotate_command(&mut self, c: &RotateCommand) -> pagurus::Result<()> {
-        match c {
-            RotateCommand::Color(delta) => {
-                let name = self.palette.get_name(self.dot_color).or_fail()?;
-                let rotated_name = if delta.0 >= 0 {
-                    self.palette
-                        .colors()
-                        .skip_while(|c| *c != name)
-                        .nth((delta.0.unsigned_abs()) % self.palette.len())
-                        .or_fail()?
-                } else {
-                    self.palette
-                        .colors()
-                        .rev()
-                        .skip_while(|c| *c != name)
-                        .nth((delta.0.unsigned_abs()) % self.palette.len())
-                        .or_fail()?
-                };
-                self.dot_color = self.palette.get_index(rotated_name).or_fail()?;
-            }
-        }
-        Ok(())
-    }
-
     fn handle_set_command(&mut self, c: &SetCommand) -> pagurus::Result<()> {
         match c {
             SetCommand::Color(name) => {
@@ -368,7 +339,7 @@ impl Model {
                         name.0,
                     ))
                 })?;
-                self.dot_color = self.palette.get_index(name).or_fail()?;
+                self.dot_color = Some(self.palette.get_color(name).or_fail()?);
             }
             SetCommand::Cursor(name) => {
                 self.cursor.position = self.get_anchor_position(name).or_fail()?;
@@ -413,9 +384,10 @@ impl Model {
             return Ok(());
         };
 
+        let color = self.dot_color();
         for pixel in marker.marked_pixels() {
-            let old = self.pixels.insert(pixel, self.dot_color);
-            self.edit_history.record_draw(pixel, self.dot_color, old);
+            let old = self.pixels.insert(pixel, color);
+            self.edit_history.record_draw(pixel, color, old);
         }
 
         Ok(())
@@ -555,16 +527,6 @@ pub enum SetCommand {
     // TODO(?): Marker? (and make the marker command no arguments)
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RotateCommand {
-    // TODO: rotate within history (back / forward)
-    Color(RotateDelta), // TODO: Cursor
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct RotateDelta(isize);
-
 // TODO: add unit test
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -595,9 +557,6 @@ pub enum Command {
 
     // {"set": {"show-frame": 1}}
     Set(SetCommand),
-
-    // {"rotate": {"color": 1}},
-    Rotate(RotateCommand),
 
     Anchor(AnchorName),
 
@@ -761,59 +720,26 @@ impl From<String> for ColorName {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct ColorIndex(pub usize);
-
+// TODO: remove
 #[derive(Debug, Default, Clone)]
 pub struct Palette {
     colors: BTreeMap<ColorName, Color>,
-    table: Vec<ColorName>,
 }
 
 impl Palette {
-    // TODO: rename
-    fn colors(&self) -> impl '_ + DoubleEndedIterator<Item = &ColorName> {
-        self.colors.keys().chain(self.colors.keys())
-    }
-
-    fn len(&self) -> usize {
-        self.colors.len()
-    }
-
     fn set_color(&mut self, name: ColorName, color: Color) {
-        if !self.table.contains(&name) {
-            self.table.push(name.clone());
-        }
         self.colors.insert(name, color);
     }
 
-    fn get(&self, index: ColorIndex) -> Color {
-        self.table
-            .get(index.0)
-            .and_then(|name| self.colors.get(name))
-            .copied()
-            .unwrap_or(Color::BLACK) // TODO: return Error (?)
-    }
-
-    fn get_name(&self, index: ColorIndex) -> pagurus::Result<&ColorName> {
-        self.table.get(index.0).or_fail()
-    }
-
-    fn get_index(&self, color_name: &ColorName) -> pagurus::Result<ColorIndex> {
-        self.colors
-            .contains_key(color_name)
-            .then_some(())
-            .and_then(|()| self.table.iter().position(|name| name == color_name))
-            .map(ColorIndex)
-            .or_fail()
-            .map_err(|f| f.message(format!("Color '{}' is not found", color_name.0)))
+    fn get_color(&self, name: &ColorName) -> Option<Color> {
+        self.colors.get(name).copied()
     }
 }
 
 // TODO: rename
 #[derive(Debug, Default, Clone)]
 pub struct StashBuffer {
-    pixels: BTreeMap<PixelPositionDelta, ColorIndex>,
+    pixels: BTreeMap<PixelPositionDelta, Color>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -1028,6 +954,7 @@ pub struct Frame {
     pub dst_position: PixelPosition,
     pub anchor: Option<AnchorName>,
     pub animation: Animation,
+    // TODO: pixels
 }
 
 impl Frame {
@@ -1153,7 +1080,7 @@ impl Mode {
         }
     }
 
-    pub fn editing_pixels(&self) -> impl '_ + Iterator<Item = (PixelPositionDelta, ColorIndex)> {
+    pub fn editing_pixels(&self) -> impl '_ + Iterator<Item = (PixelPositionDelta, Color)> {
         if let Self::Editing(buffer) = self {
             Some(buffer.pixels.iter().map(|(p, c)| (*p, *c)))
         } else {
@@ -1202,8 +1129,8 @@ impl EditHistory {
     pub fn record_draw(
         &mut self,
         position: PixelPosition,
-        new_color: ColorIndex,
-        old_color: Option<ColorIndex>,
+        new_color: Color,
+        old_color: Option<Color>,
     ) {
         if let Some(old_color) = old_color {
             self.history.push(Edit::PixelErase {
@@ -1217,7 +1144,7 @@ impl EditHistory {
         });
     }
 
-    pub fn record_erase(&mut self, position: PixelPosition, color: ColorIndex) {
+    pub fn record_erase(&mut self, position: PixelPosition, color: Color) {
         self.history.push(Edit::PixelErase { position, color });
     }
 
@@ -1258,10 +1185,10 @@ impl EditHistory {
 pub enum Edit {
     PixelDraw {
         position: PixelPosition,
-        color: ColorIndex,
+        color: Color,
     },
     PixelErase {
         position: PixelPosition,
-        color: ColorIndex,
+        color: Color,
     },
 }
