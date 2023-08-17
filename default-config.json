@@ -46,6 +46,6 @@
         "Ctrl+c": "quit"
     },
     "init": [
-        {"anchor": "origin"},
+        {"anchor": "origin"}
     ]
 }

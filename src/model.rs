@@ -671,6 +671,12 @@ pub struct StashBuffer {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct AnchorName(pub String);
 
+impl AnchorName {
+    pub fn new(name: &str) -> Self {
+        Self(name.to_string())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum CameraPosition {
