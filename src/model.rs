@@ -122,9 +122,7 @@ impl Model {
 
     // TOD: rename
     pub fn redo(&mut self, command: &Command) -> pagurus::Result<bool> {
-        self.edit_history.start_editing();
         let applied = self.redo_command(command).or_fail()?;
-        self.edit_history.finish_editing();
 
         if let Some(mut marker) = self.mode.take_marker() {
             marker.handle_command(command, self);
@@ -296,11 +294,13 @@ impl Model {
             .editing_pixels()
             .map(|(p, color_index)| (self.cursor.position + p, color_index));
 
+        self.edit_history.start_editing();
         for (position, color) in pixels {
             // TODO: validate whether the color index exists
             let old = self.pixels.insert(position, color);
             self.edit_history.record_draw(position, color, old);
         }
+        self.edit_history.finish_editing();
 
         Ok(())
     }
@@ -384,11 +384,13 @@ impl Model {
             return Ok(());
         };
 
+        self.edit_history.start_editing();
         let color = self.dot_color();
         for pixel in marker.marked_pixels() {
             let old = self.pixels.insert(pixel, color);
             self.edit_history.record_draw(pixel, color, old);
         }
+        self.edit_history.finish_editing();
 
         Ok(())
     }
@@ -398,11 +400,13 @@ impl Model {
             return Ok(());
         };
 
+        self.edit_history.start_editing();
         for pixel in marker.marked_pixels() {
             if let Some(color) = self.pixels.remove(&pixel) {
                 self.edit_history.record_erase(pixel, color);
             }
         }
+        self.edit_history.finish_editing();
 
         Ok(())
     }
