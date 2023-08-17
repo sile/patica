@@ -28,6 +28,8 @@ pub struct Model {
     mode: Mode,
     scale: Scale,
     applied_commands: Vec<Command>, // dirty_commands (?)
+    // for undo / redo
+    edit_history: EditHistory,
 }
 
 impl Model {
@@ -120,8 +122,11 @@ impl Model {
         self.palette.get(self.dot_color)
     }
 
+    // TOD: rename
     pub fn redo(&mut self, command: &Command) -> pagurus::Result<bool> {
+        self.edit_history.start_editing();
         let applied = self.redo_command(command).or_fail()?;
+        self.edit_history.finish_editing();
 
         if let Some(mut marker) = self.mode.take_marker() {
             marker.handle_command(command, self);
@@ -194,8 +199,38 @@ impl Model {
             }
             Command::If(c) => self.handle_if_command(c).or_fail()?,
             Command::Scale(n) => self.handle_scale_command(*n).or_fail()?,
+            Command::Undo => self.handle_undo_command().or_fail()?,
+            Command::Redo => self.handle_redo_command().or_fail()?,
         }
         Ok(true)
+    }
+
+    fn handle_undo_command(&mut self) -> pagurus::Result<()> {
+        for edit in self.edit_history.undo() {
+            match edit {
+                Edit::PixelDraw { position, color } => {
+                    (self.pixels.remove(&position) == Some(color)).or_fail()?;
+                }
+                Edit::PixelErase { position, color } => {
+                    self.pixels.insert(position, color).is_none().or_fail()?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_redo_command(&mut self) -> pagurus::Result<()> {
+        for edit in self.edit_history.redo() {
+            match edit {
+                Edit::PixelDraw { position, color } => {
+                    self.pixels.insert(position, color).is_none().or_fail()?;
+                }
+                Edit::PixelErase { position, color } => {
+                    (self.pixels.remove(&position) == Some(color)).or_fail()?;
+                }
+            }
+        }
+        Ok(())
     }
 
     fn handle_scale_command(&mut self, n: isize) -> pagurus::Result<()> {
@@ -267,9 +302,11 @@ impl Model {
             .map(|(p, color_index)| (self.cursor.position + p, color_index));
 
         for (position, color) in pixels {
-            // TODO: validate whether the index exists
-            self.pixels.insert(position, color);
+            // TODO: validate whether the color index exists
+            let old = self.pixels.insert(position, color);
+            self.edit_history.record_draw(position, color, old);
         }
+
         Ok(())
     }
 
@@ -284,6 +321,7 @@ impl Model {
                 buffer
                     .pixels
                     .insert(self.cursor.position.delta(pixel), color);
+                self.edit_history.record_erase(pixel, color);
             }
         }
         self.mode = Mode::Editing(buffer);
@@ -374,9 +412,12 @@ impl Model {
         let Some(marker) = self.mode.take_marker() else {
             return Ok(());
         };
+
         for pixel in marker.marked_pixels() {
-            self.pixels.insert(pixel, self.dot_color);
+            let old = self.pixels.insert(pixel, self.dot_color);
+            self.edit_history.record_draw(pixel, self.dot_color, old);
         }
+
         Ok(())
     }
 
@@ -384,9 +425,13 @@ impl Model {
         let Some(marker) = self.mode.take_marker() else {
             return Ok(());
         };
+
         for pixel in marker.marked_pixels() {
-            self.pixels.remove(&pixel);
+            if let Some(color) = self.pixels.remove(&pixel) {
+                self.edit_history.record_erase(pixel, color);
+            }
         }
+
         Ok(())
     }
 
@@ -507,6 +552,7 @@ pub enum SetCommand {
     Cursor(AnchorName),
     Camera(CameraPosition),
     Background(Background),
+    // TODO(?): Marker? (and make the marker command no arguments)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -571,6 +617,8 @@ pub enum Command {
     //     "marking": [],
     //     "editing": []
     // }},
+    Undo,
+    Redo,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -1129,4 +1177,91 @@ impl Default for Scale {
     fn default() -> Self {
         Self(NonZeroUsize::new(1).expect("unreachable"))
     }
+}
+
+#[derive(Debug, Default)]
+pub struct EditHistory {
+    history: Vec<Edit>,
+    undo_indices: Vec<usize>,
+    redo_indices: Vec<usize>,
+}
+
+impl EditHistory {
+    pub fn start_editing(&mut self) {
+        self.undo_indices.push(self.history.len());
+    }
+
+    pub fn finish_editing(&mut self) {
+        if self.undo_indices.last().copied() == Some(self.history.len()) {
+            self.undo_indices.pop();
+        } else {
+            self.redo_indices.clear();
+        }
+    }
+
+    pub fn record_draw(
+        &mut self,
+        position: PixelPosition,
+        new_color: ColorIndex,
+        old_color: Option<ColorIndex>,
+    ) {
+        if let Some(old_color) = old_color {
+            self.history.push(Edit::PixelErase {
+                position,
+                color: old_color,
+            });
+        }
+        self.history.push(Edit::PixelDraw {
+            position,
+            color: new_color,
+        });
+    }
+
+    pub fn record_erase(&mut self, position: PixelPosition, color: ColorIndex) {
+        self.history.push(Edit::PixelErase { position, color });
+    }
+
+    pub fn undo(&mut self) -> impl '_ + Iterator<Item = Edit> {
+        if let Some(start) = self.undo_indices.pop() {
+            let end = self
+                .redo_indices
+                .last()
+                .copied()
+                .unwrap_or_else(|| self.history.len());
+            self.redo_indices.push(start);
+            Some(self.history[start..end].iter().copied().rev())
+                .into_iter()
+                .flatten()
+        } else {
+            None.into_iter().flatten()
+        }
+    }
+
+    pub fn redo(&mut self) -> impl '_ + Iterator<Item = Edit> {
+        if let Some(start) = self.redo_indices.pop() {
+            self.undo_indices.push(start);
+            let end = self
+                .redo_indices
+                .last()
+                .copied()
+                .unwrap_or_else(|| self.history.len());
+            Some(self.history[start..end].iter().copied())
+                .into_iter()
+                .flatten()
+        } else {
+            None.into_iter().flatten()
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Edit {
+    PixelDraw {
+        position: PixelPosition,
+        color: ColorIndex,
+    },
+    PixelErase {
+        position: PixelPosition,
+        color: ColorIndex,
+    },
 }

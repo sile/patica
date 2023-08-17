@@ -29,6 +29,9 @@
         "p": "pick",
         "c": "cut",
 
+        "+": {"scale": 1},
+        "-": {"scale": -1},
+
         "m": {"mark": "stroke"},
         "Esc": "cancel",
         "e": "erase",
@@ -39,6 +42,9 @@
             "marking": ["draw"],
             "editing": ["paste", "cancel"]
         }},
+
+        "Ctrl+z": "undo",
+        "Ctrl+y": "redo",
 
         "q": "quit",
         "Ctrl+c": "quit"
