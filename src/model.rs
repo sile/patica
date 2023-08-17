@@ -174,6 +174,14 @@ impl Model {
             Command::Pick => {
                 if let Some(color) = self.pixels.get(&self.cursor.position).copied() {
                     self.dot_color = Some(color);
+                } else {
+                    // TODO
+                    for frame in self.frames.values() {
+                        if let Some(color) = frame.get_pixel_color(self.cursor.position) {
+                            self.dot_color = Some(color);
+                            break;
+                        }
+                    }
                 }
             }
             Command::Cut => {
@@ -871,6 +879,11 @@ impl EmbeddedFrame {
     pub fn pixels(&self) -> impl '_ + Iterator<Item = (PixelPosition, Color)> {
         self.frame.pixels().map(|(p, c)| (p + self.position, c))
     }
+
+    pub fn get_pixel_color(&self, position: PixelPosition) -> Option<Color> {
+        self.frame
+            .get_pixel_color((position - self.position).to_xy().into())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -900,6 +913,14 @@ impl Frame {
             && self.start == other.start
             && self.end == other.end
             && self.animation == other.animation
+    }
+
+    pub fn get_pixel_color(&self, position: PixelPosition) -> Option<Color> {
+        self.pixels
+            .0
+            .get(position.y as usize)
+            .and_then(|row| row.get(position.x as usize).copied())
+            .flatten()
     }
 }
 
