@@ -4,7 +4,7 @@ use crate::{
     model::{Command, CommandOrCommands},
 };
 use pagurus::{failure::OrFail, Game};
-use pagurus_tui::TuiSystem;
+use pagurus_tui::{TuiSystem, TuiSystemOptions};
 use std::{
     io::{BufRead, BufWriter},
     num::NonZeroUsize,
@@ -83,7 +83,11 @@ impl OpenCommand {
             journal.append_applied_commands().or_fail()?;
         }
 
-        let mut system = TuiSystem::new().or_fail()?;
+        let options = TuiSystemOptions {
+            disable_mouse: true,
+            ..Default::default()
+        };
+        let mut system = TuiSystem::with_options(options).or_fail()?;
         let mut game = crate::game::Game::default();
 
         game.set_config(config);

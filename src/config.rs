@@ -27,14 +27,13 @@ impl Config {
         }
 
         let json = std::fs::read_to_string(&path)
-            .or_fail()
-            .map_err(|f| f.message(format!("Failed to read config file: {}", path.display())))?;
+            .or_fail_with(|e| format!("Failed to read config file {}: {e}", path.display()))?;
         serde_json::from_str(&json)
-            .map_err(|e| {
-                Failure::new().message(format!(
+            .or_fail_with(|e| {
+                format!(
                     "Failed to parse config file: path={}, reason={e}",
                     path.display()
-                ))
+                )
             })
             .map(Some)
     }
@@ -124,8 +123,7 @@ impl TryFrom<String> for Key {
 
         let last = tokens
             .pop()
-            .or_fail()
-            .map_err(|f| f.message("Empty key string"))?;
+            .or_fail_with(|()| "Empty key string".to_owned())?;
         let key = match last {
             "Enter" => pagurus::event::Key::Return,
             "Left" => pagurus::event::Key::Left,
@@ -172,15 +170,15 @@ impl TryFrom<String> for Key {
                 | '\''
                 | '`'
                 | '~') => pagurus::event::Key::Char(c),
-                _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
+                _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
             },
-            _ => return Err(Failure::new().message(format!("Unknown key: {last:?}"))),
+            _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
         };
         for token in tokens {
             match token {
                 "Ctrl" => ctrl = true,
                 "Alt" => alt = true,
-                _ => return Err(Failure::new().message(format!("Unknown key modifier: {token:?}"))),
+                _ => return Err(Failure::new(format!("Unknown key modifier: {token:?}"))),
             }
         }
 
