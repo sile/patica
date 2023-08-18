@@ -216,7 +216,10 @@ impl Model {
     }
 
     fn handle_flip_command(&mut self, orientation: Orientation) -> pagurus::Result<()> {
-        todo!()
+        if let Mode::Editing(buf) = &mut self.mode {
+            buf.flip(orientation);
+        }
+        Ok(())
     }
 
     fn handle_undo_command(&mut self) -> pagurus::Result<()> {
@@ -311,6 +314,7 @@ impl Model {
             return Ok(());
         };
 
+        self.edit_history.start_editing();
         let mut buffer = StashBuffer::default();
         for pixel in marker.marked_pixels() {
             if let Some(color) = self.pixels.remove(&pixel) {
@@ -321,6 +325,7 @@ impl Model {
             }
         }
         self.mode = Mode::Editing(buffer);
+        self.edit_history.finish_editing();
 
         Ok(())
     }
@@ -570,6 +575,20 @@ pub struct PixelPositionDelta {
 }
 
 impl PixelPositionDelta {
+    fn flip(mut self, orientation: Orientation, center: PixelPositionDelta) -> Self {
+        match orientation {
+            Orientation::Horizontal => {
+                self.x = center.x - (self.x - center.x);
+            }
+            Orientation::Vertical => {
+                self.y = center.y - (self.y - center.y);
+            }
+        }
+        self
+    }
+}
+
+impl PixelPositionDelta {
     pub const fn from_xy(x: i16, y: i16) -> Self {
         Self { x, y }
     }
@@ -658,6 +677,40 @@ impl From<PixelPosition> for Position {
 #[derive(Debug, Default, Clone)]
 pub struct StashBuffer {
     pixels: BTreeMap<PixelPositionDelta, Color>,
+}
+
+impl StashBuffer {
+    fn flip(&mut self, orientation: Orientation) {
+        let center = self.center();
+        self.pixels = self
+            .pixels
+            .iter()
+            .map(|(p, c)| (p.flip(orientation, center), *c))
+            .collect();
+    }
+
+    fn center(&self) -> PixelPositionDelta {
+        if self.pixels.is_empty() {
+            return PixelPositionDelta::default();
+        }
+
+        let mut min_x = i16::MAX;
+        let mut min_y = i16::MAX;
+        let mut max_x = i16::MIN;
+        let mut max_y = i16::MIN;
+
+        for position in self.pixels.keys() {
+            min_x = min_x.min(position.x);
+            min_y = min_y.min(position.y);
+            max_x = max_x.max(position.x);
+            max_y = max_y.max(position.y);
+        }
+
+        PixelPositionDelta {
+            x: (max_x - min_x) / 2 + min_x,
+            y: (max_y - min_y) / 2 + min_y,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
