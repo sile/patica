@@ -39,6 +39,10 @@ impl Metadata {
         self.0.insert(name, value);
     }
 
+    pub fn remove(&mut self, name: &str) -> Option<serde_json::Value> {
+        self.0.remove(name)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = (&String, &serde_json::Value)> {
         self.0.iter()
     }

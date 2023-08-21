@@ -1,6 +1,6 @@
 use crate::{
     color::{Color, Rgba},
-    command::{Command, Metadata, PutCommand},
+    command::{Command, Metadata, PutCommand, RemoveCommand},
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
@@ -46,7 +46,7 @@ impl Canvas {
     pub fn apply(&mut self, command: Command) -> bool {
         let applied = match command {
             Command::Put(c) => self.handle_put_command(c),
-            Command::Remove(_) => todo!(),
+            Command::Remove(c) => self.handle_remove_command(c),
         };
         applied
     }
@@ -54,12 +54,21 @@ impl Canvas {
     fn handle_put_command(&mut self, command: PutCommand) -> bool {
         match command {
             PutCommand::Metadata(m) => {
+                if m.is_empty() {
+                    return false;
+                }
                 for (name, value) in m.into_iter() {
                     self.metadata.put(name, value);
                 }
             }
         }
         true
+    }
+
+    fn handle_remove_command(&mut self, command: RemoveCommand) -> bool {
+        match command {
+            RemoveCommand::Metadata(name) => self.metadata.remove(&name).is_some(),
+        }
     }
 }
 
