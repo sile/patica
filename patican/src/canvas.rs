@@ -5,21 +5,69 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
+pub trait History {
+    fn len(&self) -> usize;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    fn append_command(&mut self, command: Command);
+    fn get_redo_command(&self, index: usize) -> Option<&Command>;
+    fn get_undo_command(&self, index: usize) -> Option<&Command>;
+}
+
+// TODO: PerfectHistory or FullHistory
+
+#[derive(Debug, Default, Clone)]
+pub struct NoopHistory {
+    len: usize,
+}
+
+impl NoopHistory {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl History for NoopHistory {
+    fn append_command(&mut self, _command: Command) {}
+
+    fn len(&self) -> usize {
+        self.len
+    }
+
+    fn get_redo_command(&self, _index: usize) -> Option<&Command> {
+        None
+    }
+
+    fn get_undo_command(&self, _index: usize) -> Option<&Command> {
+        None
+    }
+}
+
 #[derive(Debug, Clone)]
-pub struct Canvas {
+pub struct Canvas<H> {
     cursor: Point,
     brush_color: Color,
     pixels: Pixels,
     metadata: Metadata,
+    history: H,
 }
 
-impl Canvas {
+impl<H: Default> Canvas<H> {
     pub fn new() -> Self {
+        Self::with_history(H::default())
+    }
+}
+
+impl<H> Canvas<H> {
+    pub fn with_history(history: H) -> Self {
         Self {
             cursor: Point::default(),
             brush_color: Color::rgb(0, 0, 0),
             pixels: Pixels::default(),
             metadata: Metadata::default(),
+            history,
         }
     }
 
@@ -39,40 +87,53 @@ impl Canvas {
         &self.pixels
     }
 
+    pub fn history(&self) -> &H {
+        &self.history
+    }
+
+    pub fn history_mut(&mut self) -> &mut H {
+        &mut self.history
+    }
+
     pub fn drawing_area(&self) -> RectangularArea {
         RectangularArea::from_points(self.pixels.iter().map(|(point, _)| point))
     }
+}
 
+impl<H: History> Canvas<H> {
     pub fn apply(&mut self, command: Command) -> bool {
-        let applied = match command {
+        let applied = match &command {
             Command::Put(c) => self.handle_put_command(c),
             Command::Remove(c) => self.handle_remove_command(c),
         };
+        if applied {
+            self.history.append_command(command);
+        }
         applied
     }
 
-    fn handle_put_command(&mut self, command: PutCommand) -> bool {
+    fn handle_put_command(&mut self, command: &PutCommand) -> bool {
         match command {
             PutCommand::Metadata(m) => {
                 if m.is_empty() {
                     return false;
                 }
-                for (name, value) in m.into_iter() {
-                    self.metadata.put(name, value);
+                for (name, value) in m.iter() {
+                    self.metadata.put(name.clone(), value.clone());
                 }
             }
         }
         true
     }
 
-    fn handle_remove_command(&mut self, command: RemoveCommand) -> bool {
+    fn handle_remove_command(&mut self, command: &RemoveCommand) -> bool {
         match command {
-            RemoveCommand::Metadata(name) => self.metadata.remove(&name).is_some(),
+            RemoveCommand::Metadata(name) => self.metadata.remove(name).is_some(),
         }
     }
 }
 
-impl Default for Canvas {
+impl<H: Default> Default for Canvas<H> {
     fn default() -> Self {
         Self::new()
     }
