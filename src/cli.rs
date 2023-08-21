@@ -85,7 +85,6 @@ impl OpenCommand {
 
         let options = TuiSystemOptions {
             disable_mouse: true,
-            ..Default::default()
         };
         let mut system = TuiSystem::with_options(options).or_fail()?;
         let mut game = crate::game::Game::default();

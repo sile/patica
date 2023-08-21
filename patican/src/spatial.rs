@@ -32,9 +32,9 @@ impl From<(i16, i16)> for Point {
     }
 }
 
-impl Into<(i16, i16)> for Point {
-    fn into(self) -> (i16, i16) {
-        (self.x, self.y)
+impl From<Point> for (i16, i16) {
+    fn from(point: Point) -> Self {
+        (point.x, point.y)
     }
 }
 
