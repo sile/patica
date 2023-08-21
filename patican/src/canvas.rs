@@ -1,5 +1,6 @@
 use crate::{
     color::{Color, Rgba},
+    command::{Command, Metadata, PutCommand},
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
@@ -9,6 +10,7 @@ pub struct Canvas {
     cursor: Point,
     brush_color: Color,
     pixels: Pixels,
+    metadata: Metadata,
 }
 
 impl Canvas {
@@ -17,6 +19,7 @@ impl Canvas {
             cursor: Point::default(),
             brush_color: Color::rgb(0, 0, 0),
             pixels: Pixels::default(),
+            metadata: Metadata::default(),
         }
     }
 
@@ -28,12 +31,35 @@ impl Canvas {
         self.brush_color
     }
 
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
+    }
+
     pub fn pixels(&self) -> &Pixels {
         &self.pixels
     }
 
     pub fn drawing_area(&self) -> RectangularArea {
         RectangularArea::from_points(self.pixels.iter().map(|(point, _)| point))
+    }
+
+    pub fn apply(&mut self, command: Command) -> bool {
+        let applied = match command {
+            Command::Put(c) => self.handle_put_command(c),
+            Command::Remove(_) => todo!(),
+        };
+        applied
+    }
+
+    fn handle_put_command(&mut self, command: PutCommand) -> bool {
+        match command {
+            PutCommand::Metadata(m) => {
+                for (name, value) in m.into_iter() {
+                    self.metadata.put(name, value);
+                }
+            }
+        }
+        true
     }
 }
 

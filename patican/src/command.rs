@@ -15,13 +15,43 @@ pub enum Command {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PutCommand {
-    Frame,
-    Metadata(BTreeMap<String, serde_json::Value>),
+    //Frame,
+    Metadata(Metadata),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RemoveCommand {
-    Frame(String),
+    //Frame(String),
     Metadata(String),
+}
+
+// TODO: move
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Metadata(BTreeMap<String, serde_json::Value>);
+
+impl Metadata {
+    pub fn get(&self, name: &str) -> Option<&serde_json::Value> {
+        self.0.get(name)
+    }
+
+    pub fn put(&mut self, name: String, value: serde_json::Value) {
+        self.0.insert(name, value);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &serde_json::Value)> {
+        self.0.iter()
+    }
+
+    pub fn into_iter(self) -> impl Iterator<Item = (String, serde_json::Value)> {
+        self.0.into_iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
