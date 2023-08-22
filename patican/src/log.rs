@@ -1,33 +1,28 @@
+use crate::command::Command;
 use std::collections::VecDeque;
 
-use crate::command::Command;
-
-pub trait History {
-    fn len(&self) -> usize;
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
+pub trait CommandLog {
+    fn command_len(&self) -> usize;
     fn append_command(&mut self, command: Command);
     fn get_redo_command(&self, index: usize) -> Option<&Command>;
     fn get_undo_command(&self, index: usize) -> Option<&Command>;
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct NullHistory {
+pub struct NullCommandLog {
     len: usize,
 }
 
-impl NullHistory {
+impl NullCommandLog {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl History for NullHistory {
+impl CommandLog for NullCommandLog {
     fn append_command(&mut self, _command: Command) {}
 
-    fn len(&self) -> usize {
+    fn command_len(&self) -> usize {
         self.len
     }
 
@@ -41,27 +36,27 @@ impl History for NullHistory {
 }
 
 #[derive(Debug, Clone)]
-pub struct FullHistory(LimitedHistory);
+pub struct FullCommandLog(LimitedCommandLog);
 
-impl FullHistory {
+impl FullCommandLog {
     pub fn new() -> Self {
-        Self(LimitedHistory::new(usize::MAX))
+        Self(LimitedCommandLog::new(usize::MAX))
     }
 }
 
-impl Default for FullHistory {
+impl Default for FullCommandLog {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl History for FullHistory {
+impl CommandLog for FullCommandLog {
     fn append_command(&mut self, command: Command) {
         self.0.append_command(command);
     }
 
-    fn len(&self) -> usize {
-        self.0.len()
+    fn command_len(&self) -> usize {
+        self.0.command_len()
     }
 
     fn get_redo_command(&self, index: usize) -> Option<&Command> {
@@ -74,13 +69,13 @@ impl History for FullHistory {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct LimitedHistory {
+pub struct LimitedCommandLog {
     limit: usize,
     len: usize,
     commands: VecDeque<Command>,
 }
 
-impl LimitedHistory {
+impl LimitedCommandLog {
     pub fn new(limit: usize) -> Self {
         Self {
             limit,
@@ -90,8 +85,8 @@ impl LimitedHistory {
     }
 }
 
-impl History for LimitedHistory {
-    fn len(&self) -> usize {
+impl CommandLog for LimitedCommandLog {
+    fn command_len(&self) -> usize {
         self.len
     }
 

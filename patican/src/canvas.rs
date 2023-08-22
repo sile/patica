@@ -1,37 +1,33 @@
 use crate::{
     color::{Color, Rgba},
     command::{Command, Metadata, PutCommand, RemoveCommand},
-    history::History,
+    log::CommandLog,
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
-pub struct Canvas<H> {
+pub struct Canvas<L> {
     cursor: Point,
     brush_color: Color,
     pixels: Pixels,
     metadata: Metadata,
-    history: H,
+    log: L,
 }
 
-impl<H: Default> Canvas<H> {
+impl<L: Default> Canvas<L> {
     pub fn new() -> Self {
-        Self::with_history(H::default())
-    }
-}
-
-impl<H> Canvas<H> {
-    pub fn with_history(history: H) -> Self {
         Self {
             cursor: Point::default(),
             brush_color: Color::rgb(0, 0, 0),
             pixels: Pixels::default(),
             metadata: Metadata::default(),
-            history,
+            log: L::default(),
         }
     }
+}
 
+impl<L> Canvas<L> {
     pub fn cursor(&self) -> Point {
         self.cursor
     }
@@ -48,12 +44,12 @@ impl<H> Canvas<H> {
         &self.pixels
     }
 
-    pub fn history(&self) -> &H {
-        &self.history
+    pub fn history(&self) -> &L {
+        &self.log
     }
 
-    pub fn history_mut(&mut self) -> &mut H {
-        &mut self.history
+    pub fn history_mut(&mut self) -> &mut L {
+        &mut self.log
     }
 
     pub fn drawing_area(&self) -> RectangularArea {
@@ -61,14 +57,14 @@ impl<H> Canvas<H> {
     }
 }
 
-impl<H: History> Canvas<H> {
+impl<L: CommandLog> Canvas<L> {
     pub fn apply(&mut self, command: Command) -> bool {
         let applied = match &command {
             Command::Put(c) => self.handle_put_command(c),
             Command::Remove(c) => self.handle_remove_command(c),
         };
         if applied {
-            self.history.append_command(command);
+            self.log.append_command(command);
         }
         applied
     }
