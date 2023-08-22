@@ -1,8 +1,8 @@
 use crate::{
     color::{Color, Rgba},
-    command::{Command, Metadata, PutCommand, RemoveCommand},
+    command::{Command, Metadata, MoveDestination, PutCommand, RemoveCommand},
     editor::Editor,
-    marker::Marker,
+    marker::{MarkKind, Marker},
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
@@ -22,7 +22,40 @@ impl CanvasStateMachine {
         match &command {
             Command::Put(c) => self.handle_put_command(c),
             Command::Remove(c) => self.handle_remove_command(c),
+            Command::Mark(c) => self.handle_mark_command(*c),
+            Command::Move(c) => self.handle_move_command(c),
+            Command::Color => self.handle_color_command(),
         }
+    }
+
+    fn handle_color_command(&mut self) -> bool {
+        if let Fsm::Marking(m) = &mut self.fsm {
+            let color = self.brush_color.to_rgba();
+            for point in m.marked_points() {
+                self.pixels.0.insert(point, color);
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    fn handle_move_command(&mut self, dst: &MoveDestination) -> bool {
+        match dst {
+            MoveDestination::Delta(delta) => {
+                let old = self.cursor;
+                self.cursor = old + *delta;
+                if let Fsm::Marking(m) = &mut self.fsm {
+                    m.handle_move(self.cursor);
+                }
+                self.cursor != old
+            }
+        }
+    }
+
+    fn handle_mark_command(&mut self, kind: MarkKind) -> bool {
+        self.fsm = Fsm::new_marking(kind, self);
+        true
     }
 
     fn handle_put_command(&mut self, command: &PutCommand) -> bool {
@@ -101,4 +134,10 @@ pub enum Fsm {
     Neutral,
     Marking(Marker),
     Editing(Editor),
+}
+
+impl Fsm {
+    fn new_marking(kind: MarkKind, machine: &CanvasStateMachine) -> Self {
+        Self::Marking(Marker::new(kind, machine))
+    }
 }

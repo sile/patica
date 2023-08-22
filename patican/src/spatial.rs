@@ -14,6 +14,14 @@ impl Point {
     }
 }
 
+impl std::ops::Add for Point {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::new(self.x.saturating_add(rhs.x), self.y.saturating_add(rhs.y))
+    }
+}
+
 impl PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some((self.y, self.x).cmp(&(other.y, other.x)))

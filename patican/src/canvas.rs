@@ -5,6 +5,7 @@ use crate::{
     log::CommandLog,
     spatial::Point,
 };
+use std::io::Read;
 
 #[derive(Debug, Clone)]
 pub struct Canvas<L> {
@@ -12,16 +13,23 @@ pub struct Canvas<L> {
     log: L,
 }
 
-impl<L: Default> Canvas<L> {
+impl<L: CommandLog + Default> Canvas<L> {
     pub fn new() -> Self {
         Self {
             machine: CanvasStateMachine::default(),
             log: L::default(),
         }
     }
-}
 
-impl<L> Canvas<L> {
+    pub fn load<R: Read>(log_reader: R) -> serde_json::Result<Self> {
+        let mut canvas = Self::new();
+        for command in serde_json::Deserializer::from_reader(log_reader).into_iter::<Command>() {
+            let command = command?;
+            canvas.apply(command);
+        }
+        Ok(canvas)
+    }
+
     pub fn cursor(&self) -> Point {
         self.machine.cursor
     }
@@ -38,16 +46,14 @@ impl<L> Canvas<L> {
         &self.machine.pixels
     }
 
-    pub fn history(&self) -> &L {
+    pub fn log(&self) -> &L {
         &self.log
     }
 
-    pub fn history_mut(&mut self) -> &mut L {
+    pub fn log_mut(&mut self) -> &mut L {
         &mut self.log
     }
-}
 
-impl<L: CommandLog> Canvas<L> {
     pub fn apply(&mut self, command: Command) -> bool {
         let applied = self.machine.apply(&command);
         if applied {
@@ -57,7 +63,7 @@ impl<L: CommandLog> Canvas<L> {
     }
 }
 
-impl<H: Default> Default for Canvas<H> {
+impl<H: CommandLog + Default> Default for Canvas<H> {
     fn default() -> Self {
         Self::new()
     }
