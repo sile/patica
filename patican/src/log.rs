@@ -104,7 +104,7 @@ impl CommandLog for LimitedCommandLog {
         self.commands.get(i)
     }
 
-    fn get_undo_command(&self, index: usize) -> Option<&Command> {
+    fn get_undo_command(&self, _index: usize) -> Option<&Command> {
         todo!()
     }
 }

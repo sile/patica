@@ -24,6 +24,12 @@ impl Color {
     }
 }
 
+impl Default for Color {
+    fn default() -> Self {
+        Self::rgb(0, 0, 0)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(into = "(u8,u8,u8)", from = "(u8,u8,u8)")]
 pub struct Rgb {
