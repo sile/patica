@@ -55,7 +55,7 @@ impl<L: CommandLog> Canvas<L> {
     pub fn apply(&mut self, command: Command) -> bool {
         let applied = self.machine.apply(&command);
         if applied {
-            self.log.append_command(command);
+            self.log.append_command(command, &self.machine);
         }
         applied
     }
