@@ -1,7 +1,7 @@
 use crate::{
     config::Config,
-    model::{GameClock, Model},
     view::{View, ViewContext},
+    Model,
 };
 use pagurus::{
     event::{Event, TimeoutTag},
@@ -10,16 +10,40 @@ use pagurus::{
     video::VideoFrame,
     Result, System,
 };
-use std::sync::Arc;
 use std::time::Duration;
+use std::{num::NonZeroU64, sync::Arc};
 
 const FPS: u32 = 30;
 const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
+
+// TODO: delete
+#[derive(Debug, Clone, Copy)]
+pub struct GameClock {
+    pub ticks: u64,
+    pub fps: NonZeroU64,
+}
+
+impl GameClock {
+    pub const fn new(fps: NonZeroU64) -> Self {
+        Self { ticks: 0, fps }
+    }
+
+    pub fn tick(&mut self) {
+        self.ticks += 1;
+    }
+}
+
+impl Default for GameClock {
+    fn default() -> Self {
+        Self::new(NonZeroU64::new(30).expect("unreachable"))
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct Game {
     video_frame: VideoFrame,
     view: View,
+    // TODO: rename
     model: Option<Model>,
     config: Arc<Config>,
     clock: GameClock,

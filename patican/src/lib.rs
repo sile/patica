@@ -9,5 +9,6 @@ pub mod marker;
 pub mod spatial;
 
 pub use self::canvas::Canvas;
+pub use self::color::Rgba;
 pub use self::command::Command;
 pub use self::log::{CommandLog, FullCommandLog, LimitedCommandLog, NullCommandLog};

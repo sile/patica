@@ -3,6 +3,7 @@ use crate::{
     color::Color,
     command::{Command, Metadata},
     log::CommandLog,
+    marker::Marker,
     spatial::Point,
 };
 use std::io::Read;
@@ -52,6 +53,10 @@ impl<L: CommandLog + Default> Canvas<L> {
 
     pub fn log_mut(&mut self) -> &mut L {
         &mut self.log
+    }
+
+    pub fn marker(&self) -> Option<&Marker> {
+        self.machine.fsm.as_marker()
     }
 
     pub fn apply(&mut self, command: Command) -> bool {

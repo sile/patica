@@ -68,6 +68,13 @@ impl RectangularArea {
         }
     }
 
+    pub fn contains(self, point: Point) -> bool {
+        self.top_left.x <= point.x
+            && self.top_left.y <= point.y
+            && self.bottom_right.x >= point.x
+            && self.bottom_right.y >= point.y
+    }
+
     pub fn is_empty(self) -> bool {
         self.top_left.x > self.bottom_right.x || self.top_left.y > self.bottom_right.y
     }

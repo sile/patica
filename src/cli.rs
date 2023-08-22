@@ -1,22 +1,18 @@
 use crate::{
     config::Config,
     journal::JournaledModel,
-    model::{Command, CommandOrCommands},
+    //model::{Command, CommandOrCommands},
 };
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use std::{
-    io::{BufRead, BufWriter},
-    num::NonZeroUsize,
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
 pub enum Args {
     Open(OpenCommand),
-    Apply(ApplyCommand),
-    Export(ExportCommand),
+    // TODO: Apply(ApplyCommand),
+    // TODO: Export(ExportCommand),
     // Include (set-origin -> cut -> reset-origin)
     // Summary
     // ShowStatusLine
@@ -27,40 +23,40 @@ impl Args {
     pub fn run(&self) -> pagurus::Result<()> {
         match self {
             Self::Open(cmd) => cmd.run().or_fail(),
-            Self::Apply(cmd) => cmd.run().or_fail(),
-            Self::Export(cmd) => cmd.run().or_fail(),
+            // Self::Apply(cmd) => cmd.run().or_fail(),
+            // Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
 }
 
-#[derive(Debug, clap::Args)]
-pub struct ApplyCommand {
-    path: PathBuf,
-}
+// #[derive(Debug, clap::Args)]
+// pub struct ApplyCommand {
+//     path: PathBuf,
+// }
 
-impl ApplyCommand {
-    fn run(&self) -> pagurus::Result<()> {
-        let mut journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
-        let mut commands = Vec::new();
-        let stdin = std::io::stdin();
+// impl ApplyCommand {
+//     fn run(&self) -> pagurus::Result<()> {
+//         let mut journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
+//         let mut commands = Vec::new();
+//         let stdin = std::io::stdin();
 
-        for line in stdin.lock().lines() {
-            let line = line.or_fail()?;
-            commands.extend(
-                serde_json::from_str::<CommandOrCommands>(&line)
-                    .or_fail()?
-                    .into_commands(),
-            );
-        }
+//         for line in stdin.lock().lines() {
+//             let line = line.or_fail()?;
+//             commands.extend(
+//                 serde_json::from_str::<CommandOrCommands>(&line)
+//                     .or_fail()?
+//                     .into_commands(),
+//             );
+//         }
 
-        for command in commands {
-            journal.model_mut().apply(command).or_fail()?;
-        }
-        journal.append_applied_commands().or_fail()?;
+//         for command in commands {
+//             journal.model_mut().apply(command).or_fail()?;
+//         }
+//         journal.append_applied_commands().or_fail()?;
 
-        Ok(())
-    }
-}
+//         Ok(())
+//     }
+// }
 
 #[derive(Debug, clap::Args)]
 pub struct OpenCommand {
@@ -72,17 +68,6 @@ impl OpenCommand {
         let config = Config::load_config_file().or_fail()?.unwrap_or_default();
 
         let mut journal = JournaledModel::open_or_create(&self.path).or_fail()?;
-        if journal.commands_len() == 0 {
-            journal
-                .model_mut()
-                .apply(Command::Header(Default::default()))
-                .or_fail()?;
-            for command in config.init.clone().into_commands() {
-                journal.model_mut().apply(command).or_fail()?;
-            }
-            journal.append_applied_commands().or_fail()?;
-        }
-
         let options = TuiSystemOptions {
             disable_mouse: true,
         };
@@ -106,34 +91,34 @@ impl OpenCommand {
     }
 }
 
-#[derive(Debug, clap::Args)]
-pub struct ExportCommand {
-    path: PathBuf,
+// #[derive(Debug, clap::Args)]
+// pub struct ExportCommand {
+//     path: PathBuf,
 
-    #[clap(short, long)]
-    output: Option<PathBuf>,
+//     #[clap(short, long)]
+//     output: Option<PathBuf>,
 
-    #[clap(long, default_value = "1")]
-    scale: NonZeroUsize,
-    // TODO: size, origin, anchor, tag
-}
+//     #[clap(long, default_value = "1")]
+//     scale: NonZeroUsize,
+//     // TODO: size, origin, anchor, tag
+// }
 
-impl ExportCommand {
-    fn run(&self) -> pagurus::Result<()> {
-        let journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
-        let output = self
-            .output
-            .clone()
-            .unwrap_or_else(|| self.path.with_extension("bmp"));
+// impl ExportCommand {
+//     fn run(&self) -> pagurus::Result<()> {
+//         let journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
+//         let output = self
+//             .output
+//             .clone()
+//             .unwrap_or_else(|| self.path.with_extension("bmp"));
 
-        crate::bmp::write_image(
-            BufWriter::new(std::fs::File::create(&output).or_fail()?),
-            journal.model().pixels_region(),
-            journal.model().pixels(),
-        )
-        .or_fail()?;
+//         crate::bmp::write_image(
+//             BufWriter::new(std::fs::File::create(&output).or_fail()?),
+//             journal.model().pixels_region(),
+//             journal.model().pixels(),
+//         )
+//         .or_fail()?;
 
-        println!("Exported to {}", output.display());
-        Ok(())
-    }
-}
+//         println!("Exported to {}", output.display());
+//         Ok(())
+//     }
+// }

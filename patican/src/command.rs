@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 
 use crate::{marker::MarkKind, spatial::Point};
 
+// TODO: pub trait Extension{}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
@@ -14,6 +16,7 @@ pub enum Command {
     // Dip(Color)
     // Pick
     // Erase
+    // Undo / Redo or Checkout
 }
 
 impl Command {

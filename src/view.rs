@@ -1,13 +1,13 @@
-use crate::{
-    config::Config,
-    marker::Marker,
-    model::{Background, Command, GameClock, Model, PixelPosition, PixelRegion, PixelSize},
-};
+use crate::{config::Config, game::GameClock, Model};
 use pagurus::{
     event::{Event, KeyEvent},
     failure::OrFail,
     image::{Canvas, Color},
     spatial::{Position, Size},
+};
+use patican::{
+    marker::Marker,
+    spatial::{Point, RectangularArea},
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,35 +28,38 @@ impl ViewContext {
     }
 
     fn scale(&self) -> usize {
-        self.model.scale().get()
+        // TODO: self.model.scale().get()
+        1
     }
 
-    fn to_canvas_position(&self, pixel_position: PixelPosition) -> Position {
+    fn to_position(&self, point: Point) -> Position {
         let center = self.scaled_window_size().to_region().center();
-        let position = (Position::from(pixel_position) + center)
-            - Position::from(self.model.camera().position);
+        let position = Position::from_xy(point.x as i32, point.y as i32) + center;
+
+        // TODO
+        // let position = (Position::from_xy(point.x as i32, point.y as i32) + center)
+        //     - Position::from(self.model.camera().position);
+
         position * self.scale() as u32
     }
 
-    fn visible_pixel_region(&self) -> PixelRegion {
+    fn visible_pixel_region(&self) -> RectangularArea {
         let center = self.scaled_window_size().to_region().center();
         let mut region = self.scaled_window_size().to_region();
-        region.position = (region.position - center) + Position::from(self.model.camera().position);
-        PixelRegion {
-            position: PixelPosition {
-                x: region.position.x as i16,
-                y: region.position.y as i16,
-            },
-            size: PixelSize {
-                width: region.size.width as u16,
-                height: region.size.height as u16,
-            },
-        }
+        region.position = region.position - center; // TODO: + Position::from(self.model.camera().position);
+        RectangularArea::from_points(
+            [
+                Point::new(region.start().x as i16, region.start().y as i16),
+                Point::new(region.end().x as i16, region.end().y as i16),
+            ]
+            .into_iter(),
+        )
     }
 }
 
-fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: PixelPosition, color: Color) {
-    let p = ctx.to_canvas_position(pixel_position);
+fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: Point, color: patican::Rgba) {
+    let color = Color::rgba(color.r, color.g, color.b, color.a);
+    let p = ctx.to_position(pixel_position);
     for y in 0..ctx.scale() {
         for x in 0..ctx.scale() {
             canvas.draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
@@ -76,31 +79,33 @@ impl View {
         self.canvas.render(ctx, canvas);
     }
 
-    fn render_frames(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        for frame in ctx.model.active_frames(ctx.clock) {
-            for (pixel_position, color) in frame.pixels() {
-                draw_pixel(ctx, canvas, pixel_position, color);
-            }
-        }
+    fn render_frames(&self, _ctx: &ViewContext, _canvas: &mut Canvas) {
+        // TODO:
+        // for frame in ctx.model.active_frames(ctx.clock) {
+        //     for (pixel_position, color) in frame.pixels() {
+        //         draw_pixel(ctx, canvas, pixel_position, color);
+        //     }
+        // }
     }
 
-    fn render_background(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        match ctx.model.background() {
-            Background::Color(c) => {
-                canvas.fill_color(*c);
-            }
-            Background::Checkerboard(c) => {
-                let n = c.dot_size.get() as i16;
-                for pixel_position in ctx.visible_pixel_region().positions() {
-                    let color = if (pixel_position.x / n + pixel_position.y / n) % 2 == 0 {
-                        c.color1
-                    } else {
-                        c.color2
-                    };
-                    draw_pixel(ctx, canvas, pixel_position, color);
-                }
-            }
-        }
+    fn render_background(&self, _ctx: &ViewContext, _canvas: &mut Canvas) {
+        // TODO
+        // match ctx.model.background() {
+        //     Background::Color(c) => {
+        //         canvas.fill_color(*c);
+        //     }
+        //     Background::Checkerboard(c) => {
+        //         let n = c.dot_size.get() as i16;
+        //         for pixel_position in ctx.visible_pixel_region().positions() {
+        //             let color = if (pixel_position.x / n + pixel_position.y / n) % 2 == 0 {
+        //                 c.color1
+        //             } else {
+        //                 c.color2
+        //             };
+        //             draw_pixel(ctx, canvas, pixel_position, color);
+        //         }
+        //     }
+        // }
     }
 
     pub fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
@@ -120,37 +125,36 @@ impl PixelCanvas {
         if let Some(marker) = ctx.model.marker() {
             self.render_marked_pixels(ctx, canvas, marker);
         }
-        if ctx.model.has_stashed_pixels() {
-            self.render_stashed_pixels(ctx, canvas);
-        }
+        // TODO
+        // if ctx.model.has_stashed_pixels() {
+        //     self.render_stashed_pixels(ctx, canvas);
+        // }
         self.render_cursor(ctx, canvas);
     }
 
     fn render_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         let region = ctx.visible_pixel_region();
 
-        // TODO: optimzie
-        for pixel_position in region.positions() {
-            if let Some(color) = ctx.model.get_pixel_color(pixel_position) {
-                draw_pixel(ctx, canvas, pixel_position, color);
-            }
-        }
-    }
-
-    fn render_stashed_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-        if ctx.now.as_millis() % 1000 < 500 {
-            return;
-        }
-
-        for (pixel_position, color) in ctx.model.stashed_pixels() {
+        for (pixel_position, color) in ctx.model.pixels().area(region) {
             draw_pixel(ctx, canvas, pixel_position, color);
         }
     }
 
+    fn render_stashed_pixels(&self, _ctx: &ViewContext, _canvas: &mut Canvas) {
+        // TODO
+        // if ctx.now.as_millis() % 1000 < 500 {
+        //     return;
+        // }
+
+        // for (pixel_position, color) in ctx.model.stashed_pixels() {
+        //     draw_pixel(ctx, canvas, pixel_position, color);
+        // }
+    }
+
     fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, marker: &Marker) {
         let region = ctx.visible_pixel_region();
-        for pixel_position in marker.marked_pixels() {
-            if !region.contains(pixel_position) {
+        for point in marker.marked_points() {
+            if !region.contains(point) {
                 continue;
             }
 
@@ -160,18 +164,17 @@ impl PixelCanvas {
                 continue;
             }
 
-            draw_pixel(ctx, canvas, pixel_position, ctx.model.dot_color());
+            draw_pixel(ctx, canvas, point, ctx.model.brush_color().to_rgba());
         }
     }
 
     fn render_cursor(&self, ctx: &ViewContext, canvas: &mut Canvas) {
         // TODO: consider draw tool
-        let mut color = ctx.model.dot_color();
+        let mut c = ctx.model.brush_color().to_rgba();
         if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
-            let c = color.to_rgba();
-            color = Color::rgba(255 - c.r, 255 - c.g, 255 - c.b, c.a);
+            c = patican::Rgba::new(255 - c.r, 255 - c.g, 255 - c.b, c.a);
         };
-        draw_pixel(ctx, canvas, ctx.model.cursor().position(), color);
+        draw_pixel(ctx, canvas, ctx.model.cursor(), c);
     }
 
     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
@@ -185,10 +188,11 @@ impl PixelCanvas {
         match ctx.config.key.get_command(key) {
             None => {}
             Some(commands) => {
-                for command in commands.into_commands() {
-                    if matches!(command, Command::Quit) {
-                        ctx.quit = true;
-                    }
+                for command in commands {
+                    // TODO
+                    // if matches!(command, Command::Quit) {
+                    //     ctx.quit = true;
+                    // }
                     ctx.model.apply(command).or_fail()?;
                 }
                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);

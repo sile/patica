@@ -237,6 +237,7 @@ dependencies = [
  "copic_colors",
  "pagurus",
  "pagurus_tui",
+ "patican",
  "serde",
  "serde_json",
 ]

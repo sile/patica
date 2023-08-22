@@ -140,4 +140,12 @@ impl Fsm {
     fn new_marking(kind: MarkKind, machine: &CanvasStateMachine) -> Self {
         Self::Marking(Marker::new(kind, machine))
     }
+
+    pub fn as_marker(&self) -> Option<&Marker> {
+        if let Self::Marking(m) = self {
+            Some(m)
+        } else {
+            None
+        }
+    }
 }

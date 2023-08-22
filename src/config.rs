@@ -1,8 +1,8 @@
-use crate::model::CommandOrCommands;
 use pagurus::{
     event::KeyEvent,
     failure::{Failure, OrFail},
 };
+use patican::Command;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
@@ -10,9 +10,6 @@ use std::{collections::BTreeMap, path::Path};
 pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
-
-    #[serde(default)]
-    pub init: CommandOrCommands,
 }
 
 impl Config {
@@ -46,10 +43,10 @@ impl Default for Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KeyConfig(BTreeMap<Key, CommandOrCommands>);
+pub struct KeyConfig(BTreeMap<Key, Vec<Command>>);
 
 impl KeyConfig {
-    pub fn get_command(&self, key: KeyEvent) -> Option<CommandOrCommands> {
+    pub fn get_command(&self, key: KeyEvent) -> Option<Vec<Command>> {
         let key = Key(key);
         self.0.get(&key).cloned()
     }

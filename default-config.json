@@ -1,36 +1,36 @@
 {
     "key": {
-        "Up": {"move": [0, -1]},
-        "Down": {"move": [0, 1]},
-        "Left": {"move": [-1, 0]},
-        "Right": {"move": [1, 0]},
-        "Ctrl+p": {"move": [0, -1]},
-        "Ctrl+n": {"move": [0, 1]},
-        "Ctrl+b": {"move": [-1, 0]},
-        "Ctrl+f": {"move": [1, 0]},
+        "Up": [{"move": [0, -1]}],
+        "Down": [{"move": [0, 1]}],
+        "Left": [{"move": [-1, 0]}],
+        "Right": [{"move": [1, 0]}],
+        "Ctrl+p": [{"move": [0, -1]}],
+        "Ctrl+n": [{"move": [0, 1]}],
+        "Ctrl+b": [{"move": [-1, 0]}],
+        "Ctrl+f": [{"move": [1, 0]}],
 
-        "k": {"move": [0, -1]},
-        "j": {"move": [0, 1]},
-        "h": {"move": [-1, 0]},
-        "l": {"move": [1, 0]},
+        "k": [{"move": [0, -1]}],
+        "j": [{"move": [0, 1]}],
+        "h": [{"move": [-1, 0]}],
+        "l": [{"move": [1, 0]}],
 
-        "Alt+k": {"move": [0, -8]},
-        "Alt+j": {"move": [0, 8]},
-        "Alt+h": {"move": [-8, 0]},
-        "Alt+l": {"move": [8, 0]},
+        "Alt+k": [{"move": [0, -8]}],
+        "Alt+j": [{"move": [0, 8]}],
+        "Alt+h": [{"move": [-8, 0]}],
+        "Alt+l": [{"move": [8, 0]}],
 
-        "o": {"set": {"camera": [0, 0]}},
-        "O": {"set": {"camera": "origin"}},
+        "o": [{"set": {"camera": [0, 0]}}],
+        "O": [{"set": {"camera": "origin"}}],
 
-        "p": "pick",
-        "c": "cut",
+        "p": ["pick"],
+        "c": ["cut"],
 
-        "+": {"scale": 1},
-        "-": {"scale": -1},
+        "+": [{"scale": 1}],
+        "-": [{"scale": -1}],
 
-        "m": {"mark": "stroke"},
-        "Esc": "cancel",
-        "e": "erase",
+        "m": [{"mark": "stroke"}],
+        "Esc": ["cancel"],
+        "e": ["erase"],
         "Backspace": [{"mark": "stroke"}, "erase"],
 
         " ": {"if": {
@@ -39,13 +39,10 @@
             "editing": ["paste", "cancel"]
         }},
 
-        "Ctrl+z": "undo",
-        "Ctrl+y": "redo",
+        "Ctrl+z": ["undo"],
+        "Ctrl+y": ["redo"],
 
-        "q": "quit",
-        "Ctrl+c": "quit"
-    },
-    "init": [
-        {"anchor": "origin"}
-    ]
+        "q": ["quit"],
+        "Ctrl+c": ["quit"]
+    }
 }
