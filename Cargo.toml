@@ -15,7 +15,7 @@ exclude = ["/palettes/"]
 clap = { version = "4.3.19", features = ["derive"] }
 pagurus = { version = "0.7.2", features = ["image", "serde"] }
 pagurus_tui = "0.7.2"
-patican = { version = "0.1", path = "./patican/" }
+pati = { version = "0.1", path = "./pati/" }
 serde = { version = "1.0.182", features = ["derive"] }
 serde_json = "1.0.104"
 
@@ -23,4 +23,4 @@ serde_json = "1.0.104"
 copic_colors = "0.1"
 
 [workspace]
-members = ["patican"]
+members = ["pati"]

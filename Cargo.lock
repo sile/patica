@@ -230,6 +230,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pati"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "patica"
 version = "0.0.1"
 dependencies = [
@@ -237,15 +245,7 @@ dependencies = [
  "copic_colors",
  "pagurus",
  "pagurus_tui",
- "patican",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "patican"
-version = "0.1.0"
-dependencies = [
+ "pati",
  "serde",
  "serde_json",
 ]

@@ -69,6 +69,7 @@ impl CommandLog for FullCommandLog {
     }
 }
 
+// TODO: remove
 #[derive(Debug, Default, Clone)]
 pub struct LimitedCommandLog {
     limit: usize,
