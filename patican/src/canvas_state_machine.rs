@@ -1,16 +1,20 @@
 use crate::{
     color::{Color, Rgba},
     command::{Command, Metadata, PutCommand, RemoveCommand},
+    editor::Editor,
+    marker::Marker,
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone)]
 pub struct CanvasStateMachine {
+    // TODO: private
     pub cursor: Point,
     pub brush_color: Color,
     pub pixels: Pixels,
     pub metadata: Metadata,
+    pub fsm: Fsm,
 }
 
 impl CanvasStateMachine {
@@ -89,4 +93,12 @@ impl<'a> Iterator for AreaPixels<'a> {
             self.row_iter = Some(self.pixels.0.range(range));
         }
     }
+}
+
+#[derive(Debug, Default, Clone)]
+pub enum Fsm {
+    #[default]
+    Neutral,
+    Marking(Marker),
+    Editing(Editor),
 }

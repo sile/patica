@@ -3,7 +3,7 @@ use crate::{
     color::Color,
     command::{Command, Metadata},
     log::CommandLog,
-    spatial::{Point, RectangularArea},
+    spatial::Point,
 };
 
 #[derive(Debug, Clone)]
@@ -44,10 +44,6 @@ impl<L> Canvas<L> {
 
     pub fn history_mut(&mut self) -> &mut L {
         &mut self.log
-    }
-
-    pub fn drawing_area(&self) -> RectangularArea {
-        RectangularArea::from_points(self.pixels().iter().map(|(point, _)| point))
     }
 }
 

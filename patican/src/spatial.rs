@@ -64,6 +64,14 @@ impl RectangularArea {
         self.top_left.x > self.bottom_right.x || self.top_left.y > self.bottom_right.y
     }
 
+    pub fn width(self) -> u16 {
+        (self.bottom_right.x - self.top_left.x + 1).max(0) as u16
+    }
+
+    pub fn height(self) -> u16 {
+        (self.bottom_right.y - self.top_left.y + 1).max(0) as u16
+    }
+
     pub fn next_row_range(&mut self) -> Option<RangeInclusive<Point>> {
         if self.is_empty() {
             return None;
