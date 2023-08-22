@@ -1,49 +1,10 @@
 use crate::{
     color::{Color, Rgba},
     command::{Command, Metadata, PutCommand, RemoveCommand},
+    history::History,
     spatial::{Point, RectangularArea},
 };
 use std::collections::BTreeMap;
-
-pub trait History {
-    fn len(&self) -> usize;
-    fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    fn append_command(&mut self, command: Command);
-    fn get_redo_command(&self, index: usize) -> Option<&Command>;
-    fn get_undo_command(&self, index: usize) -> Option<&Command>;
-}
-
-// TODO: PerfectHistory or FullHistory
-
-#[derive(Debug, Default, Clone)]
-pub struct NoopHistory {
-    len: usize,
-}
-
-impl NoopHistory {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl History for NoopHistory {
-    fn append_command(&mut self, _command: Command) {}
-
-    fn len(&self) -> usize {
-        self.len
-    }
-
-    fn get_redo_command(&self, _index: usize) -> Option<&Command> {
-        None
-    }
-
-    fn get_undo_command(&self, _index: usize) -> Option<&Command> {
-        None
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Canvas<H> {
