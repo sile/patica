@@ -19,25 +19,15 @@
         "Alt+h": [{"move": [-8, 0]}],
         "Alt+l": [{"move": [8, 0]}],
 
-        "o": [{"set": {"camera": [0, 0]}}],
-        "O": [{"set": {"camera": "origin"}}],
-
         "p": ["pick"],
         "c": ["cut"],
-
-        "+": [{"scale": 1}],
-        "-": [{"scale": -1}],
 
         "m": [{"mark": "stroke"}],
         "Esc": ["cancel"],
         "e": ["erase"],
         "Backspace": [{"mark": "stroke"}, "erase"],
 
-        " ": {"if": {
-            "neutral": [{"mark": "stroke"}, "draw"],
-            "marking": ["draw"],
-            "editing": ["paste", "cancel"]
-        }},
+        " ": ["color"],
 
         "Ctrl+z": ["undo"],
         "Ctrl+y": ["redo"],

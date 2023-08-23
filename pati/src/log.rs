@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
 )]
-pub struct Version(u32);
+pub struct Version(pub(crate) u32);
 
 #[derive(Debug, Clone)]
 pub struct Log {
@@ -26,6 +26,10 @@ impl Log {
                 canvas: canvas.clone(),
             });
         }
+    }
+
+    pub fn commands(&self) -> &[Command] {
+        &self.commands
     }
 
     pub fn restore_canvas(&self, version: Version) -> Option<Canvas> {

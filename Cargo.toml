@@ -13,9 +13,10 @@ exclude = ["/palettes/"]
 
 [dependencies]
 clap = { version = "4.3.19", features = ["derive"] }
+orfail = "1.1.0"
 pagurus = { version = "0.7.2", features = ["image", "serde"] }
 pagurus_tui = "0.7.2"
-pati = { version = "0.1", path = "./pati/" }
+pati = { version = "0.0", path = "./pati/" }
 serde = { version = "1.0.182", features = ["derive"] }
 serde_json = "1.0.104"
 
@@ -24,3 +25,6 @@ copic_colors = "0.1"
 
 [workspace]
 members = ["pati"]
+
+[patch.crates-io]
+pati = { path = "pati" }

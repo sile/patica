@@ -1,10 +1,9 @@
-// TODO: pub mod bmp;
 pub mod cli;
+pub mod command;
 pub mod config;
 pub mod game;
-pub mod journal;
+pub mod marker;
+pub mod model;
 pub mod view;
-
-// TODO: delete
-// pub mod marker;
-// TODO: pub mod model;
+// TODO: pub mod bmp;
+// pub mod journal;

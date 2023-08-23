@@ -1,10 +1,10 @@
 use clap::Parser;
-use pagurus::failure::OrFail;
+use orfail::OrFail;
 use patica::cli::Args;
 use std::fs::OpenOptions;
 use std::io::Write;
 
-fn main() -> pagurus::Result<()> {
+fn main() -> orfail::Result<()> {
     pagurus::io::set_println_fn(file_println).or_fail()?;
     std::panic::set_hook(Box::new(|info| {
         // NOTE: TODO

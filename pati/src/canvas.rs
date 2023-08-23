@@ -4,8 +4,6 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-// TODO: Pixels
-
 #[derive(Debug, Default, Clone)]
 pub struct VersionedCanvas {
     canvas: Canvas,
@@ -51,6 +49,11 @@ impl VersionedCanvas {
                 .append_applied_command(command.clone(), &self.canvas);
         }
         applied
+    }
+
+    pub fn applied_commands(&self, since: Version) -> &[Command] {
+        let i = (since.0 as usize).min(self.log.commands().len());
+        &self.log.commands()[i..]
     }
 
     pub fn diff(&self, version: Version) -> Option<PatchCommand> {

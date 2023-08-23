@@ -1,8 +1,6 @@
-use pagurus::{
-    event::KeyEvent,
-    failure::{Failure, OrFail},
-};
-use pati::Command;
+use crate::command::Command;
+use orfail::OrFail;
+use pagurus::event::KeyEvent;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
@@ -13,12 +11,12 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load_config_file() -> pagurus::Result<Option<Self>> {
+    pub fn load_config_file() -> orfail::Result<Option<Self>> {
         let Ok(home_dir) = std::env::var("HOME") else {
             return Ok(None);
         };
 
-        let path = Path::new(&home_dir).join(".config").join("dotedit.json");
+        let path = Path::new(&home_dir).join(".config").join("patica.json");
         if !path.exists() {
             return Ok(None);
         }
@@ -106,7 +104,7 @@ impl From<Key> for String {
 }
 
 impl TryFrom<String> for Key {
-    type Error = Failure;
+    type Error = orfail::Failure;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let mut ctrl = false;
@@ -167,15 +165,19 @@ impl TryFrom<String> for Key {
                 | '\''
                 | '`'
                 | '~') => pagurus::event::Key::Char(c),
-                _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
+                _ => return Err(orfail::Failure::new(format!("Unknown key: {last:?}"))),
             },
-            _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
+            _ => return Err(orfail::Failure::new(format!("Unknown key: {last:?}"))),
         };
         for token in tokens {
             match token {
                 "Ctrl" => ctrl = true,
                 "Alt" => alt = true,
-                _ => return Err(Failure::new(format!("Unknown key modifier: {token:?}"))),
+                _ => {
+                    return Err(orfail::Failure::new(format!(
+                        "Unknown key modifier: {token:?}"
+                    )))
+                }
             }
         }
 

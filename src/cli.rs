@@ -1,11 +1,12 @@
-use crate::{
-    config::Config,
-    journal::JournaledModel,
-    //model::{Command, CommandOrCommands},
-};
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use std::path::PathBuf;
+use pati::{CommandReader, CommandWriter};
+use std::{
+    io::{BufReader, BufWriter},
+    path::PathBuf,
+};
+
+use crate::config::Config;
 
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
@@ -20,12 +21,56 @@ pub enum Args {
 }
 
 impl Args {
-    pub fn run(&self) -> pagurus::Result<()> {
+    pub fn run(&self) -> orfail::Result<()> {
         match self {
             Self::Open(cmd) => cmd.run().or_fail(),
             // Self::Apply(cmd) => cmd.run().or_fail(),
             // Self::Export(cmd) => cmd.run().or_fail(),
         }
+    }
+}
+
+#[derive(Debug, clap::Args)]
+pub struct OpenCommand {
+    path: PathBuf,
+}
+
+impl OpenCommand {
+    fn run(&self) -> orfail::Result<()> {
+        let config = Config::load_config_file().or_fail()?.unwrap_or_default();
+
+        let mut game = crate::game::Game::default();
+        game.set_config(config);
+
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&self.path)
+            .or_fail()?;
+        let mut reader = CommandReader::new(BufReader::new(file.try_clone().or_fail()?));
+        let mut writer = CommandWriter::new(BufWriter::new(file));
+        while let Some(command) = reader.read_command().or_fail()? {
+            game.model_mut().canvas_mut().apply(&command);
+        }
+
+        let options = TuiSystemOptions {
+            disable_mouse: true,
+        };
+        let mut system = TuiSystem::with_options(options).or_fail()?;
+        game.initialize(&mut system).or_fail()?;
+
+        while let Ok(event) = system.next_event() {
+            let version = game.model().canvas().version();
+            if !game.handle_event(&mut system, event).or_fail()? {
+                break;
+            }
+            for command in game.model().canvas().applied_commands(version) {
+                writer.write_command(command).or_fail()?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -57,39 +102,6 @@ impl Args {
 //         Ok(())
 //     }
 // }
-
-#[derive(Debug, clap::Args)]
-pub struct OpenCommand {
-    path: PathBuf,
-}
-
-impl OpenCommand {
-    fn run(&self) -> pagurus::Result<()> {
-        let config = Config::load_config_file().or_fail()?.unwrap_or_default();
-
-        let mut journal = JournaledModel::open_or_create(&self.path).or_fail()?;
-        let options = TuiSystemOptions {
-            disable_mouse: true,
-        };
-        let mut system = TuiSystem::with_options(options).or_fail()?;
-        let mut game = crate::game::Game::default();
-
-        game.set_config(config);
-        game.initialize(&mut system).or_fail()?;
-
-        while let Ok(event) = system.next_event() {
-            journal.sync_model().or_fail()?;
-            game.set_model(std::mem::take(journal.model_mut()));
-            if !game.handle_event(&mut system, event).or_fail()? {
-                break;
-            }
-            *journal.model_mut() = game.take_model().or_fail()?;
-            journal.append_applied_commands().or_fail()?;
-        }
-
-        Ok(())
-    }
-}
 
 // #[derive(Debug, clap::Args)]
 // pub struct ExportCommand {

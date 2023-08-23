@@ -1,5 +1,6 @@
 use crate::{
     config::Config,
+    model::Model,
     view::{View, ViewContext},
 };
 use pagurus::{
@@ -9,8 +10,8 @@ use pagurus::{
     video::VideoFrame,
     Result, System,
 };
+use std::num::NonZeroU64;
 use std::time::Duration;
-use std::{num::NonZeroU64, sync::Arc};
 
 const FPS: u32 = 30;
 const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
@@ -42,49 +43,40 @@ impl Default for GameClock {
 pub struct Game {
     video_frame: VideoFrame,
     view: View,
-    // TODO: rename
-    model: Option<pati::VersionedCanvas>,
-    config: Arc<Config>,
+    model: Model,
     clock: GameClock,
 }
 
 impl Game {
-    pub fn set_model(&mut self, model: pati::VersionedCanvas) {
-        self.model = Some(model);
-    }
-
-    pub fn take_model(&mut self) -> Option<pati::VersionedCanvas> {
-        self.model.take()
-    }
-
     pub fn set_config(&mut self, config: Config) {
-        self.config = Arc::new(config);
+        self.view.set_key_config(config.key);
     }
 
-    fn render<S: System>(&mut self, system: &mut S) -> pagurus::Result<()> {
-        let ctx = self.make_view_context(system).or_fail()?;
+    pub fn model(&self) -> &Model {
+        &self.model
+    }
+
+    pub fn model_mut(&mut self) -> &mut Model {
+        &mut self.model
+    }
+
+    fn render<S: System>(&mut self, system: &mut S) {
+        let ctx = self.view_context(system);
         let mut canvas = Canvas::new(&mut self.video_frame);
-        self.view.render(&ctx, &mut canvas);
+        self.view.render(&ctx, &self.model, &mut canvas);
         system.video_draw(self.video_frame.as_ref());
-        self.model = Some(ctx.model);
-        Ok(())
     }
 
-    fn make_view_context<S: System>(&mut self, system: &S) -> pagurus::Result<ViewContext> {
-        Ok(ViewContext {
+    fn view_context<S: System>(&self, _system: &S) -> ViewContext {
+        ViewContext {
             window_size: self.video_frame.spec().resolution,
-            now: system.clock_game_time(),
-            model: self.model.take().or_fail()?,
-            config: Arc::clone(&self.config),
             quit: false,
-            clock: self.clock,
-        })
+        }
     }
 }
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> Result<()> {
-        self.model = Some(Model::default());
         system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
         Ok(())
     }
@@ -93,21 +85,21 @@ impl<S: System> pagurus::Game<S> for Game {
         match event {
             Event::WindowResized(size) => {
                 self.video_frame = VideoFrame::new(system.video_init(size));
-                self.render(system).or_fail()?;
+                self.render(system);
             }
             Event::Timeout(RENDER_TIMEOUT_TAG) => {
                 self.clock.tick();
-                self.render(system).or_fail()?;
+                self.render(system);
                 system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
                 return Ok(true);
             }
             _ => {}
         }
 
-        let mut ctx = self.make_view_context(system).or_fail()?;
-        self.view.handle_event(&mut ctx, event).or_fail()?;
-        self.model = Some(ctx.model);
-
+        let mut ctx = self.view_context(system);
+        self.view
+            .handle_event(&mut ctx, &mut self.model, event)
+            .or_fail()?;
         Ok(!ctx.quit)
     }
 }
