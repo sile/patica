@@ -1,13 +1,9 @@
-use crate::{config::Config, game::GameClock, Model};
+use crate::{config::Config, game::GameClock};
 use pagurus::{
     event::{Event, KeyEvent},
     failure::OrFail,
     image::{Canvas, Color},
     spatial::{Position, Size},
-};
-use patican::{
-    marker::Marker,
-    spatial::{Point, RectangularArea},
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -57,7 +53,7 @@ impl ViewContext {
     }
 }
 
-fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: Point, color: patican::Rgba) {
+fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: Point, color: pati::Rgba) {
     let color = Color::rgba(color.r, color.g, color.b, color.a);
     let p = ctx.to_position(pixel_position);
     for y in 0..ctx.scale() {
@@ -172,7 +168,7 @@ impl PixelCanvas {
         // TODO: consider draw tool
         let mut c = ctx.model.brush_color().to_rgba();
         if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
-            c = patican::Rgba::new(255 - c.r, 255 - c.g, 255 - c.b, c.a);
+            c = pati::Rgba::new(255 - c.r, 255 - c.g, 255 - c.b, c.a);
         };
         draw_pixel(ctx, canvas, ctx.model.cursor(), c);
     }

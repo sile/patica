@@ -2,7 +2,7 @@ use pagurus::{
     event::KeyEvent,
     failure::{Failure, OrFail},
 };
-use patican::Command;
+use pati::Command;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 

@@ -1,7 +1,6 @@
 use crate::{
     config::Config,
     view::{View, ViewContext},
-    Model,
 };
 use pagurus::{
     event::{Event, TimeoutTag},
@@ -44,17 +43,17 @@ pub struct Game {
     video_frame: VideoFrame,
     view: View,
     // TODO: rename
-    model: Option<Model>,
+    model: Option<pati::VersionedCanvas>,
     config: Arc<Config>,
     clock: GameClock,
 }
 
 impl Game {
-    pub fn set_model(&mut self, model: Model) {
+    pub fn set_model(&mut self, model: pati::VersionedCanvas) {
         self.model = Some(model);
     }
 
-    pub fn take_model(&mut self) -> Option<Model> {
+    pub fn take_model(&mut self) -> Option<pati::VersionedCanvas> {
         self.model.take()
     }
 

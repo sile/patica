@@ -1,7 +1,6 @@
 // TODO: use crate::model::{Command, EmbedCommand, EmbeddedFrame, Frame, FrameName, Model};
-use crate::Model;
 use pagurus::failure::OrFail;
-use patican::Command;
+use pati::Command;
 use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, BufWriter, Seek, SeekFrom},
@@ -12,7 +11,7 @@ use std::{
 pub struct JournaledModel {
     reader: BufReader<File>,
     writer: BufWriter<File>,
-    model: Model,
+    model: pati::VersionedCanvas,
     commands_len: usize, // TODO: Use model.commands_len() instead of this
                          // TOOD: frames: BTreeMap<FrameName, JournaledFrame>,
 }
@@ -51,11 +50,11 @@ impl JournaledModel {
         Ok(this)
     }
 
-    pub fn model(&self) -> &Model {
+    pub fn model(&self) -> &pati::VersionedCanvas {
         &self.model
     }
 
-    pub fn model_mut(&mut self) -> &mut Model {
+    pub fn model_mut(&mut self) -> &mut pati::VersionedCanvas {
         &mut self.model
     }
 
@@ -63,7 +62,7 @@ impl JournaledModel {
         if self.reader.get_ref().metadata().or_fail()?.len()
             < self.reader.stream_position().or_fail()?
         {
-            self.model = Model::default();
+            self.model = pati::VersionedCanvas::default();
             self.commands_len = 0;
             // TODO: self.frames.clear();
             self.reader.seek(SeekFrom::Start(0)).or_fail()?;
