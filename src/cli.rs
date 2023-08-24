@@ -19,9 +19,6 @@ pub enum Args {
     Apply(ApplyCommand),
     // TODO: Export(ExportCommand),
     // Include (set-origin -> cut -> reset-origin)
-    // Summary
-    // ShowStatusLine
-    // Compaction or GC
 }
 
 impl Args {

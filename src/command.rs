@@ -1,5 +1,5 @@
 use crate::marker::MarkKind;
-use pati::Point;
+use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub enum Command {
     Move(MoveDestination),
     Mark(MarkKind),
+    Dip(Color),
     Pick,
     Cut,
     Cancel,

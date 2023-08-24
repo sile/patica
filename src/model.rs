@@ -67,7 +67,7 @@ impl Model {
         match command {
             Command::Move(c) => self.handle_move_command(c),
             Command::Mark(c) => self.handle_mark_command(*c),
-            Command::Pick => todo!(),
+            Command::Pick => self.handle_pick_command(),
             Command::Cut => todo!(),
             Command::Cancel => todo!(),
             Command::Erase => self.handle_erase_command(),
@@ -78,7 +78,23 @@ impl Model {
             Command::Quit => {
                 self.quit = true;
             }
+            Command::Dip(c) => self.handle_dip_command(*c),
         }
+    }
+
+    fn handle_dip_command(&mut self, color: Color) {
+        self.brush_color = color;
+    }
+
+    fn handle_pick_command(&mut self) {
+        if let Some(color) = self.get_displayed_pixel_color(self.cursor) {
+            self.brush_color = color;
+        }
+    }
+
+    fn get_displayed_pixel_color(&self, point: Point) -> Option<Color> {
+        // TODO: consider background
+        self.canvas.get_pixel(point)
     }
 
     fn handle_erase_command(&mut self) {
