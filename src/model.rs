@@ -69,7 +69,7 @@ impl Model {
             Command::Mark(c) => self.handle_mark_command(*c),
             Command::Pick => self.handle_pick_command(),
             Command::Cut => todo!(),
-            Command::Cancel => todo!(),
+            Command::Cancel => self.handle_cancel_command(),
             Command::Erase => self.handle_erase_command(),
             Command::Color => self.handle_color_command(),
             Command::Paste => todo!(),
@@ -80,6 +80,10 @@ impl Model {
             }
             Command::Dip(c) => self.handle_dip_command(*c),
         }
+    }
+
+    fn handle_cancel_command(&mut self) {
+        self.fsm = Fsm::Neutral;
     }
 
     fn handle_dip_command(&mut self, color: Color) {
