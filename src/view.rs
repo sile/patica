@@ -8,37 +8,6 @@ use pagurus::{
 use pati::{Color, Point};
 use std::time::Duration;
 
-// #[derive(Debug)]
-// pub struct ViewContext {
-// pub now: Duration,
-// pub quit: bool,
-// pub clock: GameClock,
-//}
-
-// impl ViewContext {
-//     fn scaled_window_size(&self) -> Size {
-//         self.window_size / self.scale() as u32
-//     }
-
-//     fn scale(&self) -> usize {
-//         // TODO: self.model.scale().get()
-//         1
-//     }
-
-//     fn visible_pixel_region(&self) -> RectangularArea {
-//         let center = self.scaled_window_size().to_region().center();
-//         let mut region = self.scaled_window_size().to_region();
-//         region.position = region.position - center; // TODO: + Position::from(self.model.camera().position);
-//         RectangularArea::from_points(
-//             [
-//                 Point::new(region.start().x as i16, region.start().y as i16),
-//                 Point::new(region.end().x as i16, region.end().y as i16),
-//             ]
-//             .into_iter(),
-//         )
-//     }
-// }
-
 #[derive(Debug, Default)]
 pub struct View {
     key_config: KeyConfig,
@@ -52,13 +21,21 @@ impl View {
 
     pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
         self.render_background(canvas);
+        self.render_pixels(model, canvas);
         if let Some(marker) = model.marker() {
             self.render_marked_pixels(model, marker, canvas);
         } else {
             self.cursor.render(model, canvas);
         }
         // self.render_frames(ctx, canvas);
-        // self.canvas.render(ctx, canvas);
+    }
+
+    fn render_pixels(&self, model: &Model, canvas: &mut WindowCanvas) {
+        let top_left = canvas.position_to_point(model, Position::ORIGIN);
+        let bottom_right = canvas.position_to_point(model, canvas.window_size.to_region().end());
+        for (point, color) in model.canvas().range_pixels(top_left..bottom_right) {
+            canvas.dot(model, point, color);
+        }
     }
 
     fn render_marked_pixels(&self, model: &Model, marker: &Marker, canvas: &mut WindowCanvas) {
@@ -191,10 +168,6 @@ impl View {
 //     }
 // }
 
-fn to_position(point: Point) -> Position {
-    Position::from_xy(point.x as i32, point.y as i32)
-}
-
 #[derive(Debug, Default, Clone, Copy)]
 struct Cursor {
     show: bool,
@@ -241,7 +214,7 @@ impl<'a> WindowCanvas<'a> {
 
     fn dot(&mut self, model: &Model, point: Point, color: Color) {
         let color = pagurus::image::Color::rgba(color.r, color.g, color.b, color.a);
-        let p = self.to_window_position(model, point);
+        let p = self.point_to_position(model, point);
         for y in 0..model.scale().get() {
             for x in 0..model.scale().get() {
                 self.canvas
@@ -250,8 +223,16 @@ impl<'a> WindowCanvas<'a> {
         }
     }
 
-    fn to_window_position(&self, model: &Model, point: Point) -> Position {
+    fn point_to_position(&self, model: &Model, point: Point) -> Position {
         let center = self.window_size.to_region().center();
-        to_position(point) + center - to_position(model.camera())
+        Position::from_xy(point.x as i32, point.y as i32) + center
+            - Position::from_xy(model.camera().x as i32, model.camera().y as i32)
+    }
+
+    fn position_to_point(&self, model: &Model, position: Position) -> Point {
+        let center = self.window_size.to_region().center();
+        let p =
+            position + Position::from_xy(model.camera().x as i32, model.camera().y as i32) - center;
+        Point::new(p.x as i16, p.y as i16)
     }
 }

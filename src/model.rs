@@ -71,7 +71,7 @@ impl Model {
             Command::Cut => todo!(),
             Command::Cancel => todo!(),
             Command::Erase => todo!(),
-            Command::Color => todo!(),
+            Command::Color => self.handle_color_command(),
             Command::Paste => todo!(),
             Command::Undo => todo!(),
             Command::Redo => todo!(),
@@ -79,6 +79,19 @@ impl Model {
                 self.quit = true;
             }
         }
+    }
+
+    fn handle_color_command(&mut self) {
+        let points = match &self.fsm {
+            Fsm::Neutral => vec![self.cursor],
+            Fsm::Marking(marker) => marker.marked_points().collect(),
+        };
+        let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
+            color: Some(self.brush_color),
+            points,
+        }]));
+        self.canvas.apply(&command);
+        self.fsm = Fsm::Neutral;
     }
 
     fn handle_mark_command(&mut self, kind: MarkKind) {
