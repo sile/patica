@@ -14,11 +14,6 @@
         "j": [{"move": [-1, 0]}],
         "l": [{"move": [1, 0]}],
 
-        "Alt+k": [{"move": [0, -8]}],
-        "Alt+j": [{"move": [0, 8]}],
-        "Alt+h": [{"move": [-8, 0]}],
-        "Alt+l": [{"move": [8, 0]}],
-
         "p": ["pick"],
         "c": ["cut"],
 
@@ -29,8 +24,8 @@
 
         " ": ["color"],
 
-        "Ctrl+z": ["undo"],
-        "Ctrl+y": ["redo"],
+        "z": ["undo"],
+        "y": ["redo"],
 
         "q": ["quit"],
         "Ctrl+c": ["quit"]

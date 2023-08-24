@@ -3,7 +3,7 @@ use crate::{
     command::{Command, MoveDestination},
     marker::{MarkKind, Marker},
 };
-use pati::{Color, Point};
+use pati::{Color, Point, Version};
 use std::num::NonZeroUsize;
 
 #[derive(Debug, Default)]
@@ -15,6 +15,7 @@ pub struct Model {
     clock: Clock,
     quit: bool,
     fsm: Fsm,
+    undo: Option<Undo>,
 }
 
 impl Model {
@@ -73,12 +74,36 @@ impl Model {
             Command::Erase => self.handle_erase_command(),
             Command::Color => self.handle_color_command(),
             Command::Paste => todo!(),
-            Command::Undo => todo!(),
-            Command::Redo => todo!(),
+            Command::Undo => self.handle_undo_command(),
+            Command::Redo => self.handle_redo_command(),
             Command::Quit => {
                 self.quit = true;
             }
             Command::Dip(c) => self.handle_dip_command(*c),
+        }
+    }
+
+    fn handle_undo_command(&mut self) {
+        let mut undo = self
+            .undo
+            .unwrap_or_else(|| Undo::new(self.canvas.version()));
+        if let Some(command) = self.canvas.diff(undo.undo_version) {
+            self.canvas.apply(&pati::Command::Patch(command));
+            undo.undo_version = undo.undo_version - 1;
+            self.undo = Some(undo);
+        }
+    }
+
+    fn handle_redo_command(&mut self) {
+        if let Some(mut undo) = self.undo.take() {
+            undo.undo_version = undo.undo_version + 1;
+            let version = undo.undo_version + 1;
+            if let Some(command) = self.canvas.diff(version) {
+                self.canvas.apply(&pati::Command::Patch(command));
+                if version < undo.latest_version {
+                    self.undo = Some(undo);
+                }
+            }
         }
     }
 
@@ -112,6 +137,7 @@ impl Model {
         }]));
         self.canvas.apply(&command);
         self.fsm = Fsm::Neutral;
+        self.undo = None;
     }
 
     fn handle_color_command(&mut self) {
@@ -125,6 +151,7 @@ impl Model {
         }]));
         self.canvas.apply(&command);
         self.fsm = Fsm::Neutral;
+        self.undo = None;
     }
 
     fn handle_mark_command(&mut self, kind: MarkKind) {
@@ -144,16 +171,6 @@ impl Model {
     }
 }
 
-// use crate::marker::{MarkKind, Marker};
-// use pagurus::{failure::OrFail, image::Color, spatial::Position};
-// use serde::{Deserialize, Serialize};
-// use std::{
-//     collections::BTreeMap,
-//     num::{NonZeroU64, NonZeroUsize},
-//     path::PathBuf,
-// };
-
-// // TODO: Rename to `PaticaCanvas`
 // #[derive(Debug, Default)]
 // pub struct Model {
 //     cursor: Cursor,
@@ -1328,4 +1345,19 @@ enum Fsm {
     Neutral,
     Marking(Marker),
     // Editing(Editor)
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Undo {
+    latest_version: Version,
+    undo_version: Version,
+}
+
+impl Undo {
+    fn new(version: Version) -> Self {
+        Self {
+            latest_version: version,
+            undo_version: version - 1,
+        }
+    }
 }

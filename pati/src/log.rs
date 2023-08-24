@@ -7,6 +7,22 @@ use serde::{Deserialize, Serialize};
 )]
 pub struct Version(pub(crate) u32);
 
+impl std::ops::Add<u32> for Version {
+    type Output = Self;
+
+    fn add(self, rhs: u32) -> Self::Output {
+        Self(self.0.saturating_add(rhs))
+    }
+}
+
+impl std::ops::Sub<u32> for Version {
+    type Output = Self;
+
+    fn sub(self, rhs: u32) -> Self::Output {
+        Self(self.0.saturating_sub(rhs))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Log {
     commands: Vec<Command>,
@@ -63,4 +79,30 @@ impl Default for Log {
 struct Snapshot {
     version: Version,
     canvas: Canvas,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Canvas, Color, PatchCommand, PatchEntry, Point};
+
+    #[test]
+    fn restore_canvas_works() {
+        let mut canvas = Canvas::new();
+        let mut log = Log::default();
+        assert_eq!(log.latest_canvas_version(), Version(0));
+
+        let color = Color::rgb(100, 0, 0);
+        let entry = PatchEntry {
+            color: Some(color),
+            points: vec![Point::new(1, 3)],
+        };
+        let command = Command::Patch(PatchCommand::new(vec![entry]));
+        assert!(canvas.apply(&command));
+        log.append_applied_command(command, &canvas);
+        assert_eq!(log.latest_canvas_version(), Version(1));
+
+        let old_canvas = log.restore_canvas(Version(0)).unwrap();
+        assert_ne!(old_canvas.pixels().len(), canvas.pixels().len());
+    }
 }

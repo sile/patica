@@ -59,7 +59,7 @@ impl VersionedCanvas {
 
     pub fn diff(&self, version: Version) -> Option<PatchCommand> {
         let canvas = self.log.restore_canvas(version)?;
-        Some(canvas.diff(&canvas))
+        Some(self.canvas.diff(&canvas))
     }
 }
 
@@ -158,9 +158,9 @@ impl Canvas {
                     Ordering::Equal => {
                         if old.1 != new.1 {
                             added.entry(new.1).or_default().push(new.0);
-                            old_pixel = old_pixels.next();
-                            new_pixel = new_pixels.next();
                         }
+                        old_pixel = old_pixels.next();
+                        new_pixel = new_pixels.next();
                     }
                     Ordering::Less => {
                         removed.push(old.0);
