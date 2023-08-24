@@ -1,4 +1,4 @@
-use crate::{config::KeyConfig, marker::Marker, model::Model};
+use crate::{config::KeyConfig, model::Model};
 use orfail::OrFail;
 use pagurus::{
     event::Event,
@@ -6,7 +6,7 @@ use pagurus::{
     spatial::{Position, Size},
 };
 use pati::{Color, Point};
-use std::time::Duration;
+use std::{collections::BTreeSet, time::Duration};
 
 #[derive(Debug, Default)]
 pub struct View {
@@ -21,26 +21,37 @@ impl View {
 
     pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
         self.render_background(canvas);
-        self.render_pixels(model, canvas);
-        if let Some(marker) = model.marker() {
-            self.render_marked_pixels(model, marker, canvas);
-        } else {
-            self.cursor.render(model, canvas);
-        }
+
+        let marked_points = self.collect_marked_points(model);
+
+        self.render_pixels(model, canvas, &marked_points);
+        self.cursor.render(model, canvas, &marked_points);
         // self.render_frames(ctx, canvas);
     }
 
-    fn render_pixels(&self, model: &Model, canvas: &mut WindowCanvas) {
+    fn collect_marked_points(&self, model: &Model) -> BTreeSet<Point> {
+        let mut points = BTreeSet::new();
+        if let Some(marker) = model.marker() {
+            points.extend(marker.marked_points());
+        } else {
+            points.insert(model.cursor());
+        }
+        points
+    }
+
+    fn render_pixels(
+        &self,
+        model: &Model,
+        canvas: &mut WindowCanvas,
+        marked_points: &BTreeSet<Point>,
+    ) {
         let top_left = canvas.position_to_point(model, Position::ORIGIN);
         let bottom_right = canvas.position_to_point(model, canvas.window_size.to_region().end());
         for (point, color) in model.canvas().range_pixels(top_left..bottom_right) {
+            if marked_points.contains(&point) {
+                continue;
+            }
             canvas.dot(model, point, color);
-        }
-    }
-
-    fn render_marked_pixels(&self, model: &Model, marker: &Marker, canvas: &mut WindowCanvas) {
-        for point in marker.marked_points() {
-            canvas.dot(model, point, model.brush_color());
         }
     }
 
@@ -130,42 +141,6 @@ impl View {
 //         //     draw_pixel(ctx, canvas, pixel_position, color);
 //         // }
 //     }
-
-//     fn render_marked_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas, marker: &Marker) {
-//         let region = ctx.visible_pixel_region();
-//         for point in marker.marked_points() {
-//             if !region.contains(point) {
-//                 continue;
-//             }
-
-//             // TODO: consider mark kind
-
-//             if ctx.now.as_millis() % 1000 < 500 {
-//                 continue;
-//             }
-
-//             draw_pixel(ctx, canvas, point, ctx.model.brush_color().to_rgba());
-//         }
-//     }
-
-//     fn render_cursor(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-//         // TODO: consider draw tool
-//         let mut c = ctx.model.brush_color().to_rgba();
-//         if !(ctx.now <= self.force_show_cursor_until || ctx.now.as_secs() % 2 == 0) {
-//             c = pati::Rgba::new(255 - c.r, 255 - c.g, 255 - c.b, c.a);
-//         };
-//         draw_pixel(ctx, canvas, ctx.model.cursor(), c);
-//     }
-// }
-
-// fn dot(ctx: &ViewContext, canvas: &mut Canvas, point: Point, color: Color) {
-//     let color = pagurus::image::Color::rgba(color.r, color.g, color.b, color.a);
-//     let p = ctx.to_window_position(point);
-//     for y in 0..ctx.scale() {
-//         for x in 0..ctx.scale() {
-//             canvas.draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
-//         }
-//     }
 // }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -175,11 +150,12 @@ struct Cursor {
 }
 
 impl Cursor {
-    fn render(self, model: &Model, canvas: &mut WindowCanvas) {
-        let cursor = model.cursor();
+    fn render(self, model: &Model, canvas: &mut WindowCanvas, marked_points: &BTreeSet<Point>) {
         let color = model.brush_color();
         if self.show {
-            canvas.dot(model, cursor, color);
+            for &point in marked_points {
+                canvas.dot(model, point, color);
+            }
         }
     }
 
