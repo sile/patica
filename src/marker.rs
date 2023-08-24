@@ -31,6 +31,12 @@ impl Marker {
         }
     }
 
+    pub fn handle_move(&mut self, cursor: Point) {
+        match self {
+            Self::Line(m) => m.handle_move(cursor),
+        }
+    }
+
     pub fn marked_points(&self) -> Box<dyn '_ + Iterator<Item = Point>> {
         match self {
             Self::Line(m) => Box::new(m.marked_points()),
@@ -52,9 +58,9 @@ impl LineMarker {
         }
     }
 
-    // fn handle_command(&mut self, _command: &Command, model: &Model) {
-    //     self.end = model.cursor().position();
-    // }
+    fn handle_move(&mut self, cursor: Point) {
+        self.end = cursor;
+    }
 
     fn marked_points(self) -> impl Iterator<Item = Point> {
         let p0 = self.start;

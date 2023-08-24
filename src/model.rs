@@ -1,7 +1,7 @@
 use crate::{
     clock::Clock,
     command::{Command, MoveDestination},
-    marker::Marker,
+    marker::{MarkKind, Marker},
 };
 use pati::{Color, Point};
 use std::num::NonZeroUsize;
@@ -47,6 +47,14 @@ impl Model {
         NonZeroUsize::new(1).unwrap()
     }
 
+    pub fn marker(&self) -> Option<&Marker> {
+        if let Fsm::Marking(marker) = &self.fsm {
+            Some(marker)
+        } else {
+            None
+        }
+    }
+
     pub fn canvas(&self) -> &pati::VersionedCanvas {
         &self.canvas
     }
@@ -58,7 +66,7 @@ impl Model {
     pub fn apply(&mut self, command: &Command) {
         match command {
             Command::Move(c) => self.handle_move_command(c),
-            Command::Mark(_) => todo!(),
+            Command::Mark(c) => self.handle_mark_command(*c),
             Command::Pick => todo!(),
             Command::Cut => todo!(),
             Command::Cancel => todo!(),
@@ -73,12 +81,19 @@ impl Model {
         }
     }
 
+    fn handle_mark_command(&mut self, kind: MarkKind) {
+        self.fsm = Fsm::Marking(Marker::new(kind, self.cursor));
+    }
+
     fn handle_move_command(&mut self, dst: &MoveDestination) {
         match dst {
             MoveDestination::Delta(delta) => {
                 self.cursor = self.cursor + *delta;
             }
             MoveDestination::Anchor(_) => todo!(),
+        }
+        if let Fsm::Marking(marker) = &mut self.fsm {
+            marker.handle_move(self.cursor);
         }
     }
 }

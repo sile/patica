@@ -1,4 +1,4 @@
-use crate::{config::KeyConfig, model::Model};
+use crate::{config::KeyConfig, marker::Marker, model::Model};
 use orfail::OrFail;
 use pagurus::{
     event::Event,
@@ -23,17 +23,6 @@ use std::time::Duration;
 //     fn scale(&self) -> usize {
 //         // TODO: self.model.scale().get()
 //         1
-//     }
-
-//     fn to_position(&self, point: Point) -> Position {
-//         let center = self.scaled_window_size().to_region().center();
-//         let position = Position::from_xy(point.x as i32, point.y as i32) + center;
-
-//         // TODO
-//         // let position = (Position::from_xy(point.x as i32, point.y as i32) + center)
-//         //     - Position::from(self.model.camera().position);
-
-//         position * self.scale() as u32
 //     }
 
 //     fn visible_pixel_region(&self) -> RectangularArea {
@@ -63,9 +52,19 @@ impl View {
 
     pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
         self.render_background(canvas);
-        self.cursor.render(model, canvas);
+        if let Some(marker) = model.marker() {
+            self.render_marked_pixels(model, marker, canvas);
+        } else {
+            self.cursor.render(model, canvas);
+        }
         // self.render_frames(ctx, canvas);
         // self.canvas.render(ctx, canvas);
+    }
+
+    fn render_marked_pixels(&self, model: &Model, marker: &Marker, canvas: &mut WindowCanvas) {
+        for point in marker.marked_points() {
+            canvas.dot(model, point, model.brush_color());
+        }
     }
 
     fn render_background(&self, canvas: &mut WindowCanvas) {

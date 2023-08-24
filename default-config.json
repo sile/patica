@@ -23,6 +23,7 @@
         "c": ["cut"],
 
         "m": [{"mark": "stroke"}],
+        "n": [{"mark": "line"}],
         "Esc": ["cancel"],
         "e": ["erase"],
         "Backspace": [{"mark": "stroke"}, "erase"],
