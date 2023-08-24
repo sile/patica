@@ -1,5 +1,6 @@
 use crate::{log::Log, Color, Command, PatchCommand, PatchEntry, Point, Version};
 use std::{
+    cmp::Ordering,
     collections::BTreeMap,
     ops::{Bound, RangeBounds},
 };
@@ -153,21 +154,23 @@ impl Canvas {
                     added.entry(color).or_default().push(point);
                     new_pixel = new_pixels.next();
                 }
-                (Some(old), Some(new)) => {
-                    if old.0 == new.0 {
+                (Some(old), Some(new)) => match old.0.cmp(&new.0) {
+                    Ordering::Equal => {
                         if old.1 != new.1 {
                             added.entry(new.1).or_default().push(new.0);
                             old_pixel = old_pixels.next();
                             new_pixel = new_pixels.next();
                         }
-                    } else if old.0 < new.0 {
+                    }
+                    Ordering::Less => {
                         removed.push(old.0);
                         old_pixel = old_pixels.next();
-                    } else {
+                    }
+                    Ordering::Greater => {
                         added.entry(new.1).or_default().push(new.0);
                         new_pixel = new_pixels.next();
                     }
-                }
+                },
             }
         }
 
