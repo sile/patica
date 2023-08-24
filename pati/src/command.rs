@@ -68,17 +68,14 @@ impl<R: BufRead> CommandReader<R> {
     }
 
     pub fn read_command(&mut self) -> std::io::Result<Option<Command>> {
-        loop {
-            if 0 == self.inner.read_line(&mut self.line)? {
-                return Ok(None);
-            }
-            if self.line.ends_with('\n') {
-                let command = serde_json::from_str(&self.line)?;
-                self.line.clear();
-                return Ok(Some(command));
-            } else {
-                return Ok(None);
-            }
+        if 0 == self.inner.read_line(&mut self.line)? {
+            Ok(None)
+        } else if self.line.ends_with('\n') {
+            let command = serde_json::from_str(&self.line)?;
+            self.line.clear();
+            Ok(Some(command))
+        } else {
+            Ok(None)
         }
     }
 }

@@ -33,6 +33,9 @@ impl Args {
 #[derive(Debug, clap::Args)]
 pub struct OpenCommand {
     path: PathBuf,
+
+    #[clap(short, long, default_value_t = 7539)]
+    port: u16,
 }
 
 impl OpenCommand {
