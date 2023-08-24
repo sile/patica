@@ -25,6 +25,3 @@ copic_colors = "0.1"
 
 [workspace]
 members = ["pati"]
-
-[patch.crates-io]
-pati = { path = "pati" }

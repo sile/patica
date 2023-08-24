@@ -1,6 +1,7 @@
 use crate::{
     clock::Clock,
     command::{Command, MoveDestination},
+    marker::Marker,
 };
 use pati::{Color, Point};
 use std::num::NonZeroUsize;
@@ -13,6 +14,7 @@ pub struct Model {
     brush_color: Color,
     clock: Clock,
     quit: bool,
+    fsm: Fsm,
 }
 
 impl Model {
@@ -1258,3 +1260,11 @@ impl Model {
 //         color: Color,
 //     },
 // }
+
+#[derive(Debug, Default)]
+enum Fsm {
+    #[default]
+    Neutral,
+    Marking(Marker),
+    // Editing(Editor)
+}

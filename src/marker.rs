@@ -1,3 +1,4 @@
+use pati::Point;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,22 +13,78 @@ pub enum MarkKind {
     Ellipse,
 }
 
+#[derive(Debug, Clone)]
+pub enum Marker {
+    Line(LineMarker),
+}
+
+impl Marker {
+    pub fn new(mark_kind: MarkKind, cursor: Point) -> Self {
+        match mark_kind {
+            MarkKind::Line => Self::Line(LineMarker::new(cursor)),
+            MarkKind::Stroke => todo!(),
+            MarkKind::Fill => todo!(),
+            MarkKind::Rectangle => todo!(),
+            MarkKind::FillRectangle => todo!(),
+            MarkKind::Color => todo!(),
+            MarkKind::Ellipse => todo!(),
+        }
+    }
+
+    pub fn marked_points(&self) -> Box<dyn '_ + Iterator<Item = Point>> {
+        match self {
+            Self::Line(m) => Box::new(m.marked_points()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct LineMarker {
+    start: Point,
+    end: Point,
+}
+
+impl LineMarker {
+    fn new(cursor: Point) -> Self {
+        Self {
+            start: cursor,
+            end: cursor,
+        }
+    }
+
+    // fn handle_command(&mut self, _command: &Command, model: &Model) {
+    //     self.end = model.cursor().position();
+    // }
+
+    fn marked_points(self) -> impl Iterator<Item = Point> {
+        let p0 = self.start;
+        let p1 = self.end;
+        let dx = (p1.x - p0.x).abs() + 1;
+        let dy = (p1.y - p0.y).abs() + 1;
+        let sign_y = if p1.y > p0.y { 1 } else { -1 };
+        let sign_x = if p1.x > p0.x { 1 } else { -1 };
+        let (f, r, n, v0, sign0, mut v1, sign1) = if dx > dy {
+            let f = xy as fn(i16, i16) -> Point;
+            let r = Rational::new(dx, dy);
+            (f, r, dx, p0.x, sign_x, p0.y, sign_y)
+        } else {
+            let f = yx as fn(i16, i16) -> Point;
+            let r = Rational::new(dy, dx);
+            (f, r, dy, p0.y, sign_y, p0.x, sign_x)
+        };
+        (0..n).map(move |i| {
+            if i != 0 && (i - 1) / r != i / r {
+                v1 += sign1;
+            }
+            f(v0 + i * sign0, v1)
+        })
+    }
+}
+
 // // TODO: delete
 // use crate::model::{Command, Model, PixelPosition, PixelRegion};
 // use pagurus::image::Color;
 // use std::collections::HashSet;
-
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-// #[serde(rename_all = "snake_case")]
-// pub enum MarkKind {
-//     Line,
-//     Stroke,
-//     Fill,
-//     Rectangle,
-//     FillRectangle,
-//     Color,
-//     Ellipse,
-// }
 
 // #[derive(Debug, Clone)]
 // pub enum Marker {
@@ -65,93 +122,39 @@ pub enum MarkKind {
 //         }
 //     }
 
-//     pub fn marked_pixels(&self) -> Box<dyn '_ + Iterator<Item = PixelPosition>> {
-//         match self {
-//             Self::Line(m) => Box::new(m.marked_pixels()),
-//             Self::Stroke(m) => Box::new(m.marked_pixels()),
-//             Self::Fill(m) => Box::new(m.marked_pixels()),
-//             Self::Rectangle(m) => Box::new(m.marked_pixels()),
-//             Self::FillRectangle(m) => Box::new(m.marked_pixels()),
-//             Self::Color(m) => Box::new(m.marked_pixels()),
-//             Self::Ellipse(m) => Box::new(m.marked_pixels()),
-//         }
-//     }
 // }
 
 // fn line(start: PixelPosition, end: PixelPosition) -> impl Iterator<Item = PixelPosition> {
 //     LineMarker { start, end }.marked_pixels()
 // }
 
-// #[derive(Debug, Clone, Copy)]
-// pub struct LineMarker {
-//     start: PixelPosition,
-//     end: PixelPosition,
-// }
+#[derive(Debug, Clone, Copy)]
+struct Rational {
+    num: i16,
+    den: i16,
+}
 
-// impl LineMarker {
-//     fn new(model: &Model) -> Self {
-//         Self {
-//             start: model.cursor().position(),
-//             end: model.cursor().position(),
-//         }
-//     }
+impl Rational {
+    const fn new(num: i16, den: i16) -> Self {
+        Self { num, den }
+    }
+}
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         self.end = model.cursor().position();
-//     }
+impl std::ops::Div<Rational> for i16 {
+    type Output = i16;
 
-//     fn marked_pixels(self) -> impl Iterator<Item = PixelPosition> {
-//         let p0 = self.start;
-//         let p1 = self.end;
-//         let dx = (p1.x - p0.x).abs() + 1;
-//         let dy = (p1.y - p0.y).abs() + 1;
-//         let sign_y = if p1.y > p0.y { 1 } else { -1 };
-//         let sign_x = if p1.x > p0.x { 1 } else { -1 };
-//         let (f, r, n, v0, sign0, mut v1, sign1) = if dx > dy {
-//             let f = xy as fn(i16, i16) -> PixelPosition;
-//             let r = Rational::new(dx, dy);
-//             (f, r, dx, p0.x, sign_x, p0.y, sign_y)
-//         } else {
-//             let f = yx as fn(i16, i16) -> PixelPosition;
-//             let r = Rational::new(dy, dx);
-//             (f, r, dy, p0.y, sign_y, p0.x, sign_x)
-//         };
-//         (0..n).map(move |i| {
-//             if i != 0 && (i - 1) / r != i / r {
-//                 v1 += sign1;
-//             }
-//             f(v0 + i * sign0, v1)
-//         })
-//     }
-// }
+    fn div(self, rhs: Rational) -> Self::Output {
+        self * rhs.den / rhs.num
+    }
+}
 
-// #[derive(Debug, Clone, Copy)]
-// struct Rational {
-//     num: i16,
-//     den: i16,
-// }
+fn xy(x: i16, y: i16) -> Point {
+    Point::new(x, y)
+}
 
-// impl Rational {
-//     const fn new(num: i16, den: i16) -> Self {
-//         Self { num, den }
-//     }
-// }
-
-// impl std::ops::Div<Rational> for i16 {
-//     type Output = i16;
-
-//     fn div(self, rhs: Rational) -> Self::Output {
-//         self * rhs.den / rhs.num
-//     }
-// }
-
-// fn xy(x: i16, y: i16) -> PixelPosition {
-//     PixelPosition::from_xy(x, y)
-// }
-
-// fn yx(y: i16, x: i16) -> PixelPosition {
-//     PixelPosition::from_xy(x, y)
-// }
+fn yx(y: i16, x: i16) -> Point {
+    Point::new(x, y)
+}
 
 // #[derive(Debug, Clone)]
 // pub struct StrokeMarker {
