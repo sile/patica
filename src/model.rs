@@ -1,15 +1,83 @@
+use crate::{
+    clock::Clock,
+    command::{Command, MoveDestination},
+};
+use pati::{Color, Point};
+use std::num::NonZeroUsize;
+
 #[derive(Debug, Default)]
 pub struct Model {
     canvas: pati::VersionedCanvas,
+    cursor: Point,
+    camera: Point,
+    brush_color: Color,
+    clock: Clock,
+    quit: bool,
 }
 
 impl Model {
+    pub fn cursor(&self) -> Point {
+        self.cursor
+    }
+
+    pub fn camera(&self) -> Point {
+        self.camera
+    }
+
+    pub fn brush_color(&self) -> Color {
+        self.brush_color
+    }
+
+    pub fn quit(&self) -> bool {
+        self.quit
+    }
+
+    pub fn clock(&self) -> Clock {
+        self.clock
+    }
+
+    pub fn tick(&mut self) {
+        self.clock.tick();
+    }
+
+    pub fn scale(&self) -> NonZeroUsize {
+        // TODO
+        NonZeroUsize::new(1).unwrap()
+    }
+
     pub fn canvas(&self) -> &pati::VersionedCanvas {
         &self.canvas
     }
 
     pub fn canvas_mut(&mut self) -> &mut pati::VersionedCanvas {
         &mut self.canvas
+    }
+
+    pub fn apply(&mut self, command: &Command) {
+        match command {
+            Command::Move(c) => self.handle_move_command(c),
+            Command::Mark(_) => todo!(),
+            Command::Pick => todo!(),
+            Command::Cut => todo!(),
+            Command::Cancel => todo!(),
+            Command::Erase => todo!(),
+            Command::Color => todo!(),
+            Command::Paste => todo!(),
+            Command::Undo => todo!(),
+            Command::Redo => todo!(),
+            Command::Quit => {
+                self.quit = true;
+            }
+        }
+    }
+
+    fn handle_move_command(&mut self, dst: &MoveDestination) {
+        match dst {
+            MoveDestination::Delta(delta) => {
+                self.cursor = self.cursor + *delta;
+            }
+            MoveDestination::Anchor(_) => todo!(),
+        }
     }
 }
 

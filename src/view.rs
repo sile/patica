@@ -1,17 +1,19 @@
 use crate::{config::KeyConfig, model::Model};
+use orfail::OrFail;
 use pagurus::{
     event::Event,
-    image::{Canvas, Color},
-    spatial::Size,
+    image::Canvas,
+    spatial::{Position, Size},
 };
+use pati::{Color, Point};
+use std::time::Duration;
 
-#[derive(Debug)]
-pub struct ViewContext {
-    pub window_size: Size,
-    // pub now: Duration,
-    pub quit: bool,
-    //pub clock: GameClock,
-}
+// #[derive(Debug)]
+// pub struct ViewContext {
+// pub now: Duration,
+// pub quit: bool,
+// pub clock: GameClock,
+//}
 
 // impl ViewContext {
 //     fn scaled_window_size(&self) -> Size {
@@ -48,20 +50,10 @@ pub struct ViewContext {
 //     }
 // }
 
-// fn draw_pixel(ctx: &ViewContext, canvas: &mut Canvas, pixel_position: Point, color: pati::Rgba) {
-//     let color = Color::rgba(color.r, color.g, color.b, color.a);
-//     let p = ctx.to_position(pixel_position);
-//     for y in 0..ctx.scale() {
-//         for x in 0..ctx.scale() {
-//             canvas.draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
-//         }
-//     }
-// }
-
 #[derive(Debug, Default)]
 pub struct View {
-    // canvas: PixelCanvas,
     key_config: KeyConfig,
+    cursor: Cursor,
 }
 
 impl View {
@@ -69,14 +61,16 @@ impl View {
         self.key_config = config;
     }
 
-    pub fn render(&self, ctx: &ViewContext, model: &Model, canvas: &mut Canvas) {
-        self.render_background(ctx, canvas);
+    pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
+        self.render_background(canvas);
+        self.cursor.render(model, canvas);
         // self.render_frames(ctx, canvas);
         // self.canvas.render(ctx, canvas);
     }
 
-    fn render_background(&self, _ctx: &ViewContext, canvas: &mut Canvas) {
-        canvas.fill_color(Color::WHITE);
+    fn render_background(&self, canvas: &mut WindowCanvas) {
+        // TODO
+        canvas.canvas.fill_color(pagurus::image::Color::WHITE);
         // TODO
         // match ctx.model.background() {
         //     Background::Color(c) => {
@@ -96,13 +90,17 @@ impl View {
         // }
     }
 
-    pub fn handle_event(
-        &mut self,
-        ctx: &mut ViewContext,
-        model: &mut Model,
-        event: Event,
-    ) -> orfail::Result<()> {
-        //self.canvas.handle_event(ctx, event).or_fail()?;
+    pub fn handle_event(&mut self, model: &mut Model, event: Event) -> orfail::Result<()> {
+        self.cursor.handle_event(model, event).or_fail()?;
+
+        let Event::Key(key) = event else {
+            return Ok(());
+        };
+        for command in self.key_config.get_commands(key) {
+            model.apply(command);
+            // TODO: self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
+        }
+
         Ok(())
     }
 }
@@ -182,28 +180,79 @@ impl View {
 //         };
 //         draw_pixel(ctx, canvas, ctx.model.cursor(), c);
 //     }
+// }
 
-//     fn handle_event(&mut self, ctx: &mut ViewContext, event: Event) -> pagurus::Result<()> {
-//         if let Event::Key(event) = event {
-//             self.handle_key_event(ctx, event).or_fail()?;
+// fn dot(ctx: &ViewContext, canvas: &mut Canvas, point: Point, color: Color) {
+//     let color = pagurus::image::Color::rgba(color.r, color.g, color.b, color.a);
+//     let p = ctx.to_window_position(point);
+//     for y in 0..ctx.scale() {
+//         for x in 0..ctx.scale() {
+//             canvas.draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
 //         }
-//         Ok(())
-//     }
-
-//     fn handle_key_event(&mut self, ctx: &mut ViewContext, key: KeyEvent) -> pagurus::Result<()> {
-//         match ctx.config.key.get_command(key) {
-//             None => {}
-//             Some(commands) => {
-//                 for command in commands {
-//                     // TODO
-//                     // if matches!(command, Command::Quit) {
-//                     //     ctx.quit = true;
-//                     // }
-//                     ctx.model.apply(command).or_fail()?;
-//                 }
-//                 self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
-//             }
-//         }
-//         Ok(())
 //     }
 // }
+
+fn to_position(point: Point) -> Position {
+    Position::from_xy(point.x as i32, point.y as i32)
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+struct Cursor {
+    show: bool,
+    switch_time: Duration,
+}
+
+impl Cursor {
+    fn render(self, model: &Model, canvas: &mut WindowCanvas) {
+        let cursor = model.cursor();
+        let color = model.brush_color();
+        if self.show {
+            canvas.dot(model, cursor, color);
+        }
+    }
+
+    fn handle_event(&mut self, model: &mut Model, event: Event) -> orfail::Result<()> {
+        if matches!(event, Event::Key(_)) {
+            self.show = true;
+            self.switch_time = model.clock().duration() + Duration::from_secs(1);
+        }
+
+        if model.clock().duration() >= self.switch_time {
+            self.show = !self.show;
+            self.switch_time = model.clock().duration() + Duration::from_millis(500);
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct WindowCanvas<'a> {
+    canvas: Canvas<'a>,
+    window_size: Size,
+}
+
+impl<'a> WindowCanvas<'a> {
+    pub fn new(canvas: Canvas<'a>, window_size: Size) -> Self {
+        Self {
+            canvas,
+            window_size,
+        }
+    }
+
+    fn dot(&mut self, model: &Model, point: Point, color: Color) {
+        let color = pagurus::image::Color::rgba(color.r, color.g, color.b, color.a);
+        let p = self.to_window_position(model, point);
+        for y in 0..model.scale().get() {
+            for x in 0..model.scale().get() {
+                self.canvas
+                    .draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
+            }
+        }
+    }
+
+    fn to_window_position(&self, model: &Model, point: Point) -> Position {
+        let center = self.window_size.to_region().center();
+        to_position(point) + center - to_position(model.camera())
+    }
+}

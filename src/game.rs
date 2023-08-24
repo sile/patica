@@ -1,7 +1,8 @@
 use crate::{
+    clock::Clock,
     config::Config,
     model::Model,
-    view::{View, ViewContext},
+    view::{View, WindowCanvas},
 };
 use pagurus::{
     event::{Event, TimeoutTag},
@@ -13,8 +14,7 @@ use pagurus::{
 use std::num::NonZeroU64;
 use std::time::Duration;
 
-const FPS: u32 = 30;
-const RENDER_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
+const TICK_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
 
 // TODO: delete
 #[derive(Debug, Clone, Copy)]
@@ -44,7 +44,6 @@ pub struct Game {
     video_frame: VideoFrame,
     view: View,
     model: Model,
-    clock: GameClock,
 }
 
 impl Game {
@@ -61,45 +60,43 @@ impl Game {
     }
 
     fn render<S: System>(&mut self, system: &mut S) {
-        let ctx = self.view_context(system);
-        let mut canvas = Canvas::new(&mut self.video_frame);
-        self.view.render(&ctx, &self.model, &mut canvas);
+        let size = self.video_frame.spec().resolution;
+        let mut canvas = WindowCanvas::new(Canvas::new(&mut self.video_frame), size);
+        self.view.render(&self.model, &mut canvas);
         system.video_draw(self.video_frame.as_ref());
     }
 
-    fn view_context<S: System>(&self, _system: &S) -> ViewContext {
-        ViewContext {
-            window_size: self.video_frame.spec().resolution,
-            quit: false,
-        }
+    fn set_tick_timeout<S: System>(&mut self, system: &mut S) {
+        system.clock_set_timeout(
+            TICK_TIMEOUT_TAG,
+            Duration::from_secs(1) / Clock::DEFAULT_FPS,
+        );
     }
 }
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> Result<()> {
-        system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
+        self.set_tick_timeout(system);
         Ok(())
     }
 
     fn handle_event(&mut self, system: &mut S, event: Event) -> Result<bool> {
+        let mut set_timeout = false;
         match event {
             Event::WindowResized(size) => {
                 self.video_frame = VideoFrame::new(system.video_init(size));
-                self.render(system);
             }
-            Event::Timeout(RENDER_TIMEOUT_TAG) => {
-                self.clock.tick();
-                self.render(system);
-                system.clock_set_timeout(RENDER_TIMEOUT_TAG, Duration::from_secs(1) / FPS);
-                return Ok(true);
+            Event::Timeout(TICK_TIMEOUT_TAG) => {
+                self.model.tick();
+                set_timeout = true;
             }
             _ => {}
         }
-
-        let mut ctx = self.view_context(system);
-        self.view
-            .handle_event(&mut ctx, &mut self.model, event)
-            .or_fail()?;
-        Ok(!ctx.quit)
+        self.view.handle_event(&mut self.model, event).or_fail()?;
+        self.render(system);
+        if set_timeout {
+            self.set_tick_timeout(system);
+        }
+        Ok(!self.model.quit())
     }
 }

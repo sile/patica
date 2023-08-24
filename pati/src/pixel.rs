@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
-#[derive(
-    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(into = "ColorLike", from = "ColorLike")]
 pub struct Color {
     pub r: u8,
@@ -19,6 +17,12 @@ impl Color {
 
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
+    }
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::rgb(0, 0, 0)
     }
 }
 

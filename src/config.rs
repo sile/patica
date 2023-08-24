@@ -44,9 +44,9 @@ impl Default for Config {
 pub struct KeyConfig(BTreeMap<Key, Vec<Command>>);
 
 impl KeyConfig {
-    pub fn get_command(&self, key: KeyEvent) -> Option<Vec<Command>> {
+    pub fn get_commands(&self, key: KeyEvent) -> impl Iterator<Item = &Command> {
         let key = Key(key);
-        self.0.get(&key).cloned()
+        self.0.get(&key).into_iter().flatten()
     }
 }
 
