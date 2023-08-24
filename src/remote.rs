@@ -133,7 +133,7 @@ pub struct RemoteCommandClient {
 }
 
 impl RemoteCommandClient {
-    pub fn new(port: u16) -> orfail::Result<Self> {
+    pub fn connect(port: u16) -> orfail::Result<Self> {
         let stream = BufWriter::new(TcpStream::connect(("127.0.0.1", port)).or_fail()?);
         Ok(Self { stream })
     }

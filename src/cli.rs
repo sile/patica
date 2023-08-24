@@ -6,13 +6,17 @@ use std::{
     path::PathBuf,
 };
 
-use crate::config::Config;
+use crate::{
+    command::Command,
+    config::Config,
+    remote::{RemoteCommandClient, RemoteCommandServer},
+};
 
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
 pub enum Args {
     Open(OpenCommand),
-    // TODO: Apply(ApplyCommand),
+    Apply(ApplyCommand),
     // TODO: Export(ExportCommand),
     // Include (set-origin -> cut -> reset-origin)
     // Summary
@@ -24,7 +28,7 @@ impl Args {
     pub fn run(&self) -> orfail::Result<()> {
         match self {
             Self::Open(cmd) => cmd.run().or_fail(),
-            // Self::Apply(cmd) => cmd.run().or_fail(),
+            Self::Apply(cmd) => cmd.run().or_fail(),
             // Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
@@ -40,6 +44,7 @@ pub struct OpenCommand {
 
 impl OpenCommand {
     fn run(&self) -> orfail::Result<()> {
+        let server = RemoteCommandServer::start(self.port).or_fail()?;
         let config = Config::load_config_file().or_fail()?.unwrap_or_default();
 
         let mut game = crate::game::Game::default();
@@ -65,11 +70,17 @@ impl OpenCommand {
 
         while let Ok(event) = system.next_event() {
             let version = game.model().canvas().version();
+
+            if let Some(patica_command) = server.poll_command().or_fail()? {
+                game.model_mut().apply(&patica_command);
+            }
+
             if !game.handle_event(&mut system, event).or_fail()? {
                 break;
             }
-            for command in game.model().canvas().applied_commands(version) {
-                writer.write_command(command).or_fail()?;
+
+            for pati_command in game.model().canvas().applied_commands(version) {
+                writer.write_command(pati_command).or_fail()?;
             }
         }
 
@@ -77,34 +88,21 @@ impl OpenCommand {
     }
 }
 
-// #[derive(Debug, clap::Args)]
-// pub struct ApplyCommand {
-//     path: PathBuf,
-// }
+#[derive(Debug, clap::Args)]
+pub struct ApplyCommand {
+    #[clap(short, long, default_value_t = 7539)]
+    port: u16,
+}
 
-// impl ApplyCommand {
-//     fn run(&self) -> pagurus::Result<()> {
-//         let mut journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
-//         let mut commands = Vec::new();
-//         let stdin = std::io::stdin();
-
-//         for line in stdin.lock().lines() {
-//             let line = line.or_fail()?;
-//             commands.extend(
-//                 serde_json::from_str::<CommandOrCommands>(&line)
-//                     .or_fail()?
-//                     .into_commands(),
-//             );
-//         }
-
-//         for command in commands {
-//             journal.model_mut().apply(command).or_fail()?;
-//         }
-//         journal.append_applied_commands().or_fail()?;
-
-//         Ok(())
-//     }
-// }
+impl ApplyCommand {
+    fn run(&self) -> pagurus::Result<()> {
+        let mut client = RemoteCommandClient::connect(self.port).or_fail()?;
+        let commands: Vec<Command> =
+            serde_json::from_reader(&mut std::io::stdin().lock()).or_fail()?;
+        client.send_commands(&commands).or_fail()?;
+        Ok(())
+    }
+}
 
 // #[derive(Debug, clap::Args)]
 // pub struct ExportCommand {
