@@ -1,6 +1,7 @@
 use crate::{
     clock::Clock,
     command::{Command, MoveDestination},
+    editor::Editor,
     marker::{MarkKind, Marker},
 };
 use pati::{Color, Point, Version};
@@ -69,7 +70,7 @@ impl Model {
             Command::Move(c) => self.handle_move_command(c),
             Command::Mark(c) => self.handle_mark_command(*c),
             Command::Pick => self.handle_pick_command(),
-            Command::Cut => todo!(),
+            Command::Cut => self.handle_cut_command(),
             Command::Cancel => self.handle_cancel_command(),
             Command::Erase => self.handle_erase_command(),
             Command::Color => self.handle_color_command(),
@@ -81,6 +82,10 @@ impl Model {
             }
             Command::Dip(c) => self.handle_dip_command(*c),
         }
+    }
+
+    fn handle_cut_command(&mut self) {
+        //
     }
 
     fn handle_undo_command(&mut self) {
@@ -130,6 +135,7 @@ impl Model {
         let points = match &self.fsm {
             Fsm::Neutral => vec![self.cursor],
             Fsm::Marking(marker) => marker.marked_points().collect(),
+            Fsm::Editing(_) => Vec::new(),
         };
         let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
             color: None,
@@ -144,6 +150,7 @@ impl Model {
         let points = match &self.fsm {
             Fsm::Neutral => vec![self.cursor],
             Fsm::Marking(marker) => marker.marked_points().collect(),
+            Fsm::Editing(_) => vec![],
         };
         let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
             color: Some(self.brush_color),
@@ -1344,7 +1351,7 @@ enum Fsm {
     #[default]
     Neutral,
     Marking(Marker),
-    // Editing(Editor)
+    Editing(Editor),
 }
 
 #[derive(Debug, Clone, Copy)]
