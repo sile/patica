@@ -1,6 +1,7 @@
 {
     "key": {
         "Up": [{"move": [0, -1]}],
+        "Up": [{"move": [0, -1]}],
         "Down": [{"move": [0, 1]}],
         "Left": [{"move": [-1, 0]}],
         "Right": [{"move": [1, 0]}],
@@ -23,6 +24,10 @@
         "Backspace": ["erase"],
 
         " ": ["draw", "cancel"],
+        "o": [{"center": "cursor"}],
+
+        "+": [{"scale": 1}],
+        "-": [{"scale": -1}],
 
         "z": ["undo"],
         "y": ["redo"],

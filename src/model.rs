@@ -1,6 +1,6 @@
 use crate::{
     clock::Clock,
-    command::{Command, MoveDestination},
+    command::{CenterPoint, Command, MoveDestination},
     editor::Editor,
     marker::{MarkKind, Marker},
 };
@@ -88,6 +88,33 @@ impl Model {
             }
             Command::Dip(c) => self.handle_dip_command(*c),
             Command::Scale(c) => self.handle_scale_command(*c),
+            Command::Center(c) => self.handle_center_command(c),
+            Command::Anchor(c) => self.handle_anchor_command(c),
+            Command::Tag(c) => self.handle_tag_command(c),
+        }
+    }
+
+    fn handle_anchor_command(&mut self, name: &str) {
+        let command = pati::Command::anchor(name.to_owned(), Some(self.cursor));
+        self.canvas.apply(&command);
+    }
+
+    fn handle_tag_command(&mut self, name: &str) {
+        let version = self.canvas.version();
+        let command = pati::Command::tag(name.to_owned(), Some(version));
+        self.canvas.apply(&command);
+    }
+
+    fn handle_center_command(&mut self, point: &CenterPoint) {
+        match point {
+            CenterPoint::Cursor => {
+                self.camera = self.cursor;
+            }
+            CenterPoint::Anchor(name) => {
+                if let Some(point) = self.canvas.anchors().get(name).copied() {
+                    self.camera = point;
+                }
+            }
         }
     }
 
@@ -191,7 +218,11 @@ impl Model {
             MoveDestination::Delta(delta) => {
                 self.cursor = self.cursor + *delta;
             }
-            MoveDestination::Anchor(_) => todo!(),
+            MoveDestination::Anchor(name) => {
+                if let Some(point) = self.canvas.anchors().get(&name.anchor).copied() {
+                    self.cursor = point;
+                }
+            }
         }
         if let Fsm::Marking(marker) = &mut self.fsm {
             marker.handle_move(self.cursor);

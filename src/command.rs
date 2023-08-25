@@ -17,19 +17,31 @@ pub enum Command {
     Redo,
     Quit,
     Scale(i8),
+    Center(CenterPoint),
+    Anchor(String),
+    Tag(String),
     // Checkout
-    // "o": [{"set": {"camera": [0, 0]}}],
-    // "O": [{"set": {"camera": "origin"}}],
-    // "+": [{"scale": 1}],
-    // "-": [{"scale": -1}],
     // Background
     // Rotate
     // Flip
+    // {"remove": {"tag"|"anchor"|"frame": "name"}}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MoveDestination {
     Delta(Point),
+    Anchor(AnchorName),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnchorName {
+    pub anchor: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CenterPoint {
+    Cursor,
     Anchor(String),
 }
