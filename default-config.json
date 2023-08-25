@@ -16,14 +16,13 @@
 
         "p": ["pick"],
         "c": ["cut"],
-        "v": ["paste"],
 
         "m": [{"mark": "stroke"}],
         "n": [{"mark": "line"}],
         "Esc": ["cancel"],
         "Backspace": ["erase"],
 
-        " ": ["color"],
+        " ": ["draw", "cancel"],
 
         "z": ["undo"],
         "y": ["redo"],

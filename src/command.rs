@@ -12,8 +12,7 @@ pub enum Command {
     Cut,
     Cancel,
     Erase,
-    Color, // TODO: rename to draw
-    Paste,
+    Draw,
     Undo,
     Redo,
     Quit,
@@ -23,11 +22,6 @@ pub enum Command {
     // "O": [{"set": {"camera": "origin"}}],
     // "+": [{"scale": 1}],
     // "-": [{"scale": -1}],
-    // " ": {"if": {
-    //     "neutral": [{"mark": "stroke"}, "color"],
-    //     "marking": ["color"],
-    //     "editing": ["paste", "cancel"]
-    // }},
     // Background
     // Rotate
     // Flip

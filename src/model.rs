@@ -80,8 +80,7 @@ impl Model {
             Command::Cut => self.handle_cut_command(),
             Command::Cancel => self.handle_cancel_command(),
             Command::Erase => self.handle_erase_command(),
-            Command::Color => self.handle_color_command(),
-            Command::Paste => self.handle_paste_command(),
+            Command::Draw => self.handle_draw_command(),
             Command::Undo => self.handle_undo_command(),
             Command::Redo => self.handle_redo_command(),
             Command::Quit => {
@@ -94,27 +93,6 @@ impl Model {
 
     fn handle_scale_command(&mut self, delta: i8) {
         self.scale = self.scale.saturating_add(delta);
-    }
-
-    fn handle_paste_command(&mut self) {
-        let Fsm::Editing(editor) = &self.fsm else {
-            return;
-        };
-
-        let mut pixels: BTreeMap<_, Vec<_>> = BTreeMap::new();
-        for (point, color) in editor.pixels() {
-            pixels.entry(color).or_default().push(point + self.cursor);
-        }
-
-        let entries = pixels
-            .into_iter()
-            .map(|(color, points)| pati::PatchEntry {
-                color: Some(color),
-                points,
-            })
-            .collect::<Vec<_>>();
-        let command = pati::Command::Patch(pati::PatchCommand::new(entries));
-        self.canvas.apply(&command);
     }
 
     fn handle_cut_command(&mut self) {
@@ -199,18 +177,9 @@ impl Model {
         self.fsm = Fsm::Neutral(Default::default());
     }
 
-    fn handle_color_command(&mut self) {
-        let points = match &self.fsm {
-            Fsm::Neutral(_) => vec![self.cursor],
-            Fsm::Marking(marker) => marker.marked_points().collect(),
-            Fsm::Editing(_) => vec![],
-        };
-        let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
-            color: Some(self.brush_color),
-            points,
-        }]));
-        self.canvas.apply(&command);
-        self.fsm = Fsm::Neutral(Default::default());
+    fn handle_draw_command(&mut self) {
+        self.fsm
+            .draw(&mut self.canvas, self.brush_color, self.cursor);
     }
 
     fn handle_mark_command(&mut self, kind: MarkKind) {
@@ -235,6 +204,38 @@ enum Fsm {
     Neutral(NeutralState),
     Marking(Marker),
     Editing(Editor),
+}
+
+impl Fsm {
+    fn draw(&mut self, canvas: &mut pati::VersionedCanvas, brush_color: Color, cursor: Point) {
+        match self {
+            Fsm::Neutral(fsm) => {
+                let command =
+                    pati::Command::patch(vec![pati::PatchEntry::color(brush_color, vec![cursor])]);
+                canvas.apply(&command);
+                fsm.undo = None;
+            }
+            Fsm::Marking(fsm) => {
+                let command = pati::Command::patch(vec![pati::PatchEntry::color(
+                    brush_color,
+                    fsm.marked_points().collect(),
+                )]);
+                canvas.apply(&command);
+            }
+            Fsm::Editing(fsm) => {
+                let mut patches: BTreeMap<_, pati::PatchEntry> = BTreeMap::new();
+                for (point, color) in fsm.pixels() {
+                    patches
+                        .entry(color)
+                        .or_insert_with(|| pati::PatchEntry::color(color, Vec::new()))
+                        .points
+                        .push(point + cursor);
+                }
+                let command = pati::Command::patch(patches.into_iter().map(|(_, v)| v).collect());
+                canvas.apply(&command);
+            }
+        }
+    }
 }
 
 impl Default for Fsm {

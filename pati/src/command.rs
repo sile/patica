@@ -16,6 +16,20 @@ pub enum Command {
     },
 }
 
+impl Command {
+    pub fn patch(entries: Vec<PatchEntry>) -> Self {
+        Self::Patch(PatchCommand::new(entries))
+    }
+
+    pub fn tag(name: String, version: Option<Version>) -> Self {
+        Self::Tag { name, version }
+    }
+
+    pub fn anchor(name: String, point: Option<Point>) -> Self {
+        Self::Anchor { name, point }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PatchCommand(Vec<PatchEntry>);
 
@@ -33,6 +47,22 @@ impl PatchCommand {
 pub struct PatchEntry {
     pub color: Option<Color>,
     pub points: Vec<Point>,
+}
+
+impl PatchEntry {
+    pub fn color(color: Color, points: Vec<Point>) -> Self {
+        Self {
+            color: Some(color),
+            points,
+        }
+    }
+
+    pub fn erase(points: Vec<Point>) -> Self {
+        Self {
+            color: None,
+            points,
+        }
+    }
 }
 
 #[derive(Debug)]
