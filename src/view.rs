@@ -92,57 +92,7 @@ impl View {
     }
 }
 
-// impl View {
-
-//     fn render_frames(&self, _ctx: &ViewContext, _canvas: &mut Canvas) {
-//         // TODO:
-//         // for frame in ctx.model.active_frames(ctx.clock) {
-//         //     for (pixel_position, color) in frame.pixels() {
-//         //         draw_pixel(ctx, canvas, pixel_position, color);
-//         //     }
-//         // }
-//     }
-
-// }
-
-// #[derive(Debug, Default)]
-// pub struct PixelCanvas {
-//     force_show_cursor_until: Duration,
-// }
-
-// impl PixelCanvas {
-//     fn render(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-//         self.render_pixels(ctx, canvas);
-//         if let Some(marker) = ctx.model.marker() {
-//             self.render_marked_pixels(ctx, canvas, marker);
-//         }
-//         // TODO
-//         // if ctx.model.has_stashed_pixels() {
-//         //     self.render_stashed_pixels(ctx, canvas);
-//         // }
-//         self.render_cursor(ctx, canvas);
-//     }
-
-//     fn render_pixels(&self, ctx: &ViewContext, canvas: &mut Canvas) {
-//         let region = ctx.visible_pixel_region();
-
-//         for (pixel_position, color) in ctx.model.pixels().area(region) {
-//             draw_pixel(ctx, canvas, pixel_position, color);
-//         }
-//     }
-
-//     fn render_stashed_pixels(&self, _ctx: &ViewContext, _canvas: &mut Canvas) {
-//         // TODO
-//         // if ctx.now.as_millis() % 1000 < 500 {
-//         //     return;
-//         // }
-
-//         // for (pixel_position, color) in ctx.model.stashed_pixels() {
-//         //     draw_pixel(ctx, canvas, pixel_position, color);
-//         // }
-//     }
-// }
-
+// TODO: rename
 #[derive(Debug, Default, Clone, Copy)]
 struct Cursor {
     show: bool,
@@ -153,8 +103,14 @@ impl Cursor {
     fn render(self, model: &Model, canvas: &mut WindowCanvas, marked_points: &BTreeSet<Point>) {
         let color = model.brush_color();
         if self.show {
-            for &point in marked_points {
-                canvas.dot(model, point, color);
+            if let Some(editor) = model.editor() {
+                for (point, color) in editor.pixels() {
+                    canvas.dot(model, point + model.cursor(), color);
+                }
+            } else {
+                for &point in marked_points {
+                    canvas.dot(model, point, color);
+                }
             }
         }
     }
