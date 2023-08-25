@@ -16,6 +16,7 @@ pub struct Model {
     clock: Clock,
     quit: bool,
     fsm: Fsm,
+    scale: Scale,
 }
 
 impl Model {
@@ -44,8 +45,7 @@ impl Model {
     }
 
     pub fn scale(&self) -> NonZeroUsize {
-        // TODO
-        NonZeroUsize::new(1).unwrap()
+        self.scale.0
     }
 
     pub fn marker(&self) -> Option<&Marker> {
@@ -88,7 +88,12 @@ impl Model {
                 self.quit = true;
             }
             Command::Dip(c) => self.handle_dip_command(*c),
+            Command::Scale(c) => self.handle_scale_command(*c),
         }
+    }
+
+    fn handle_scale_command(&mut self, delta: i8) {
+        self.scale = self.scale.saturating_add(delta);
     }
 
     fn handle_paste_command(&mut self) {
@@ -256,4 +261,20 @@ impl Undo {
 #[derive(Debug, Default)]
 struct NeutralState {
     undo: Option<Undo>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Scale(NonZeroUsize);
+
+impl Scale {
+    fn saturating_add(self, delta: i8) -> Self {
+        let n = (self.0.get() as i8 + delta).max(1).min(100);
+        Self(NonZeroUsize::new(n as usize).expect("unreachable"))
+    }
+}
+
+impl Default for Scale {
+    fn default() -> Self {
+        Self(NonZeroUsize::new(1).expect("unreachable"))
+    }
 }

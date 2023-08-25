@@ -26,7 +26,6 @@ impl View {
 
         self.render_pixels(model, canvas, &marked_points);
         self.cursor.render(model, canvas, &marked_points);
-        // self.render_frames(ctx, canvas);
     }
 
     fn collect_marked_points(&self, model: &Model) -> BTreeSet<Point> {
@@ -145,10 +144,11 @@ impl<'a> WindowCanvas<'a> {
     }
 
     fn dot(&mut self, model: &Model, point: Point, color: Color) {
+        let scale = model.scale().get() as u32;
         let color = pagurus::image::Color::rgba(color.r, color.g, color.b, color.a);
         let p = self.point_to_position(model, point);
-        for y in 0..model.scale().get() {
-            for x in 0..model.scale().get() {
+        for y in 0..scale {
+            for x in 0..scale {
                 self.canvas
                     .draw_pixel(p.move_x(x as i32).move_y(y as i32), color);
             }
@@ -156,15 +156,18 @@ impl<'a> WindowCanvas<'a> {
     }
 
     fn point_to_position(&self, model: &Model, point: Point) -> Position {
-        let center = self.window_size.to_region().center();
-        Position::from_xy(point.x as i32, point.y as i32) + center
-            - Position::from_xy(model.camera().x as i32, model.camera().y as i32)
+        let scale = model.scale().get() as u32;
+        let center = (self.window_size / scale).to_region().center();
+        let point_position = Position::from_xy(point.x as i32, point.y as i32);
+        let camera_position = Position::from_xy(model.camera().x as i32, model.camera().y as i32);
+        (point_position - camera_position + center) * scale
     }
 
     fn position_to_point(&self, model: &Model, position: Position) -> Point {
-        let center = self.window_size.to_region().center();
-        let p =
-            position + Position::from_xy(model.camera().x as i32, model.camera().y as i32) - center;
+        let scale = model.scale().get() as u32;
+        let center = (self.window_size / scale).to_region().center();
+        let camera_position = Position::from_xy(model.camera().x as i32, model.camera().y as i32);
+        let p = (position / scale) + camera_position - center;
         Point::new(p.x as i16, p.y as i16)
     }
 }

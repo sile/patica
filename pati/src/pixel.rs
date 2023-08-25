@@ -85,6 +85,14 @@ impl std::ops::Sub for Point {
     }
 }
 
+impl std::ops::Mul<i16> for Point {
+    type Output = Self;
+
+    fn mul(self, rhs: i16) -> Self::Output {
+        Self::new(self.x.saturating_mul(rhs), self.y.saturating_mul(rhs))
+    }
+}
+
 impl PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some((self.y, self.x).cmp(&(other.y, other.x)))

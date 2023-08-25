@@ -12,11 +12,12 @@ pub enum Command {
     Cut,
     Cancel,
     Erase,
-    Color,
+    Color, // TODO: rename to draw
     Paste,
     Undo,
     Redo,
     Quit,
+    Scale(i8),
     // Checkout
     // "o": [{"set": {"camera": [0, 0]}}],
     // "O": [{"set": {"camera": "origin"}}],
@@ -27,6 +28,9 @@ pub enum Command {
     //     "marking": ["color"],
     //     "editing": ["paste", "cancel"]
     // }},
+    // Background
+    // Rotate
+    // Flip
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
