@@ -14,6 +14,10 @@ pub enum Command {
         name: String,
         point: Option<Point>,
     },
+    Put {
+        name: String,
+        value: serde_json::Value,
+    },
 }
 
 impl Command {
@@ -27,6 +31,10 @@ impl Command {
 
     pub fn anchor(name: String, point: Option<Point>) -> Self {
         Self::Anchor { name, point }
+    }
+
+    pub fn put(name: String, value: serde_json::Value) -> Self {
+        Self::Put { name, value }
     }
 }
 

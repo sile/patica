@@ -43,6 +43,10 @@ impl VersionedCanvas {
         self.canvas.anchors()
     }
 
+    pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
+        self.canvas.metadata()
+    }
+
     pub fn apply(&mut self, command: &Command) -> bool {
         let applied = self.canvas.apply(command);
         if applied {
@@ -68,6 +72,7 @@ pub struct Canvas {
     pixels: BTreeMap<Point, Color>,
     tags: BTreeMap<String, Version>,
     anchors: BTreeMap<String, Point>,
+    metadata: BTreeMap<String, serde_json::Value>,
 }
 
 impl Canvas {
@@ -98,6 +103,10 @@ impl Canvas {
         &self.anchors
     }
 
+    pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
+        &self.metadata
+    }
+
     pub fn apply(&mut self, command: &Command) -> bool {
         match command {
             Command::Patch(c) => self.handle_patch_command(c),
@@ -113,6 +122,13 @@ impl Canvas {
                     self.anchors.insert(name.clone(), point) != Some(point)
                 } else {
                     self.anchors.remove(name).is_some()
+                }
+            }
+            Command::Put { name, value } => {
+                if value.is_null() {
+                    self.metadata.remove(name).is_some()
+                } else {
+                    self.metadata.insert(name.clone(), value.clone()) != Some(value.clone())
                 }
             }
         }
