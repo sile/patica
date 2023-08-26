@@ -1,5 +1,6 @@
 use crate::{
     clock::Clock,
+    command::Command,
     config::Config,
     model::Model,
     view::{View, WindowCanvas},
@@ -49,6 +50,9 @@ pub struct Game {
 impl Game {
     pub fn set_config(&mut self, config: Config) {
         self.view.set_key_config(config.key);
+
+        self.model
+            .apply(&Command::BackgroundColor(config.initial.background_color));
     }
 
     pub fn model(&self) -> &Model {

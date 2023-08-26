@@ -20,7 +20,7 @@ impl View {
     }
 
     pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
-        self.render_background(canvas);
+        self.render_background(model, canvas);
 
         let marked_points = self.collect_marked_points(model);
 
@@ -54,26 +54,11 @@ impl View {
         }
     }
 
-    fn render_background(&self, canvas: &mut WindowCanvas) {
-        // TODO
-        canvas.canvas.fill_color(pagurus::image::Color::WHITE);
-        // TODO
-        // match ctx.model.background() {
-        //     Background::Color(c) => {
-        //         canvas.fill_color(*c);
-        //     }
-        //     Background::Checkerboard(c) => {
-        //         let n = c.dot_size.get() as i16;
-        //         for pixel_position in ctx.visible_pixel_region().positions() {
-        //             let color = if (pixel_position.x / n + pixel_position.y / n) % 2 == 0 {
-        //                 c.color1
-        //             } else {
-        //                 c.color2
-        //             };
-        //             draw_pixel(ctx, canvas, pixel_position, color);
-        //         }
-        //     }
-        // }
+    fn render_background(&self, model: &Model, canvas: &mut WindowCanvas) {
+        let c = model.background_color();
+        canvas
+            .canvas
+            .fill_color(pagurus::image::Color::rgba(c.r, c.g, c.b, c.a));
     }
 
     pub fn handle_event(&mut self, model: &mut Model, event: Event) -> orfail::Result<()> {

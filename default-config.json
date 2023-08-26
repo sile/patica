@@ -34,5 +34,8 @@
 
         "q": ["quit"],
         "Ctrl+c": ["quit"]
+    },
+    "initial": {
+        "background_color": [230, 230, 230]
     }
 }

@@ -20,8 +20,9 @@ pub enum Command {
     Center(CenterPoint),
     Anchor(String),
     Tag(String),
+    BackgroundColor(Color),
     // Checkout
-    // Background
+
     // Rotate
     // Flip
     // {"remove": {"tag"|"anchor"|"frame": "name"}}

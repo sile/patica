@@ -1,6 +1,7 @@
 use crate::command::Command;
 use orfail::OrFail;
 use pagurus::event::KeyEvent;
+use pati::Color;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
@@ -8,6 +9,9 @@ use std::{collections::BTreeMap, path::Path};
 pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
+
+    #[serde(default)]
+    pub initial: InitialConfig,
 }
 
 impl Config {
@@ -37,6 +41,17 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         serde_json::from_str(include_str!("../default-config.json")).expect("unreachable")
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitialConfig {
+    pub background_color: Color,
+}
+
+impl Default for InitialConfig {
+    fn default() -> Self {
+        Config::default().initial
     }
 }
 

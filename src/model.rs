@@ -13,6 +13,7 @@ pub struct Model {
     cursor: Point,
     camera: Point,
     brush_color: Color,
+    background_color: Color,
     clock: Clock,
     quit: bool,
     fsm: Fsm,
@@ -30,6 +31,10 @@ impl Model {
 
     pub fn brush_color(&self) -> Color {
         self.brush_color
+    }
+
+    pub fn background_color(&self) -> Color {
+        self.background_color
     }
 
     pub fn quit(&self) -> bool {
@@ -91,7 +96,12 @@ impl Model {
             Command::Center(c) => self.handle_center_command(c),
             Command::Anchor(c) => self.handle_anchor_command(c),
             Command::Tag(c) => self.handle_tag_command(c),
+            Command::BackgroundColor(c) => self.handle_background_color_command(*c),
         }
+    }
+
+    fn handle_background_color_command(&mut self, color: Color) {
+        self.background_color = color;
     }
 
     fn handle_anchor_command(&mut self, name: &str) {
