@@ -1,7 +1,7 @@
 use crate::command::Command;
 use orfail::OrFail;
 use pagurus::event::KeyEvent;
-use pati::Color;
+use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::Path};
 
@@ -47,6 +47,7 @@ impl Default for Config {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitialConfig {
     pub background_color: Color,
+    pub anchors: BTreeMap<String, Point>,
 }
 
 impl Default for InitialConfig {

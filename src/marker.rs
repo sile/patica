@@ -11,6 +11,7 @@ pub enum MarkKind {
     FillRectangle,
     Color,
     Ellipse,
+    // All
 }
 
 #[derive(Debug, Clone)]

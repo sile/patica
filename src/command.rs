@@ -32,6 +32,7 @@ pub enum Command {
     // Edit(rotate|flip|color)
     // Rotate
     // Flip
+    // Color
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -25,6 +25,7 @@
 
         " ": ["draw", "cancel"],
         "o": [{"center": "cursor"}],
+        "O": [{"move": {"anchor": "origin"}}, {"center": {"anchor": "origin"}}],
 
         "+": [{"scale": 1}],
         "-": [{"scale": -1}],
@@ -41,6 +42,9 @@
         "Ctrl+c": ["quit"]
     },
     "initial": {
-        "background_color": [230, 230, 230]
+        "background_color": [230, 230, 230],
+        "anchors": {
+            "origin": [0, 0]
+        }
     }
 }
