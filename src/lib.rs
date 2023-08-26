@@ -1,3 +1,4 @@
+pub mod bmp;
 pub mod cli;
 pub mod clock;
 pub mod command;
@@ -8,4 +9,3 @@ pub mod marker;
 pub mod model;
 pub mod remote;
 pub mod view;
-// TODO: pub mod bmp;

@@ -3,7 +3,7 @@ use pagurus_tui::{TuiSystem, TuiSystemOptions};
 use pati::{CommandReader, CommandWriter, Point};
 use std::{
     io::{BufReader, BufWriter},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::{
@@ -18,8 +18,8 @@ pub enum Args {
     Open(OpenCommand),
     Apply(ApplyCommand),
     Include(IncludeCommand),
-    // TODO: Export(ExportCommand),
-    // Embed
+    Export(ExportCommand),
+    // TODO: Embed
 }
 
 impl Args {
@@ -28,7 +28,7 @@ impl Args {
             Self::Open(cmd) => cmd.run().or_fail(),
             Self::Apply(cmd) => cmd.run().or_fail(),
             Self::Include(cmd) => cmd.run().or_fail(),
-            // Self::Export(cmd) => cmd.run().or_fail(),
+            Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
 }
@@ -121,31 +121,7 @@ pub struct IncludeCommand {
 
 impl IncludeCommand {
     fn run(&self) -> orfail::Result<()> {
-        let file = std::fs::File::open(&self.include_file).or_fail()?;
-        let mut reader = CommandReader::new(BufReader::new(file));
-        let mut canvas = pati::Canvas::new();
-        let mut tagged_canvas = None;
-        while let Some(command) = reader.read_command().or_fail()? {
-            if let Some(tag) = &self.tag {
-                if let pati::Command::Tag { name, .. } = &command {
-                    if name == tag {
-                        tagged_canvas = Some(canvas.clone());
-                    }
-                }
-            }
-
-            canvas.apply(&command);
-        }
-        if let Some(tag) = &self.tag {
-            tagged_canvas
-                .is_some()
-                .or_fail_with(|()| format!("No such tag: {tag}"))?;
-        }
-
-        if let Some(c) = tagged_canvas {
-            canvas = c;
-        }
-
+        let canvas = load_canvas(&self.include_file, self.tag.as_ref()).or_fail()?;
         let mut start = Point::new(i16::MIN, i16::MIN);
         let mut end = Point::new(i16::MAX, i16::MAX);
         if let Some(anchor) = &self.start_anchor {
@@ -194,34 +170,66 @@ fn apply_commands(port: u16, commands: &[Command]) -> orfail::Result<()> {
     Ok(())
 }
 
-// #[derive(Debug, clap::Args)]
-// pub struct ExportCommand {
-//     path: PathBuf,
+#[derive(Debug, clap::Args)]
+pub struct ExportCommand {
+    path: PathBuf,
 
-//     #[clap(short, long)]
-//     output: Option<PathBuf>,
+    #[clap(short, long)]
+    output: Option<PathBuf>,
+}
 
-//     #[clap(long, default_value = "1")]
-//     scale: NonZeroUsize,
-//     // TODO: size, origin, anchor, tag
-// }
+impl ExportCommand {
+    fn run(&self) -> orfail::Result<()> {
+        let output = self
+            .output
+            .clone()
+            .unwrap_or_else(|| self.path.with_extension("bmp"));
+        let canvas = load_canvas(&self.path, None).or_fail()?;
 
-// impl ExportCommand {
-//     fn run(&self) -> orfail::Result<()> {
-//         let journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
-//         let output = self
-//             .output
-//             .clone()
-//             .unwrap_or_else(|| self.path.with_extension("bmp"));
+        let mut start = Point::new(0, 0);
+        let mut end = Point::new(0, 0);
+        for point in canvas.pixels().keys().copied() {
+            start.y = start.y.min(point.y);
+            start.x = start.x.min(point.x);
+            end.y = end.y.max(point.y);
+            end.x = end.x.max(point.x);
+        }
+        crate::bmp::write_image(
+            BufWriter::new(std::fs::File::create(&output).or_fail()?),
+            (end.x - start.x + 1) as u16,
+            (end.y - start.y + 1) as u16,
+            canvas
+                .pixels()
+                .iter()
+                .map(|(&point, &color)| (point - start, color)),
+        )
+        .or_fail()?;
+        println!("Exported to {}", output.display());
+        Ok(())
+    }
+}
 
-//         crate::bmp::write_image(
-//             BufWriter::new(std::fs::File::create(&output).or_fail()?),
-//             journal.model().pixels_region(),
-//             journal.model().pixels(),
-//         )
-//         .or_fail()?;
+fn load_canvas<P: AsRef<Path>>(path: &P, tag: Option<&String>) -> orfail::Result<pati::Canvas> {
+    let file = std::fs::File::open(path).or_fail()?;
+    let mut reader = CommandReader::new(BufReader::new(file));
+    let mut canvas = pati::Canvas::new();
+    let mut tagged_canvas = None;
+    while let Some(command) = reader.read_command().or_fail()? {
+        if let Some(tag) = tag {
+            if let pati::Command::Tag { name, .. } = &command {
+                if name == tag {
+                    tagged_canvas = Some(canvas.clone());
+                }
+            }
+        }
 
-//         println!("Exported to {}", output.display());
-//         Ok(())
-//     }
-// }
+        canvas.apply(&command);
+    }
+    if let Some(tag) = tag {
+        Ok(tagged_canvas
+            .take()
+            .or_fail_with(|()| format!("No such tag: {tag}"))?)
+    } else {
+        Ok(canvas)
+    }
+}
