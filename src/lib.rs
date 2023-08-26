@@ -4,6 +4,7 @@ pub mod clock;
 pub mod command;
 pub mod config;
 pub mod editor;
+pub mod frame;
 pub mod game;
 pub mod marker;
 pub mod model;

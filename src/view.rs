@@ -21,11 +21,19 @@ impl View {
 
     pub fn render(&self, model: &Model, canvas: &mut WindowCanvas) {
         self.render_background(model, canvas);
+        self.render_frames(model, canvas);
 
         let marked_points = self.collect_marked_points(model);
-
         self.render_pixels(model, canvas, &marked_points);
         self.cursor.render(model, canvas, &marked_points);
+    }
+
+    fn render_frames(&self, model: &Model, canvas: &mut WindowCanvas) {
+        for frame in model.frames().values() {
+            for (&point, &color) in frame.pixels.iter() {
+                canvas.dot(model, point, color);
+            }
+        }
     }
 
     fn collect_marked_points(&self, model: &Model) -> BTreeSet<Point> {
@@ -47,7 +55,6 @@ impl View {
         let top_left = canvas.position_to_point(model, Position::ORIGIN);
         let bottom_right = canvas.position_to_point(model, canvas.window_size.to_region().end());
         for (point, color) in model.canvas().range_pixels(top_left..bottom_right) {
-            //for (&point, &color) in model.canvas().pixels() {
             if marked_points.contains(&point) {
                 continue;
             }
@@ -70,7 +77,6 @@ impl View {
         };
         for command in self.key_config.get_commands(key) {
             model.apply(command);
-            // TODO: self.force_show_cursor_until = ctx.now + Duration::from_millis(500);
         }
 
         Ok(())

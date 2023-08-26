@@ -1,4 +1,4 @@
-use crate::marker::MarkKind;
+use crate::{frame::Frame, marker::MarkKind};
 use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
 
@@ -24,10 +24,10 @@ pub enum Command {
     Repeat(u8),
     Checkout(Checkout),
     Import(Vec<(Point, Color)>),
+    Embed(Frame),
     // Edit(rotate|flip|color)
     // Rotate
     // Flip
-    // Embedded
     // {"remove": {"tag"|"anchor"|"frame": "name"}}
 }
 

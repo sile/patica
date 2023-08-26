@@ -2,12 +2,14 @@ use crate::{
     clock::Clock,
     command::{CenterPoint, Checkout, Command, MoveDestination},
     editor::Editor,
+    frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
 };
 use pati::{Color, Point, Version};
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 const METADATA_BACKGROUND_COLOR: &str = "patica.background_color";
+const METADATA_FRAME_PREFIX: &str = "patica.frame.";
 
 #[derive(Debug, Default)]
 pub struct Model {
@@ -21,10 +23,12 @@ pub struct Model {
     fsm: Fsm,
     scale: Scale,
     repeat: Option<usize>,
+    frames: BTreeMap<String, EmbeddedFrame>,
 }
 
 impl Model {
     pub fn initialize(&mut self) {
+        // Background color.
         if let Some(color) = self
             .canvas
             .metadata()
@@ -32,6 +36,18 @@ impl Model {
             .and_then(|json| serde_json::from_value(json.clone()).ok())
         {
             self.background_color = color;
+        }
+
+        // Frames.
+        for (name, value) in self.canvas.metadata() {
+            if !name.starts_with(METADATA_FRAME_PREFIX) {
+                continue;
+            }
+
+            // TODO: error handling
+            if let Ok(frame) = serde_json::from_value::<EmbeddedFrame>(value.clone()) {
+                self.frames.insert(frame.frame.name.clone(), frame);
+            }
         }
     }
 
@@ -49,6 +65,14 @@ impl Model {
 
     pub fn background_color(&self) -> Color {
         self.background_color
+    }
+
+    pub fn frames(&self) -> &BTreeMap<String, EmbeddedFrame> {
+        &self.frames
+    }
+
+    pub fn frames_mut(&mut self) -> &mut BTreeMap<String, EmbeddedFrame> {
+        &mut self.frames
     }
 
     pub fn quit(&self) -> bool {
@@ -115,8 +139,19 @@ impl Model {
                 Command::Repeat(c) => self.handle_repeat_command(*c),
                 Command::Checkout(c) => self.handle_checkout_command(c),
                 Command::Import(c) => self.handle_import_command(c),
+                Command::Embed(c) => self.handle_embed_command(c),
             }
         }
+    }
+
+    fn handle_embed_command(&mut self, frame: &Frame) {
+        let frame = EmbeddedFrame::new(frame.clone(), self.cursor);
+        self.frames.insert(frame.frame.name.clone(), frame.clone());
+        let command = pati::Command::put(
+            format!("{}{}", METADATA_FRAME_PREFIX, frame.frame.name),
+            serde_json::to_value(&frame).expect("unreachable"),
+        );
+        self.canvas.apply(&command);
     }
 
     fn handle_import_command(&mut self, pixels: &[(Point, Color)]) {

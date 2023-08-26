@@ -1,7 +1,8 @@
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use pati::{CommandReader, CommandWriter, Point};
+use pati::{CommandReader, CommandWriter, Point, VersionedCanvas};
 use std::{
+    collections::BTreeMap,
     io::{BufReader, BufWriter},
     path::{Path, PathBuf},
 };
@@ -9,6 +10,8 @@ use std::{
 use crate::{
     command::Command,
     config::Config,
+    frame::Frame,
+    model::Model,
     remote::{RemoteCommandClient, RemoteCommandServer},
 };
 
@@ -18,8 +21,8 @@ pub enum Args {
     Open(OpenCommand),
     Apply(ApplyCommand),
     Include(IncludeCommand),
+    Embed(EmbedCommand),
     Export(ExportCommand),
-    // TODO: Embed
 }
 
 impl Args {
@@ -28,6 +31,7 @@ impl Args {
             Self::Open(cmd) => cmd.run().or_fail(),
             Self::Apply(cmd) => cmd.run().or_fail(),
             Self::Include(cmd) => cmd.run().or_fail(),
+            Self::Embed(cmd) => cmd.run().or_fail(),
             Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
@@ -67,6 +71,15 @@ impl OpenCommand {
         let mut system = TuiSystem::with_options(options).or_fail()?;
         game.initialize(&mut system).or_fail()?;
 
+        let mut embedded_canvases = BTreeMap::new();
+        for embedded in game.model().frames().values() {
+            let canvas = EmbeddedCanvas::new(&embedded.frame.path).or_fail()?;
+            embedded_canvases.insert(embedded.frame.path.clone(), canvas);
+        }
+        for embedded_canvas in embedded_canvases.values_mut() {
+            embedded_canvas.sync(game.model_mut()).or_fail()?;
+        }
+
         while let Ok(event) = system.next_event() {
             let version = game.model().canvas().version();
 
@@ -81,9 +94,64 @@ impl OpenCommand {
             for pati_command in game.model().canvas().applied_commands(version) {
                 writer.write_command(pati_command).or_fail()?;
             }
+
+            // TODO: optimize
+            for embedded in game.model().frames().values() {
+                if embedded_canvases.contains_key(&embedded.frame.path) {
+                    continue;
+                }
+                let canvas = EmbeddedCanvas::new(&embedded.frame.path).or_fail()?;
+                embedded_canvases.insert(embedded.frame.path.clone(), canvas);
+            }
+
+            let mut removed = Vec::new();
+            for embedded_canvas in embedded_canvases.values_mut() {
+                if !embedded_canvas.sync(game.model_mut()).or_fail()? {
+                    removed.push(embedded_canvas.path.clone());
+                }
+            }
+            for path in removed {
+                embedded_canvases.remove(&path);
+            }
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct EmbeddedCanvas {
+    path: PathBuf,
+    canvas: VersionedCanvas,
+    reader: CommandReader<BufReader<std::fs::File>>,
+}
+
+impl EmbeddedCanvas {
+    fn new(path: &PathBuf) -> orfail::Result<Self> {
+        let file = std::fs::File::open(path).or_fail()?;
+        let reader = CommandReader::new(BufReader::new(file));
+        let canvas = VersionedCanvas::default();
+        Ok(Self {
+            path: path.clone(),
+            canvas,
+            reader,
+        })
+    }
+
+    fn sync(&mut self, model: &mut Model) -> orfail::Result<bool> {
+        while let Some(command) = self.reader.read_command().or_fail()? {
+            self.canvas.apply(&command).or_fail()?;
+        }
+        for embedded in model.frames_mut().values_mut() {
+            if embedded.frame.path != self.path {
+                continue;
+            }
+            if self.canvas.version() == embedded.version {
+                continue;
+            }
+            embedded.sync(&self.canvas).or_fail()?;
+        }
+        Ok(model.frames().values().any(|f| f.frame.path == self.path))
     }
 }
 
@@ -159,6 +227,37 @@ impl IncludeCommand {
             pixels.push((point - origin, color));
         }
         let command = Command::Import(pixels);
+        apply_commands(self.port, &[command]).or_fail()?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, clap::Args)]
+pub struct EmbedCommand {
+    #[clap(short, long, default_value_t = 7539)]
+    port: u16,
+
+    #[clap(long = "start")]
+    start_anchor: String,
+
+    #[clap(long = "end")]
+    end_anchor: String,
+
+    #[clap(long)]
+    name: String,
+
+    path: PathBuf,
+}
+
+impl EmbedCommand {
+    fn run(&self) -> orfail::Result<()> {
+        let frame = Frame {
+            name: self.name.clone(),
+            path: self.path.clone(),
+            start_anchor: self.start_anchor.clone(),
+            end_anchor: self.end_anchor.clone(),
+        };
+        let command = Command::Embed(frame);
         apply_commands(self.port, &[command]).or_fail()?;
         Ok(())
     }
