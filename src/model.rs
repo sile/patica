@@ -366,7 +366,7 @@ impl Model {
     }
 
     fn handle_mark_command(&mut self, kind: MarkKind) {
-        self.fsm = Fsm::Marking(Marker::new(kind, self.cursor));
+        self.fsm = Fsm::Marking(Marker::new(kind, self));
     }
 
     fn handle_move_command(&mut self, dst: &MoveDestination) {
@@ -380,8 +380,11 @@ impl Model {
                 }
             }
         }
-        if let Fsm::Marking(marker) = &mut self.fsm {
-            marker.handle_move(self.cursor);
+        if matches!(self.fsm, Fsm::Marking(_)) {
+            if let Fsm::Marking(mut marker) = std::mem::take(&mut self.fsm) {
+                marker.handle_move(self);
+                self.fsm = Fsm::Marking(marker);
+            }
         }
     }
 }

@@ -1,5 +1,7 @@
-use pati::Point;
+use crate::model::Model;
+use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -9,38 +11,60 @@ pub enum MarkKind {
     Fill,
     Rectangle,
     FillRectangle,
-    Color,
     Ellipse,
-    // All
+    Color,
+    All,
 }
 
 #[derive(Debug, Clone)]
 pub enum Marker {
     Line(LineMarker),
+    Stroke(StrokeMarker),
+    Fill(FillMarker),
+    Rectangle(RectangleMarker),
+    FillRectangle(FillRectangleMarker),
+    Ellipse(EllipseMarker),
+    Color(ColorMarker),
+    All(AllMarker),
 }
 
 impl Marker {
-    pub fn new(mark_kind: MarkKind, cursor: Point) -> Self {
+    pub fn new(mark_kind: MarkKind, model: &Model) -> Self {
         match mark_kind {
-            MarkKind::Line => Self::Line(LineMarker::new(cursor)),
-            MarkKind::Stroke => todo!(),
-            MarkKind::Fill => todo!(),
-            MarkKind::Rectangle => todo!(),
-            MarkKind::FillRectangle => todo!(),
-            MarkKind::Color => todo!(),
-            MarkKind::Ellipse => todo!(),
+            MarkKind::Line => Self::Line(LineMarker::new(model)),
+            MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
+            MarkKind::Fill => Self::Fill(FillMarker::new(model)),
+            MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
+            MarkKind::FillRectangle => Self::FillRectangle(FillRectangleMarker::new(model)),
+            MarkKind::Ellipse => Self::Ellipse(EllipseMarker::new(model)),
+            MarkKind::Color => Self::Color(ColorMarker::new(model)),
+            MarkKind::All => Self::All(AllMarker::new(model)),
         }
     }
 
-    pub fn handle_move(&mut self, cursor: Point) {
+    pub fn handle_move(&mut self, model: &Model) {
         match self {
-            Self::Line(m) => m.handle_move(cursor),
+            Self::Line(m) => m.handle_move(model),
+            Self::Stroke(m) => m.handle_mvoe(model),
+            Self::Fill(m) => m.handle_move(model),
+            Self::Rectangle(m) => m.handle_move(model),
+            Self::FillRectangle(m) => m.handle_move(model),
+            Self::Ellipse(m) => m.handle_move(model),
+            Self::Color(m) => m.handle_move(model),
+            Self::All(m) => m.handle_move(model),
         }
     }
 
     pub fn marked_points(&self) -> Box<dyn '_ + Iterator<Item = Point>> {
         match self {
             Self::Line(m) => Box::new(m.marked_points()),
+            Self::Stroke(m) => Box::new(m.marked_points()),
+            Self::Fill(m) => Box::new(m.marked_points()),
+            Self::Rectangle(m) => Box::new(m.marked_points()),
+            Self::FillRectangle(m) => Box::new(m.marked_points()),
+            Self::Ellipse(m) => Box::new(m.marked_points()),
+            Self::Color(m) => Box::new(m.marked_points()),
+            Self::All(m) => Box::new(m.marked_points()),
         }
     }
 }
@@ -52,15 +76,19 @@ pub struct LineMarker {
 }
 
 impl LineMarker {
-    fn new(cursor: Point) -> Self {
+    fn new(model: &Model) -> Self {
         Self {
-            start: cursor,
-            end: cursor,
+            start: model.cursor(),
+            end: model.cursor(),
         }
     }
 
-    fn handle_move(&mut self, cursor: Point) {
-        self.end = cursor;
+    fn line(start: Point, end: Point) -> impl Iterator<Item = Point> {
+        Self { start, end }.marked_points()
+    }
+
+    fn handle_move(&mut self, model: &Model) {
+        self.end = model.cursor();
     }
 
     fn marked_points(self) -> impl Iterator<Item = Point> {
@@ -87,53 +115,6 @@ impl LineMarker {
         })
     }
 }
-
-// // TODO: delete
-// use crate::model::{Command, Model, PixelPosition, PixelRegion};
-// use pagurus::image::Color;
-// use std::collections::HashSet;
-
-// #[derive(Debug, Clone)]
-// pub enum Marker {
-//     Line(LineMarker),
-//     Stroke(StrokeMarker),
-//     Fill(FillMarker),
-//     Rectangle(RectangleMarker),
-//     FillRectangle(FillRectangleMarker),
-//     Color(ColorMarker),
-//     Ellipse(EllipseMarker),
-// }
-
-// impl Marker {
-//     pub fn new(mark_kind: MarkKind, model: &Model) -> Self {
-//         match mark_kind {
-//             MarkKind::Line => Self::Line(LineMarker::new(model)),
-//             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
-//             MarkKind::Fill => Self::Fill(FillMarker::new(model)),
-//             MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
-//             MarkKind::FillRectangle => Self::FillRectangle(FillRectangleMarker::new(model)),
-//             MarkKind::Color => Self::Color(ColorMarker::new(model)),
-//             MarkKind::Ellipse => Self::Ellipse(EllipseMarker::new(model)),
-//         }
-//     }
-
-//     pub fn handle_command(&mut self, command: &Command, model: &Model) {
-//         match self {
-//             Self::Line(m) => m.handle_command(command, model),
-//             Self::Stroke(m) => m.handle_command(command, model),
-//             Self::Fill(m) => m.handle_command(command, model),
-//             Self::Rectangle(m) => m.handle_command(command, model),
-//             Self::FillRectangle(m) => m.handle_command(command, model),
-//             Self::Color(m) => m.handle_command(command, model),
-//             Self::Ellipse(m) => m.handle_command(command, model),
-//         }
-//     }
-
-// }
-
-// fn line(start: PixelPosition, end: PixelPosition) -> impl Iterator<Item = PixelPosition> {
-//     LineMarker { start, end }.marked_pixels()
-// }
 
 #[derive(Debug, Clone, Copy)]
 struct Rational {
@@ -163,266 +144,338 @@ fn yx(y: i16, x: i16) -> Point {
     Point::new(x, y)
 }
 
-// #[derive(Debug, Clone)]
-// pub struct StrokeMarker {
-//     stroke: HashSet<PixelPosition>,
-//     last: PixelPosition,
-// }
+#[derive(Debug, Clone)]
+pub struct StrokeMarker {
+    stroke: HashSet<Point>,
+    last: Point,
+}
 
-// impl StrokeMarker {
-//     fn new(model: &Model) -> Self {
-//         Self {
-//             stroke: [model.cursor().position()].into_iter().collect(),
-//             last: model.cursor().position(),
-//         }
-//     }
+impl StrokeMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            stroke: [model.cursor()].into_iter().collect(),
+            last: model.cursor(),
+        }
+    }
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         if self.last != model.cursor().position() {
-//             self.stroke
-//                 .extend(line(self.last, model.cursor().position()));
-//             self.last = model.cursor().position();
-//         }
-//     }
+    fn handle_mvoe(&mut self, model: &Model) {
+        let cursor = model.cursor();
+        if self.last != cursor {
+            self.stroke.extend(LineMarker::line(self.last, cursor));
+            self.last = cursor;
+        }
+    }
 
-//     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
-//         self.stroke.iter().copied()
-//     }
-// }
+    fn marked_points(&self) -> impl '_ + Iterator<Item = Point> {
+        self.stroke.iter().copied()
+    }
+}
 
-// #[derive(Debug, Clone)]
-// pub struct FillMarker {
-//     cursor: PixelPosition,
-//     pixels: HashSet<PixelPosition>,
-//     region: PixelRegion,
-//     to_be_filled: bool,
-// }
+#[derive(Debug, Clone, Copy)]
+struct Region {
+    top_left: Point,
+    bottom_right: Point,
+}
 
-// impl FillMarker {
-//     fn new(model: &Model) -> Self {
-//         let mut this = Self {
-//             cursor: model.cursor().position(),
-//             pixels: HashSet::new(),
-//             region: model.pixels_region(),
-//             to_be_filled: false,
-//         };
-//         this.calc_pixels_to_be_filled(model);
-//         this
-//     }
+impl Region {
+    fn from_points(points: impl Iterator<Item = Point>) -> Self {
+        let mut top_left = Point::new(i16::MAX, i16::MAX);
+        let mut bottom_right = Point::new(i16::MIN, i16::MIN);
+        for point in points {
+            top_left.x = top_left.x.min(point.x);
+            top_left.y = top_left.y.min(point.y);
+            bottom_right.x = bottom_right.x.max(point.x);
+            bottom_right.y = bottom_right.y.max(point.y);
+        }
+        Self {
+            top_left,
+            bottom_right,
+        }
+    }
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         self.cursor = model.cursor().position();
-//         if !self.pixels.contains(&model.cursor().position()) {
-//             self.calc_pixels_to_be_filled(model);
-//         }
-//     }
+    fn start(self) -> Point {
+        self.top_left
+    }
 
-//     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
-//         self.to_be_filled
-//             .then(|| self.pixels.iter().copied())
-//             .into_iter()
-//             .flatten()
-//     }
+    fn end(self) -> Point {
+        self.bottom_right
+    }
 
-//     fn calc_pixels_to_be_filled(&mut self, model: &Model) {
-//         self.pixels.clear();
-//         self.to_be_filled = true;
+    fn contains(self, point: Point) -> bool {
+        self.top_left.x <= point.x
+            && point.x <= self.bottom_right.x
+            && self.top_left.y <= point.y
+            && point.y <= self.bottom_right.y
+    }
 
-//         let color = model.get_pixel_color(self.cursor);
-//         let mut stack = vec![self.cursor];
-//         while let Some(p) = stack.pop() {
-//             if self.pixels.contains(&p) {
-//                 continue;
-//             }
-//             if model.get_pixel_color(p) != color {
-//                 continue;
-//             }
-//             if !self.region.contains(p) {
-//                 self.to_be_filled = false;
-//                 break;
-//             }
+    fn points(self) -> impl Iterator<Item = Point> {
+        let Point { x: x0, y: y0 } = self.top_left;
+        let Point { x: x1, y: y1 } = self.bottom_right;
+        (y0..=y1).flat_map(move |y| (x0..=x1).map(move |x| Point::new(x, y)))
+    }
 
-//             self.pixels.insert(p);
-//             stack.push(PixelPosition::from_xy(p.x - 1, p.y));
-//             stack.push(PixelPosition::from_xy(p.x + 1, p.y));
-//             stack.push(PixelPosition::from_xy(p.x, p.y - 1));
-//             stack.push(PixelPosition::from_xy(p.x, p.y + 1));
-//         }
-//     }
-// }
+    fn edge_points(self) -> impl Iterator<Item = Point> {
+        let Point { x: x0, y: y0 } = self.top_left;
+        let Point { x: x1, y: y1 } = self.bottom_right;
+        [
+            Point::new(x0, y0),
+            Point::new(x1, y0),
+            Point::new(x0, y1),
+            Point::new(x1, y1),
+        ]
+        .into_iter()
+        .chain((x0 + 1..x1).map(move |x| Point::new(x, y0)))
+        .chain((x0 + 1..x1).map(move |x| Point::new(x, y1)))
+        .chain((y0 + 1..y1).map(move |y| Point::new(x0, y)))
+        .chain((y0 + 1..y1).map(move |y| Point::new(x1, y)))
+    }
+}
 
-// #[derive(Debug, Clone)]
-// pub struct FillRectangleMarker {
-//     inner: RectangleMarker,
-// }
+#[derive(Debug, Clone)]
+pub struct FillMarker {
+    cursor: Point,
+    points: HashSet<Point>,
+    region: Region,
+    to_be_filled: bool,
+}
 
-// impl FillRectangleMarker {
-//     fn new(model: &Model) -> Self {
-//         Self {
-//             inner: RectangleMarker::new(model),
-//         }
-//     }
+impl FillMarker {
+    fn new(model: &Model) -> Self {
+        let mut this = Self {
+            cursor: model.cursor(),
+            points: HashSet::new(),
+            region: Region::from_points(
+                std::iter::once(model.cursor()).chain(model.canvas().pixels().keys().copied()),
+            ),
+            to_be_filled: false,
+        };
+        this.calc_points_to_be_filled(model);
+        this
+    }
 
-//     fn handle_command(&mut self, command: &Command, model: &Model) {
-//         self.inner.handle_command(command, model);
-//     }
+    fn handle_move(&mut self, model: &Model) {
+        self.cursor = model.cursor();
+        if !self.points.contains(&model.cursor()) {
+            self.calc_points_to_be_filled(model);
+        }
+    }
 
-//     fn marked_pixels(&self) -> impl Iterator<Item = PixelPosition> {
-//         self.inner.region().positions()
-//     }
-// }
+    fn marked_points(&self) -> impl '_ + Iterator<Item = Point> {
+        self.to_be_filled
+            .then(|| self.points.iter().copied())
+            .into_iter()
+            .flatten()
+    }
 
-// #[derive(Debug, Clone)]
-// pub struct RectangleMarker {
-//     start: PixelPosition,
-//     end: PixelPosition,
-// }
+    fn calc_points_to_be_filled(&mut self, model: &Model) {
+        self.points.clear();
+        self.to_be_filled = true;
 
-// impl RectangleMarker {
-//     fn new(model: &Model) -> Self {
-//         Self {
-//             start: model.cursor().position(),
-//             end: model.cursor().position(),
-//         }
-//     }
+        let color = model.canvas().get_pixel(self.cursor);
+        let mut stack = vec![self.cursor];
+        while let Some(p) = stack.pop() {
+            if self.points.contains(&p) {
+                continue;
+            }
+            if model.canvas().get_pixel(p) != color {
+                continue;
+            }
+            if !self.region.contains(p) {
+                self.to_be_filled = false;
+                break;
+            }
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         self.end = model.cursor().position();
-//     }
+            self.points.insert(p);
+            stack.push(Point::new(p.x - 1, p.y));
+            stack.push(Point::new(p.x + 1, p.y));
+            stack.push(Point::new(p.x, p.y - 1));
+            stack.push(Point::new(p.x, p.y + 1));
+        }
+    }
+}
 
-//     fn marked_pixels(&self) -> impl Iterator<Item = PixelPosition> {
-//         self.region().edge_pixels()
-//     }
+#[derive(Debug, Clone)]
+pub struct RectangleMarker {
+    start: Point,
+    end: Point,
+}
 
-//     fn region(&self) -> PixelRegion {
-//         let min_x = self.start.x.min(self.end.x);
-//         let min_y = self.start.y.min(self.end.y);
-//         let max_x = self.start.x.max(self.end.x);
-//         let max_y = self.start.y.max(self.end.y);
-//         PixelRegion::from_corners(min_x, min_y, max_x, max_y)
-//     }
-// }
+impl RectangleMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            start: model.cursor(),
+            end: model.cursor(),
+        }
+    }
 
-// #[derive(Debug, Clone)]
-// pub struct ColorMarker {
-//     color: Option<Color>,
-//     pixels: HashSet<PixelPosition>,
-// }
+    fn handle_move(&mut self, model: &Model) {
+        self.end = model.cursor();
+    }
 
-// impl ColorMarker {
-//     fn new(model: &Model) -> Self {
-//         let color = model.get_pixel_color(model.cursor().position());
-//         let mut this = Self {
-//             color,
-//             pixels: HashSet::new(),
-//         };
-//         this.calc_pixels(model);
-//         this
-//     }
+    fn marked_points(&self) -> impl Iterator<Item = Point> {
+        Region::from_points([self.start, self.end].into_iter()).edge_points()
+    }
+}
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         let color = model.get_pixel_color(model.cursor().position());
-//         if self.color != color {
-//             self.color = color;
-//             self.calc_pixels(model);
-//         }
-//     }
+#[derive(Debug, Clone)]
+pub struct FillRectangleMarker {
+    inner: RectangleMarker,
+}
 
-//     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
-//         self.pixels.iter().copied()
-//     }
+impl FillRectangleMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            inner: RectangleMarker::new(model),
+        }
+    }
 
-//     fn calc_pixels(&mut self, model: &Model) {
-//         self.pixels.clear();
-//         let Some(color) = self.color else {
-//             return;
-//         };
-//         self.pixels = model
-//             .pixels()
-//             .filter(|p| p.1 == color)
-//             .map(|p| p.0)
-//             .collect();
-//     }
-// }
+    fn handle_move(&mut self, model: &Model) {
+        self.inner.handle_move(model);
+    }
 
-// #[derive(Debug, Clone)]
-// pub struct EllipseMarker {
-//     start: PixelPosition,
-//     cursor: PixelPosition,
-//     pixels: HashSet<PixelPosition>,
-// }
+    fn marked_points(&self) -> impl Iterator<Item = Point> {
+        Region::from_points([self.inner.start, self.inner.end].into_iter()).points()
+    }
+}
 
-// impl EllipseMarker {
-//     fn new(model: &Model) -> Self {
-//         Self {
-//             start: model.cursor().position(),
-//             cursor: model.cursor().position(),
-//             pixels: vec![model.cursor().position()].into_iter().collect(),
-//         }
-//     }
+#[derive(Debug, Clone)]
+pub struct EllipseMarker {
+    start: Point,
+    cursor: Point,
+    points: HashSet<Point>,
+}
 
-//     fn handle_command(&mut self, _command: &Command, model: &Model) {
-//         if self.cursor != model.cursor().position() {
-//             self.cursor = model.cursor().position();
-//             self.calc_pixels();
-//         }
-//     }
+impl EllipseMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            start: model.cursor(),
+            cursor: model.cursor(),
+            points: vec![model.cursor()].into_iter().collect(),
+        }
+    }
 
-//     fn marked_pixels(&self) -> impl '_ + Iterator<Item = PixelPosition> {
-//         self.pixels.iter().copied()
-//     }
+    fn handle_move(&mut self, model: &Model) {
+        if self.cursor != model.cursor() {
+            self.cursor = model.cursor();
+            self.calc_points();
+        }
+    }
 
-//     fn calc_pixels(&mut self) {
-//         self.pixels.clear();
+    fn marked_points(&self) -> impl '_ + Iterator<Item = Point> {
+        self.points.iter().copied()
+    }
 
-//         let region = PixelRegion::from_corners(
-//             self.start.x.min(self.cursor.x) - 1,
-//             self.start.y.min(self.cursor.y) - 1,
-//             self.start.x.max(self.cursor.x),
-//             self.start.y.max(self.cursor.y),
-//         );
+    fn calc_points(&mut self) {
+        self.points.clear();
 
-//         let x_radius = (region.end().x as f32 - region.start().x as f32) / 2.0;
-//         let y_radius = (region.end().y as f32 - region.start().y as f32) / 2.0;
-//         let x_radius2 = x_radius.powi(2);
-//         let y_radius2 = y_radius.powi(2);
-//         let center_x = x_radius + region.start().x as f32;
-//         let center_y = y_radius + region.start().y as f32;
+        let region = Region::from_points([self.start, self.cursor].into_iter());
 
-//         let ratio = |xi: f32, yi: f32| {
-//             let mut count = 0;
-//             for xj in 0..=10 {
-//                 for yj in 0..=10 {
-//                     let xv = (xi + 0.1 * xj as f32).powi(2) / x_radius2;
-//                     let yv = (yi + 0.1 * yj as f32).powi(2) / y_radius2;
-//                     if xv + yv <= 1.0 {
-//                         count += 1;
-//                     }
-//                 }
-//             }
-//             count as f32 / (11 * 11) as f32
-//         };
+        let x_radius = (region.end().x as f32 - region.start().x as f32) / 2.0;
+        let y_radius = (region.end().y as f32 - region.start().y as f32) / 2.0;
+        let x_radius2 = x_radius.powi(2);
+        let y_radius2 = y_radius.powi(2);
+        let center_x = x_radius + region.start().x as f32;
+        let center_y = y_radius + region.start().y as f32;
 
-//         let mut xi = x_radius.fract();
-//         let mut yi = y_radius - 1.0;
-//         while xi < x_radius && yi >= 0.0 {
-//             let px = (center_x + xi) as i16;
-//             let mx = (center_x - xi) as i16;
-//             let py = (center_y + yi) as i16;
-//             let my = (center_y - yi) as i16;
-//             self.pixels.insert(PixelPosition::from_xy(px, py));
-//             self.pixels.insert(PixelPosition::from_xy(mx, my));
-//             self.pixels.insert(PixelPosition::from_xy(px, my));
-//             self.pixels.insert(PixelPosition::from_xy(mx, py));
+        let ratio = |xi: f32, yi: f32| {
+            let mut count = 0;
+            for xj in 0..=10 {
+                for yj in 0..=10 {
+                    let xv = (xi + 0.1 * xj as f32).powi(2) / x_radius2;
+                    let yv = (yi + 0.1 * yj as f32).powi(2) / y_radius2;
+                    if xv + yv <= 1.0 {
+                        count += 1;
+                    }
+                }
+            }
+            count as f32 / (11 * 11) as f32
+        };
 
-//             if ratio(xi + 1.0, yi) >= 0.5 {
-//                 xi += 1.0;
-//             } else if ratio(xi + 1.0, yi - 1.0) >= 0.5 {
-//                 xi += 1.0;
-//                 yi -= 1.0;
-//             } else {
-//                 yi -= 1.0;
-//             }
-//         }
-//     }
-// }
+        let mut xi = x_radius.fract();
+        let mut yi = y_radius - 1.0;
+        while xi < x_radius && yi >= 0.0 {
+            let px = (center_x + xi) as i16;
+            let mx = (center_x - xi) as i16;
+            let py = (center_y + yi) as i16;
+            let my = (center_y - yi) as i16;
+            self.points.insert(Point::new(px, py));
+            self.points.insert(Point::new(mx, my));
+            self.points.insert(Point::new(px, my));
+            self.points.insert(Point::new(mx, py));
+
+            if ratio(xi + 1.0, yi) >= 0.5 {
+                xi += 1.0;
+            } else if ratio(xi + 1.0, yi - 1.0) >= 0.5 {
+                xi += 1.0;
+                yi -= 1.0;
+            } else {
+                yi -= 1.0;
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ColorMarker {
+    color: Option<Color>,
+    points: HashSet<Point>,
+}
+
+impl ColorMarker {
+    fn new(model: &Model) -> Self {
+        let color = model.canvas().get_pixel(model.cursor());
+        let mut this = Self {
+            color,
+            points: HashSet::new(),
+        };
+        this.calc_points(model);
+        this
+    }
+
+    fn handle_move(&mut self, model: &Model) {
+        let color = model.canvas().get_pixel(model.cursor());
+        if self.color != color {
+            self.color = color;
+            self.calc_points(model);
+        }
+    }
+
+    fn marked_points(&self) -> impl '_ + Iterator<Item = Point> {
+        self.points.iter().copied()
+    }
+
+    fn calc_points(&mut self, model: &Model) {
+        self.points.clear();
+        let Some(color) = self.color else {
+            return;
+        };
+        self.points = model
+            .canvas()
+            .pixels()
+            .iter()
+            .filter(|p| *p.1 == color)
+            .map(|p| *p.0)
+            .collect();
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AllMarker {
+    points: HashSet<Point>,
+}
+
+impl AllMarker {
+    fn new(model: &Model) -> Self {
+        Self {
+            points: model.canvas().pixels().keys().copied().collect(),
+        }
+    }
+
+    fn handle_move(&mut self, model: &Model) {
+        self.points = model.canvas().pixels().keys().copied().collect();
+    }
+
+    fn marked_points(&self) -> impl '_ + Iterator<Item = Point> {
+        self.points.iter().copied()
+    }
+}
