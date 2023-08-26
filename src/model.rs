@@ -1,6 +1,6 @@
 use crate::{
     clock::Clock,
-    command::{CenterPoint, Command, MoveDestination},
+    command::{CenterPoint, Checkout, Command, MoveDestination},
     editor::Editor,
     marker::{MarkKind, Marker},
 };
@@ -113,6 +113,23 @@ impl Model {
                 Command::Tag(c) => self.handle_tag_command(c),
                 Command::BackgroundColor(c) => self.handle_background_color_command(*c),
                 Command::Repeat(c) => self.handle_repeat_command(*c),
+                Command::Checkout(c) => self.handle_checkout_command(c),
+            }
+        }
+    }
+
+    fn handle_checkout_command(&mut self, checkout: &Checkout) {
+        match checkout {
+            Checkout::Tag(name) => {
+                if let Some(command) = self
+                    .canvas
+                    .tags()
+                    .get(name)
+                    .copied()
+                    .and_then(|version| self.canvas.diff(version))
+                {
+                    self.canvas.apply(&pati::Command::Patch(command));
+                }
             }
         }
     }

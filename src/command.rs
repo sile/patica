@@ -22,7 +22,7 @@ pub enum Command {
     Tag(String),
     BackgroundColor(Color),
     Repeat(u8),
-    // Checkout
+    Checkout(Checkout),
     // Rotate
     // Flip
     // Embedded
@@ -47,4 +47,10 @@ pub struct AnchorName {
 pub enum CenterPoint {
     Cursor,
     Anchor(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Checkout {
+    Tag(String),
 }
