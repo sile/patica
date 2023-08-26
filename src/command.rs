@@ -21,10 +21,12 @@ pub enum Command {
     Anchor(String),
     Tag(String),
     BackgroundColor(Color),
+    Repeat(u8),
     // Checkout
-
     // Rotate
     // Flip
+    // Embedded
+    // Include
     // {"remove": {"tag"|"anchor"|"frame": "name"}}
 }
 

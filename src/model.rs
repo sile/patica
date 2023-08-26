@@ -7,6 +7,8 @@ use crate::{
 use pati::{Color, Point, Version};
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
+const METADATA_BACKGROUND_COLOR: &str = "patica.background_color";
+
 #[derive(Debug, Default)]
 pub struct Model {
     canvas: pati::VersionedCanvas,
@@ -18,9 +20,21 @@ pub struct Model {
     quit: bool,
     fsm: Fsm,
     scale: Scale,
+    repeat: Option<usize>,
 }
 
 impl Model {
+    pub fn initialize(&mut self) {
+        if let Some(color) = self
+            .canvas
+            .metadata()
+            .get(METADATA_BACKGROUND_COLOR)
+            .and_then(|json| serde_json::from_value(json.clone()).ok())
+        {
+            self.background_color = color;
+        }
+    }
+
     pub fn cursor(&self) -> Point {
         self.cursor
     }
@@ -78,30 +92,48 @@ impl Model {
     }
 
     pub fn apply(&mut self, command: &Command) {
-        match command {
-            Command::Move(c) => self.handle_move_command(c),
-            Command::Mark(c) => self.handle_mark_command(*c),
-            Command::Pick => self.handle_pick_command(),
-            Command::Cut => self.handle_cut_command(),
-            Command::Cancel => self.handle_cancel_command(),
-            Command::Erase => self.handle_erase_command(),
-            Command::Draw => self.handle_draw_command(),
-            Command::Undo => self.handle_undo_command(),
-            Command::Redo => self.handle_redo_command(),
-            Command::Quit => {
-                self.quit = true;
+        for _ in 0..self.repeat.take().unwrap_or(1) {
+            match command {
+                Command::Move(c) => self.handle_move_command(c),
+                Command::Mark(c) => self.handle_mark_command(*c),
+                Command::Pick => self.handle_pick_command(),
+                Command::Cut => self.handle_cut_command(),
+                Command::Cancel => self.handle_cancel_command(),
+                Command::Erase => self.handle_erase_command(),
+                Command::Draw => self.handle_draw_command(),
+                Command::Undo => self.handle_undo_command(),
+                Command::Redo => self.handle_redo_command(),
+                Command::Quit => {
+                    self.quit = true;
+                }
+                Command::Dip(c) => self.handle_dip_command(*c),
+                Command::Scale(c) => self.handle_scale_command(*c),
+                Command::Center(c) => self.handle_center_command(c),
+                Command::Anchor(c) => self.handle_anchor_command(c),
+                Command::Tag(c) => self.handle_tag_command(c),
+                Command::BackgroundColor(c) => self.handle_background_color_command(*c),
+                Command::Repeat(c) => self.handle_repeat_command(*c),
             }
-            Command::Dip(c) => self.handle_dip_command(*c),
-            Command::Scale(c) => self.handle_scale_command(*c),
-            Command::Center(c) => self.handle_center_command(c),
-            Command::Anchor(c) => self.handle_anchor_command(c),
-            Command::Tag(c) => self.handle_tag_command(c),
-            Command::BackgroundColor(c) => self.handle_background_color_command(*c),
+        }
+    }
+
+    fn handle_repeat_command(&mut self, count: u8) {
+        if let Some(n) = self.repeat {
+            self.repeat = Some(n + count as usize);
+        } else {
+            self.repeat = Some(count as usize);
         }
     }
 
     fn handle_background_color_command(&mut self, color: Color) {
-        self.background_color = color;
+        if self.background_color != color {
+            self.background_color = color;
+            let command = pati::Command::put(
+                METADATA_BACKGROUND_COLOR.to_owned(),
+                serde_json::to_value(&color).expect("unreachable"),
+            );
+            self.canvas.apply(&command);
+        }
     }
 
     fn handle_anchor_command(&mut self, name: &str) {

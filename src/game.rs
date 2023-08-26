@@ -80,6 +80,7 @@ impl Game {
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> Result<()> {
+        self.model.initialize();
         self.set_tick_timeout(system);
         Ok(())
     }
