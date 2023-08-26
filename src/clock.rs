@@ -1,29 +1,56 @@
-use std::time::Duration;
+use serde::{Deserialize, Serialize};
+use std::{num::NonZeroU8, time::Duration};
 
-#[derive(Debug, Clone, Copy)]
-pub struct Clock {
-    pub ticks: u32,
-    pub fps: u32,
-}
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
+pub struct Ticks(u32);
 
-impl Clock {
-    pub const DEFAULT_FPS: u32 = 30;
+impl Ticks {
+    pub const fn new(n: u32) -> Self {
+        Self(n)
+    }
 
-    pub const fn new(fps: u32) -> Self {
-        Self { ticks: 0, fps }
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+
+    pub fn tick_delta(&mut self, delta: i32) {
+        if delta < 0 {
+            self.0 = self.0.saturating_sub(delta.unsigned_abs());
+        } else {
+            self.0 = self.0.saturating_add(delta as u32);
+        }
     }
 
     pub fn tick(&mut self) {
-        self.ticks += 1;
-    }
-
-    pub fn duration(self) -> Duration {
-        Duration::from_secs(self.ticks as u64) / self.fps
+        self.tick_delta(1);
     }
 }
 
-impl Default for Clock {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Time {
+    pub ticks: Ticks,
+    pub fps: NonZeroU8, // TODO: Fps
+}
+
+impl Time {
+    pub const DEFAULT_FPS: u8 = 30;
+
+    pub const fn new(ticks: Ticks, fps: NonZeroU8) -> Self {
+        Self { ticks, fps }
+    }
+
+    pub fn duration(self) -> Duration {
+        Duration::from_secs(self.ticks.0 as u64) / self.fps.get() as u32
+    }
+}
+
+impl Default for Time {
     fn default() -> Self {
-        Self::new(Self::DEFAULT_FPS)
+        Self::new(
+            Ticks::new(0),
+            NonZeroU8::new(Self::DEFAULT_FPS).expect("unreachable"),
+        )
     }
 }

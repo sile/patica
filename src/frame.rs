@@ -1,3 +1,4 @@
+use crate::clock::Ticks;
 use orfail::OrFail;
 use pati::{Color, Point, Version, VersionedCanvas};
 use serde::{Deserialize, Serialize};
@@ -9,6 +10,8 @@ pub struct Frame {
     pub path: PathBuf,
     pub start_anchor: String,
     pub end_anchor: String,
+    pub start_ticks: Ticks,
+    pub end_ticks: Option<Ticks>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,4 +1,6 @@
-use crate::{frame::Frame, marker::MarkKind};
+use std::num::NonZeroU8;
+
+use crate::{clock::Ticks, frame::Frame, marker::MarkKind};
 use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +27,8 @@ pub enum Command {
     Checkout(Checkout),
     Import(Vec<(Point, Color)>),
     Embed(Frame),
+    Tick(i32),
+    Play(PlayCommand),
     // Edit(rotate|flip|color)
     // Rotate
     // Flip
@@ -54,4 +58,12 @@ pub enum CenterPoint {
 #[serde(rename_all = "snake_case")]
 pub enum Checkout {
     Tag(String),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayCommand {
+    #[serde(default)]
+    pub offset: Ticks,
+    pub duration: Ticks,
+    pub fps: NonZeroU8,
 }

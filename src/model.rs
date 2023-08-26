@@ -1,6 +1,6 @@
 use crate::{
-    clock::Clock,
-    command::{CenterPoint, Checkout, Command, MoveDestination},
+    clock::{Ticks, Time},
+    command::{CenterPoint, Checkout, Command, MoveDestination, PlayCommand},
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
@@ -18,12 +18,13 @@ pub struct Model {
     camera: Point,
     brush_color: Color,
     background_color: Color,
-    clock: Clock,
+    clock: Time,
     quit: bool,
     fsm: Fsm,
     scale: Scale,
     repeat: Option<usize>,
     frames: BTreeMap<String, EmbeddedFrame>,
+    ticks: Ticks,
 }
 
 impl Model {
@@ -79,12 +80,30 @@ impl Model {
         self.quit
     }
 
-    pub fn clock(&self) -> Clock {
+    pub fn clock(&self) -> Time {
         self.clock
     }
 
+    pub fn ticks(&self) -> Ticks {
+        self.ticks
+    }
+
     pub fn tick(&mut self) {
-        self.clock.tick();
+        if let Fsm::Playing { end_time } = &self.fsm {
+            if self.ticks >= end_time.ticks {
+                self.fsm = Fsm::Neutral(Default::default());
+            } else {
+                self.ticks.tick();
+            }
+        }
+    }
+
+    pub fn fps(&self) -> u32 {
+        if let Fsm::Playing { end_time } = &self.fsm {
+            end_time.fps.get() as u32
+        } else {
+            Time::DEFAULT_FPS as u32
+        }
     }
 
     pub fn scale(&self) -> NonZeroUsize {
@@ -140,8 +159,21 @@ impl Model {
                 Command::Checkout(c) => self.handle_checkout_command(c),
                 Command::Import(c) => self.handle_import_command(c),
                 Command::Embed(c) => self.handle_embed_command(c),
+                Command::Tick(c) => self.handle_tick_command(*c),
+                Command::Play(c) => self.handle_play_command(c),
             }
         }
+    }
+
+    fn handle_play_command(&mut self, command: &PlayCommand) {
+        self.ticks = command.offset;
+        self.fsm = Fsm::Playing {
+            end_time: Time::new(command.duration, command.fps),
+        };
+    }
+
+    fn handle_tick_command(&mut self, delta: i32) {
+        self.ticks.tick_delta(delta);
     }
 
     fn handle_embed_command(&mut self, frame: &Frame) {
@@ -293,7 +325,7 @@ impl Model {
         let points = match &self.fsm {
             Fsm::Neutral(_) => vec![self.cursor],
             Fsm::Marking(marker) => marker.marked_points().collect(),
-            Fsm::Editing(_) => Vec::new(),
+            Fsm::Editing(_) | Fsm::Playing { .. } => Vec::new(),
         };
         let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
             color: None,
@@ -334,6 +366,7 @@ enum Fsm {
     Neutral(NeutralState),
     Marking(Marker),
     Editing(Editor),
+    Playing { end_time: Time },
 }
 
 impl Fsm {
@@ -364,6 +397,7 @@ impl Fsm {
                 let command = pati::Command::patch(patches.into_values().collect());
                 canvas.apply(&command);
             }
+            Fsm::Playing { .. } => {}
         }
     }
 }

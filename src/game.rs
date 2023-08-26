@@ -1,5 +1,4 @@
 use crate::{
-    clock::Clock,
     command::Command,
     config::Config,
     model::Model,
@@ -12,33 +11,9 @@ use pagurus::{
     video::VideoFrame,
     Result, System,
 };
-use std::num::NonZeroU64;
 use std::time::Duration;
 
 const TICK_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
-
-// TODO: delete
-#[derive(Debug, Clone, Copy)]
-pub struct GameClock {
-    pub ticks: u64,
-    pub fps: NonZeroU64,
-}
-
-impl GameClock {
-    pub const fn new(fps: NonZeroU64) -> Self {
-        Self { ticks: 0, fps }
-    }
-
-    pub fn tick(&mut self) {
-        self.ticks += 1;
-    }
-}
-
-impl Default for GameClock {
-    fn default() -> Self {
-        Self::new(NonZeroU64::new(30).expect("unreachable"))
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct Game {
@@ -71,10 +46,7 @@ impl Game {
     }
 
     fn set_tick_timeout<S: System>(&mut self, system: &mut S) {
-        system.clock_set_timeout(
-            TICK_TIMEOUT_TAG,
-            Duration::from_secs(1) / Clock::DEFAULT_FPS,
-        );
+        system.clock_set_timeout(TICK_TIMEOUT_TAG, Duration::from_secs(1) / self.model.fps());
     }
 }
 

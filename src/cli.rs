@@ -8,6 +8,7 @@ use std::{
 };
 
 use crate::{
+    clock::Ticks,
     command::Command,
     config::Config,
     frame::Frame,
@@ -243,6 +244,12 @@ pub struct EmbedCommand {
     #[clap(long = "end")]
     end_anchor: String,
 
+    #[clap(long, default_value_t = 0)]
+    start_ticks: u32,
+
+    #[clap(long)]
+    end_ticks: Option<u32>,
+
     #[clap(long)]
     name: String,
 
@@ -256,6 +263,8 @@ impl EmbedCommand {
             path: self.path.clone(),
             start_anchor: self.start_anchor.clone(),
             end_anchor: self.end_anchor.clone(),
+            start_ticks: Ticks::new(self.start_ticks),
+            end_ticks: self.end_ticks.map(Ticks::new),
         };
         let command = Command::Embed(frame);
         apply_commands(self.port, &[command]).or_fail()?;
