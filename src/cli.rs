@@ -1,6 +1,6 @@
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use pati::{CommandReader, CommandWriter};
+use pati::{CommandReader, CommandWriter, Point};
 use std::{
     io::{BufReader, BufWriter},
     path::PathBuf,
@@ -17,8 +17,9 @@ use crate::{
 pub enum Args {
     Open(OpenCommand),
     Apply(ApplyCommand),
+    Include(IncludeCommand),
     // TODO: Export(ExportCommand),
-    // Include (set-origin -> cut -> reset-origin)
+    // Embed
 }
 
 impl Args {
@@ -26,6 +27,7 @@ impl Args {
         match self {
             Self::Open(cmd) => cmd.run().or_fail(),
             Self::Apply(cmd) => cmd.run().or_fail(),
+            Self::Include(cmd) => cmd.run().or_fail(),
             // Self::Export(cmd) => cmd.run().or_fail(),
         }
     }
@@ -92,13 +94,104 @@ pub struct ApplyCommand {
 }
 
 impl ApplyCommand {
-    fn run(&self) -> pagurus::Result<()> {
-        let mut client = RemoteCommandClient::connect(self.port).or_fail()?;
+    fn run(&self) -> orfail::Result<()> {
         let commands: Vec<Command> =
             serde_json::from_reader(&mut std::io::stdin().lock()).or_fail()?;
-        client.send_commands(&commands).or_fail()?;
+        apply_commands(self.port, &commands).or_fail()?;
         Ok(())
     }
+}
+
+#[derive(Debug, clap::Args)]
+pub struct IncludeCommand {
+    #[clap(short, long, default_value_t = 7539)]
+    port: u16,
+
+    #[clap(long)]
+    start_anchor: Option<String>,
+
+    #[clap(long)]
+    end_anchor: Option<String>,
+
+    #[clap(long)]
+    tag: Option<String>,
+
+    include_file: PathBuf,
+}
+
+impl IncludeCommand {
+    fn run(&self) -> orfail::Result<()> {
+        let file = std::fs::File::open(&self.include_file).or_fail()?;
+        let mut reader = CommandReader::new(BufReader::new(file));
+        let mut canvas = pati::Canvas::new();
+        let mut tagged_canvas = None;
+        while let Some(command) = reader.read_command().or_fail()? {
+            if let Some(tag) = &self.tag {
+                if let pati::Command::Tag { name, .. } = &command {
+                    if name == tag {
+                        tagged_canvas = Some(canvas.clone());
+                    }
+                }
+            }
+
+            canvas.apply(&command);
+        }
+        if let Some(tag) = &self.tag {
+            tagged_canvas
+                .is_some()
+                .or_fail_with(|()| format!("No such tag: {tag}"))?;
+        }
+
+        if let Some(c) = tagged_canvas {
+            canvas = c;
+        }
+
+        let mut start = Point::new(i16::MIN, i16::MIN);
+        let mut end = Point::new(i16::MAX, i16::MAX);
+        if let Some(anchor) = &self.start_anchor {
+            start = canvas
+                .anchors()
+                .get(anchor)
+                .copied()
+                .or_fail_with(|()| format!("No such anchor: {anchor}"))?;
+        }
+        if let Some(anchor) = &self.end_anchor {
+            end = canvas
+                .anchors()
+                .get(anchor)
+                .copied()
+                .or_fail_with(|()| format!("No such anchor: {anchor}"))?;
+        }
+        (start.x <= end.x && start.y <= end.y).or_fail_with(|()| {
+            format!(
+                "Empty range: start=[{},{}]({}), end=[{},{}]({})",
+                start.x,
+                start.y,
+                self.start_anchor.as_ref().expect("unreachable"),
+                end.x,
+                end.y,
+                self.end_anchor.as_ref().expect("unreachable"),
+            )
+        })?;
+        let origin = Point::new(
+            ((end.x as i32 - start.x as i32 + 1) / 2 + start.x as i32) as i16,
+            ((end.y as i32 - start.y as i32 + 1) / 2 + start.y as i32) as i16,
+        );
+
+        let mut pixels = Vec::new();
+        for (point, color) in canvas.range_pixels(start..=end) {
+            pixels.push((point - origin, color));
+        }
+        let command = Command::Import(pixels);
+        apply_commands(self.port, &[command]).or_fail()?;
+        Ok(())
+    }
+}
+
+fn apply_commands(port: u16, commands: &[Command]) -> orfail::Result<()> {
+    let mut client = RemoteCommandClient::connect(port).or_fail()?;
+    client.send_commands(commands).or_fail()?;
+    Ok(())
 }
 
 // #[derive(Debug, clap::Args)]
@@ -114,7 +207,7 @@ impl ApplyCommand {
 // }
 
 // impl ExportCommand {
-//     fn run(&self) -> pagurus::Result<()> {
+//     fn run(&self) -> orfail::Result<()> {
 //         let journal = JournaledModel::open_if_exists(&self.path).or_fail()?;
 //         let output = self
 //             .output

@@ -114,8 +114,13 @@ impl Model {
                 Command::BackgroundColor(c) => self.handle_background_color_command(*c),
                 Command::Repeat(c) => self.handle_repeat_command(*c),
                 Command::Checkout(c) => self.handle_checkout_command(c),
+                Command::Import(c) => self.handle_import_command(c),
             }
         }
+    }
+
+    fn handle_import_command(&mut self, pixels: &Vec<(Point, Color)>) {
+        self.fsm = Fsm::Editing(Editor::new(pixels.iter().cloned().collect()));
     }
 
     fn handle_checkout_command(&mut self, checkout: &Checkout) {

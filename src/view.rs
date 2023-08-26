@@ -47,6 +47,7 @@ impl View {
         let top_left = canvas.position_to_point(model, Position::ORIGIN);
         let bottom_right = canvas.position_to_point(model, canvas.window_size.to_region().end());
         for (point, color) in model.canvas().range_pixels(top_left..bottom_right) {
+            //for (&point, &color) in model.canvas().pixels() {
             if marked_points.contains(&point) {
                 continue;
             }

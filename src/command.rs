@@ -23,10 +23,11 @@ pub enum Command {
     BackgroundColor(Color),
     Repeat(u8),
     Checkout(Checkout),
+    Import(Vec<(Point, Color)>),
+    // Edit(rotate|flip|color)
     // Rotate
     // Flip
     // Embedded
-    // Include
     // {"remove": {"tag"|"anchor"|"frame": "name"}}
 }
 

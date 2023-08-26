@@ -230,10 +230,7 @@ impl<'a> RangePixels<'a> {
             Bound::Excluded(&p) => Point::new(p.x - 1, p.y - 1),
             Bound::Unbounded => Point::new(i16::MAX, i16::MAX),
         };
-
-        let row = canvas
-            .pixels
-            .range(start..=Point::new(start.y.min(end.y), end.x));
+        let row = canvas.pixels.range(start..=end);
         Self {
             canvas,
             start,
@@ -248,19 +245,15 @@ impl<'a> Iterator for RangePixels<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some((point, color)) = self.row.next() {
+            let (point, color) = self.row.next()?;
+            if self.start.y != point.y {
+                self.start.y = point.y;
+            } else if self.end.x < point.x {
+                self.start.y += 1;
+            } else {
                 return Some((*point, *color));
             }
-
-            if self.start.y >= self.end.y {
-                return None;
-            }
-
-            self.start.y += 1;
-            self.row = self
-                .canvas
-                .pixels
-                .range(self.start..=Point::new(self.start.y, self.end.x));
+            self.row = self.canvas.pixels.range(self.start..=self.end);
         }
     }
 }
