@@ -8,10 +8,16 @@ use std::{collections::BTreeMap, path::PathBuf};
 pub struct Frame {
     pub name: String,
     pub path: PathBuf,
-    pub start_anchor: String,
-    pub end_anchor: String,
+    pub top_left_anchor: String,
+    pub bottom_right_anchor: String,
     pub start_ticks: Ticks,
-    pub end_ticks: Option<Ticks>,
+    pub end_ticks: Ticks,
+}
+
+impl Frame {
+    pub fn is_visible(&self, ticks: Ticks) -> bool {
+        (self.start_ticks..self.end_ticks).contains(&ticks)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,12 +41,12 @@ impl EmbeddedFrame {
     pub fn sync(&mut self, canvas: &VersionedCanvas) -> orfail::Result<()> {
         let start = canvas
             .anchors()
-            .get(&self.frame.start_anchor)
+            .get(&self.frame.top_left_anchor)
             .copied()
             .or_fail()?;
         let end = canvas
             .anchors()
-            .get(&self.frame.end_anchor)
+            .get(&self.frame.bottom_right_anchor)
             .copied()
             .or_fail()?;
         self.version = canvas.version();

@@ -4,6 +4,7 @@ use pagurus::{
     event::Event,
     image::Canvas,
     spatial::{Position, Size},
+    System,
 };
 use pati::{Color, Point};
 use std::{collections::BTreeSet, time::Duration};
@@ -29,7 +30,11 @@ impl View {
     }
 
     fn render_frames(&self, model: &Model, canvas: &mut WindowCanvas) {
-        for frame in model.frames().values() {
+        for frame in model
+            .frames()
+            .values()
+            .filter(|f| f.frame.is_visible(model.ticks()))
+        {
             for (&point, &color) in frame.pixels.iter() {
                 canvas.dot(model, point, color);
             }
@@ -69,8 +74,13 @@ impl View {
             .fill_color(pagurus::image::Color::rgba(c.r, c.g, c.b, c.a));
     }
 
-    pub fn handle_event(&mut self, model: &mut Model, event: Event) -> orfail::Result<()> {
-        self.cursor.handle_event(model, event).or_fail()?;
+    pub fn handle_event<S: System>(
+        &mut self,
+        system: &mut S,
+        model: &mut Model,
+        event: Event,
+    ) -> orfail::Result<()> {
+        self.cursor.handle_event(system, model, event).or_fail()?;
 
         let Event::Key(key) = event else {
             return Ok(());
@@ -106,15 +116,20 @@ impl Cursor {
         }
     }
 
-    fn handle_event(&mut self, model: &mut Model, event: Event) -> orfail::Result<()> {
+    fn handle_event<S: System>(
+        &mut self,
+        system: &mut S,
+        _model: &mut Model,
+        event: Event,
+    ) -> orfail::Result<()> {
         if matches!(event, Event::Key(_)) {
             self.show = true;
-            self.switch_time = model.clock().duration() + Duration::from_secs(1);
+            self.switch_time = system.clock_game_time() + Duration::from_secs(1);
         }
 
-        if model.clock().duration() >= self.switch_time {
+        if system.clock_game_time() >= self.switch_time {
             self.show = !self.show;
-            self.switch_time = model.clock().duration() + Duration::from_millis(500);
+            self.switch_time = system.clock_game_time() + Duration::from_millis(500);
         }
 
         Ok(())

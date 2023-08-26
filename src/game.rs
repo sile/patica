@@ -52,7 +52,7 @@ impl Game {
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> Result<()> {
-        self.model.initialize();
+        self.model.initialize().or_fail()?;
         self.set_tick_timeout(system);
         Ok(())
     }
@@ -69,7 +69,9 @@ impl<S: System> pagurus::Game<S> for Game {
             }
             _ => {}
         }
-        self.view.handle_event(&mut self.model, event).or_fail()?;
+        self.view
+            .handle_event(system, &mut self.model, event)
+            .or_fail()?;
         self.render(system);
         if set_timeout {
             self.set_tick_timeout(system);

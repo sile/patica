@@ -66,4 +66,6 @@ pub struct PlayCommand {
     pub offset: Ticks,
     pub duration: Ticks,
     pub fps: NonZeroU8,
+    #[serde(default)]
+    pub repeat: bool,
 }

@@ -1,12 +1,3 @@
-use pagurus::{failure::OrFail, Game};
-use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use pati::{CommandReader, CommandWriter, Point, VersionedCanvas};
-use std::{
-    collections::BTreeMap,
-    io::{BufReader, BufWriter},
-    path::{Path, PathBuf},
-};
-
 use crate::{
     clock::Ticks,
     command::Command,
@@ -14,6 +5,14 @@ use crate::{
     frame::Frame,
     model::Model,
     remote::{RemoteCommandClient, RemoteCommandServer},
+};
+use pagurus::{failure::OrFail, Game};
+use pagurus_tui::{TuiSystem, TuiSystemOptions};
+use pati::{CommandReader, CommandWriter, Point, VersionedCanvas};
+use std::{
+    collections::BTreeMap,
+    io::{BufReader, BufWriter},
+    path::{Path, PathBuf},
 };
 
 #[derive(Debug, clap::Parser)]
@@ -238,17 +237,17 @@ pub struct EmbedCommand {
     #[clap(short, long, default_value_t = 7539)]
     port: u16,
 
-    #[clap(long = "start")]
-    start_anchor: String,
+    #[clap(long = "top-left")]
+    top_left_anchor: String,
 
-    #[clap(long = "end")]
-    end_anchor: String,
+    #[clap(long = "bottom-right")]
+    bottom_right_anchor: String,
 
-    #[clap(long, default_value_t = 0)]
+    #[clap(long = "time", default_value_t = 0)]
     start_ticks: u32,
 
-    #[clap(long)]
-    end_ticks: Option<u32>,
+    #[clap(long = "duration", default_value_t = 1)]
+    duration_ticks: u32,
 
     #[clap(long)]
     name: String,
@@ -261,10 +260,10 @@ impl EmbedCommand {
         let frame = Frame {
             name: self.name.clone(),
             path: self.path.clone(),
-            start_anchor: self.start_anchor.clone(),
-            end_anchor: self.end_anchor.clone(),
+            top_left_anchor: self.top_left_anchor.clone(),
+            bottom_right_anchor: self.bottom_right_anchor.clone(),
             start_ticks: Ticks::new(self.start_ticks),
-            end_ticks: self.end_ticks.map(Ticks::new),
+            end_ticks: Ticks::new(self.start_ticks + self.duration_ticks),
         };
         let command = Command::Embed(frame);
         apply_commands(self.port, &[command]).or_fail()?;

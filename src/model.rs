@@ -5,6 +5,7 @@ use crate::{
     frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
 };
+use orfail::OrFail;
 use pati::{Color, Point, Version};
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
@@ -18,7 +19,6 @@ pub struct Model {
     camera: Point,
     brush_color: Color,
     background_color: Color,
-    clock: Time,
     quit: bool,
     fsm: Fsm,
     scale: Scale,
@@ -28,14 +28,10 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn initialize(&mut self) {
+    pub fn initialize(&mut self) -> orfail::Result<()> {
         // Background color.
-        if let Some(color) = self
-            .canvas
-            .metadata()
-            .get(METADATA_BACKGROUND_COLOR)
-            .and_then(|json| serde_json::from_value(json.clone()).ok())
-        {
+        if let Some(color_json) = self.canvas.metadata().get(METADATA_BACKGROUND_COLOR) {
+            let color = serde_json::from_value(color_json.clone()).or_fail()?;
             self.background_color = color;
         }
 
@@ -45,11 +41,11 @@ impl Model {
                 continue;
             }
 
-            // TODO: error handling
-            if let Ok(frame) = serde_json::from_value::<EmbeddedFrame>(value.clone()) {
-                self.frames.insert(frame.frame.name.clone(), frame);
-            }
+            let frame = serde_json::from_value::<EmbeddedFrame>(value.clone()).or_fail()?;
+            self.frames.insert(frame.frame.name.clone(), frame);
         }
+
+        Ok(())
     }
 
     pub fn cursor(&self) -> Point {
@@ -80,18 +76,18 @@ impl Model {
         self.quit
     }
 
-    pub fn clock(&self) -> Time {
-        self.clock
-    }
-
     pub fn ticks(&self) -> Ticks {
         self.ticks
     }
 
     pub fn tick(&mut self) {
-        if let Fsm::Playing { end_time } = &self.fsm {
+        if let Fsm::Playing { end_time, repeat } = &self.fsm {
             if self.ticks >= end_time.ticks {
-                self.fsm = Fsm::Neutral(Default::default());
+                if *repeat {
+                    self.ticks = Ticks::new(0);
+                } else {
+                    self.fsm = Fsm::Neutral(Default::default());
+                }
             } else {
                 self.ticks.tick();
             }
@@ -99,7 +95,7 @@ impl Model {
     }
 
     pub fn fps(&self) -> u32 {
-        if let Fsm::Playing { end_time } = &self.fsm {
+        if let Fsm::Playing { end_time, .. } = &self.fsm {
             end_time.fps.get() as u32
         } else {
             Time::DEFAULT_FPS as u32
@@ -169,6 +165,7 @@ impl Model {
         self.ticks = command.offset;
         self.fsm = Fsm::Playing {
             end_time: Time::new(command.duration, command.fps),
+            repeat: command.repeat,
         };
     }
 
@@ -366,7 +363,7 @@ enum Fsm {
     Neutral(NeutralState),
     Marking(Marker),
     Editing(Editor),
-    Playing { end_time: Time },
+    Playing { end_time: Time, repeat: bool },
 }
 
 impl Fsm {
