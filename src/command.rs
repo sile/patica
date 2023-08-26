@@ -1,8 +1,7 @@
-use std::num::NonZeroU8;
-
 use crate::{clock::Ticks, frame::Frame, marker::MarkKind};
 use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
+use std::num::NonZeroU8;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -29,10 +28,10 @@ pub enum Command {
     Embed(Frame),
     Tick(i32),
     Play(PlayCommand),
+    Remove(RemoveTarget),
     // Edit(rotate|flip|color)
     // Rotate
     // Flip
-    // {"remove": {"tag"|"anchor"|"frame": "name"}}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -68,4 +67,12 @@ pub struct PlayCommand {
     pub fps: NonZeroU8,
     #[serde(default)]
     pub repeat: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RemoveTarget {
+    Tag(String),
+    Anchor(String),
+    Frame(String),
 }

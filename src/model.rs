@@ -1,6 +1,6 @@
 use crate::{
     clock::{Ticks, Time},
-    command::{CenterPoint, Checkout, Command, MoveDestination, PlayCommand},
+    command::{CenterPoint, Checkout, Command, MoveDestination, PlayCommand, RemoveTarget},
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
@@ -157,6 +157,27 @@ impl Model {
                 Command::Embed(c) => self.handle_embed_command(c),
                 Command::Tick(c) => self.handle_tick_command(*c),
                 Command::Play(c) => self.handle_play_command(c),
+                Command::Remove(c) => self.handle_remove_command(c),
+            }
+        }
+    }
+
+    fn handle_remove_command(&mut self, target: &RemoveTarget) {
+        match target {
+            RemoveTarget::Tag(name) => {
+                self.canvas.apply(&pati::Command::tag(name.clone(), None));
+            }
+            RemoveTarget::Anchor(name) => {
+                self.canvas
+                    .apply(&pati::Command::anchor(name.clone(), None));
+            }
+            RemoveTarget::Frame(name) => {
+                if self.frames.remove(name).is_some() {
+                    self.canvas.apply(&pati::Command::put(
+                        format!("{}{}", METADATA_FRAME_PREFIX, name),
+                        serde_json::Value::Null,
+                    ));
+                }
             }
         }
     }
@@ -308,14 +329,21 @@ impl Model {
     }
 
     fn handle_pick_command(&mut self) {
-        if let Some(color) = self.get_displayed_pixel_color(self.cursor) {
+        let cursor = self.cursor;
+        if let Some(color) = self.canvas.get_pixel(cursor) {
             self.brush_color = color;
+        } else {
+            let ticks = self.ticks;
+            if let Some(color) = self
+                .frames
+                .values()
+                .rev()
+                .filter(|f| f.frame.is_visible(ticks))
+                .find_map(|f| f.pixels.get(&cursor).copied())
+            {
+                self.brush_color = color;
+            }
         }
-    }
-
-    fn get_displayed_pixel_color(&self, point: Point) -> Option<Color> {
-        // TODO: consider background
-        self.canvas.get_pixel(point)
     }
 
     fn handle_erase_command(&mut self) {
