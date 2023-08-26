@@ -119,7 +119,7 @@ impl Model {
         }
     }
 
-    fn handle_import_command(&mut self, pixels: &Vec<(Point, Color)>) {
+    fn handle_import_command(&mut self, pixels: &[(Point, Color)]) {
         self.fsm = Fsm::Editing(Editor::new(pixels.iter().cloned().collect()));
     }
 
@@ -152,7 +152,7 @@ impl Model {
             self.background_color = color;
             let command = pati::Command::put(
                 METADATA_BACKGROUND_COLOR.to_owned(),
-                serde_json::to_value(&color).expect("unreachable"),
+                serde_json::to_value(color).expect("unreachable"),
             );
             self.canvas.apply(&command);
         }
@@ -326,7 +326,7 @@ impl Fsm {
                         .points
                         .push(point + cursor);
                 }
-                let command = pati::Command::patch(patches.into_iter().map(|(_, v)| v).collect());
+                let command = pati::Command::patch(patches.into_values().collect());
                 canvas.apply(&command);
             }
         }
