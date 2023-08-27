@@ -139,6 +139,7 @@ impl Model {
                 Command::Mark(c) => self.handle_mark_command(*c),
                 Command::Pick => self.handle_pick_command(),
                 Command::Cut => self.handle_cut_command(),
+                Command::Copy => self.handle_copy_command(),
                 Command::Cancel => self.handle_cancel_command(),
                 Command::Erase => self.handle_erase_command(),
                 Command::Draw => self.handle_draw_command(),
@@ -295,6 +296,21 @@ impl Model {
 
     fn handle_scale_command(&mut self, delta: i8) {
         self.scale = self.scale.saturating_add(delta);
+    }
+
+    fn handle_copy_command(&mut self) {
+        let Fsm::Marking(marker) = &mut self.fsm else {
+            return;
+        };
+
+        let mut pixels = BTreeMap::new();
+        for point in marker.marked_points() {
+            if let Some(color) = self.canvas.get_pixel(point) {
+                pixels.insert(point - self.cursor, color);
+            }
+        }
+
+        self.fsm = Fsm::Editing(Editor::new(pixels));
     }
 
     fn handle_cut_command(&mut self) {

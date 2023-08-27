@@ -11,7 +11,7 @@ pub enum Command {
     Dip(Color),
     Pick,
     Cut,
-    // Copy,
+    Copy,
     Cancel,
     Erase,
     Draw,
