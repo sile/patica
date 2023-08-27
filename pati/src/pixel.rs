@@ -64,6 +64,9 @@ pub struct Point {
 }
 
 impl Point {
+    pub const MIN: Self = Self::new(i16::MIN, i16::MIN);
+    pub const MAX: Self = Self::new(i16::MAX, i16::MAX);
+
     pub const fn new(x: i16, y: i16) -> Self {
         Self { x, y }
     }

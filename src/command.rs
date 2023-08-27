@@ -30,10 +30,9 @@ pub enum Command {
     Play(PlayCommand),
     Remove(RemoveTarget),
     Color(Color),
+    Flip(FlipDirection),
     // Edit(rotate|flip|color)
     // Rotate
-    // Flip
-    // Color
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -77,4 +76,11 @@ pub enum RemoveTarget {
     Tag(String),
     Anchor(String),
     Frame(String),
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FlipDirection {
+    Horizontal,
+    Vertical,
 }

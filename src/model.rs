@@ -1,6 +1,8 @@
 use crate::{
     clock::{Ticks, Time},
-    command::{CenterPoint, Checkout, Command, MoveDestination, PlayCommand, RemoveTarget},
+    command::{
+        CenterPoint, Checkout, Command, FlipDirection, MoveDestination, PlayCommand, RemoveTarget,
+    },
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
@@ -159,7 +161,14 @@ impl Model {
                 Command::Play(c) => self.handle_play_command(c),
                 Command::Remove(c) => self.handle_remove_command(c),
                 Command::Color(c) => self.handle_color_command(*c),
+                Command::Flip(c) => self.handle_flip_command(*c),
             }
+        }
+    }
+
+    fn handle_flip_command(&mut self, direction: FlipDirection) {
+        if let Fsm::Editing(editor) = &mut self.fsm {
+            editor.apply_flip(direction);
         }
     }
 
