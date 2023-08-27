@@ -11,6 +11,7 @@ pub enum Command {
     Dip(Color),
     Pick,
     Cut,
+    // Copy,
     Cancel,
     Erase,
     Draw,
@@ -31,8 +32,7 @@ pub enum Command {
     Remove(RemoveTarget),
     Color(Color),
     Flip(FlipDirection),
-    // Edit(rotate|flip|color)
-    // Rotate
+    Rotate,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

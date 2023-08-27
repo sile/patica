@@ -23,6 +23,19 @@ impl Editor {
         }
     }
 
+    pub fn apply_rotate(&mut self) {
+        let center = self.center();
+        self.pixels = self
+            .pixels
+            .iter()
+            .map(|(&p, &c)| {
+                let x = center.x + (center.y - p.y);
+                let y = center.y + (p.x - center.x);
+                (Point::new(x, y), c)
+            })
+            .collect();
+    }
+
     pub fn apply_flip(&mut self, direction: FlipDirection) {
         let center = self.center();
         match direction {

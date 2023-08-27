@@ -162,17 +162,27 @@ impl Model {
                 Command::Remove(c) => self.handle_remove_command(c),
                 Command::Color(c) => self.handle_color_command(*c),
                 Command::Flip(c) => self.handle_flip_command(*c),
+                Command::Rotate => self.handle_rotate_command(),
             }
         }
     }
 
+    fn handle_rotate_command(&mut self) {
+        // TODO: Enter editor mode if not in it.
+        if let Fsm::Editing(editor) = &mut self.fsm {
+            editor.apply_rotate();
+        }
+    }
+
     fn handle_flip_command(&mut self, direction: FlipDirection) {
+        // TODO: Enter editor mode if not in it.
         if let Fsm::Editing(editor) = &mut self.fsm {
             editor.apply_flip(direction);
         }
     }
 
     fn handle_color_command(&mut self, color: Color) {
+        // TODO: Enter editor mode if not in it.
         if let Fsm::Editing(editor) = &mut self.fsm {
             editor.apply_color(color);
         }
