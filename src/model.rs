@@ -158,7 +158,14 @@ impl Model {
                 Command::Tick(c) => self.handle_tick_command(*c),
                 Command::Play(c) => self.handle_play_command(c),
                 Command::Remove(c) => self.handle_remove_command(c),
+                Command::Color(c) => self.handle_color_command(*c),
             }
+        }
+    }
+
+    fn handle_color_command(&mut self, color: Color) {
+        if let Fsm::Editing(editor) = &mut self.fsm {
+            editor.apply_color(color);
         }
     }
 

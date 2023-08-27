@@ -14,4 +14,10 @@ impl Editor {
     pub fn pixels(&self) -> impl '_ + Iterator<Item = (Point, Color)> {
         self.pixels.iter().map(|(p, c)| (*p, *c))
     }
+
+    pub fn apply_color(&mut self, color: Color) {
+        for c in self.pixels.values_mut() {
+            *c = color;
+        }
+    }
 }

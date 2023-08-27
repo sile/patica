@@ -29,6 +29,7 @@ pub enum Command {
     Tick(i32),
     Play(PlayCommand),
     Remove(RemoveTarget),
+    Color(Color),
     // Edit(rotate|flip|color)
     // Rotate
     // Flip
