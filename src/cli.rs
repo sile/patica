@@ -136,7 +136,7 @@ impl EmbeddedCanvas {
     fn new(path: &PathBuf) -> orfail::Result<Self> {
         let file = std::fs::File::open(path).or_fail()?;
         let reader = CommandReader::new(BufReader::new(file));
-        let canvas = VersionedCanvas::default();
+        let canvas = VersionedCanvas::default(); // TODO: use Canvas
         Ok(Self {
             path: path.clone(),
             canvas,
@@ -259,6 +259,7 @@ pub struct EmbedCommand {
     name: String,
 
     path: PathBuf,
+    // TODO: nosync
 }
 
 impl EmbedCommand {

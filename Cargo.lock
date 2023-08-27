@@ -231,7 +231,7 @@ dependencies = [
 
 [[package]]
 name = "pati"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -239,7 +239,7 @@ dependencies = [
 
 [[package]]
 name = "patica"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "clap",
  "copic_colors",
