@@ -1,6 +1,9 @@
 use crate::{Color, Point, Version};
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, Write};
+use std::{
+    collections::BTreeMap,
+    io::{BufRead, Write},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -25,12 +28,34 @@ impl Command {
         Self::Patch(PatchCommand::new(entries))
     }
 
+    pub fn draw_pixels(pixels: impl Iterator<Item = (Point, Color)>) -> Self {
+        let mut entries = BTreeMap::new();
+        for (point, color) in pixels {
+            entries
+                .entry(color)
+                .or_insert_with(|| PatchEntry {
+                    color: Some(color),
+                    points: Vec::new(),
+                })
+                .points
+                .push(point);
+        }
+        Self::patch(entries.into_values().collect())
+    }
+
     pub fn tag(name: String, version: Option<Version>) -> Self {
         Self::Tag { name, version }
     }
 
     pub fn anchor(name: String, point: Option<Point>) -> Self {
         Self::Anchor { name, point }
+    }
+
+    pub fn set_anchor(name: &str, point: Point) -> Self {
+        Self::Anchor {
+            name: name.to_string(),
+            point: Some(point),
+        }
     }
 
     pub fn put(name: String, value: serde_json::Value) -> Self {

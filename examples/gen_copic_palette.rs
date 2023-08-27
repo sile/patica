@@ -1,15 +1,51 @@
 use copic_colors::{Family, Group, Value};
-use pagurus::{failure::OrFail, image::Color};
-use patica::{
-    marker::MarkKind,
-    model::{AnchorName, CameraPosition, Command, SetCommand},
+use orfail::OrFail;
+use pati::{Color, Command, Point};
+use std::{
+    collections::{BTreeMap, HashMap},
+    io::Write,
 };
-use std::{collections::HashMap, io::Write};
 
-const PALETTE_WIDTH: i16 = 26;
-const PALETTE_HEIGHT: i16 = 47;
+const PALETTE_WIDTH: i16 = 27;
+const PALETTE_HEIGHT: i16 = 48;
 
 fn main() -> pagurus::Result<()> {
+    let mut pixels: BTreeMap<Point, Color> = BTreeMap::new();
+    add_background(&mut pixels);
+    add_colors(&mut pixels);
+
+    write_command(Command::draw_pixels(pixels.into_iter())).or_fail()?;
+    write_command(Command::set_anchor("palette.start", Point::new(0, 0))).or_fail()?;
+    write_command(Command::set_anchor(
+        "palette.end",
+        Point::new(PALETTE_WIDTH - 1, PALETTE_HEIGHT - 1),
+    ))
+    .or_fail()?;
+    write_command(Command::set_anchor(
+        "origin",
+        Point::new(PALETTE_WIDTH / 2, PALETTE_HEIGHT / 2),
+    ))
+    .or_fail()?;
+
+    Ok(())
+}
+
+fn write_command(command: Command) -> orfail::Result<()> {
+    let mut stdout = std::io::stdout();
+    serde_json::to_writer(&mut stdout, &command).or_fail()?;
+    writeln!(&mut stdout).or_fail()?;
+    Ok(())
+}
+
+fn add_background(pixels: &mut BTreeMap<Point, Color>) {
+    for y in 0..PALETTE_HEIGHT {
+        for x in 0..PALETTE_WIDTH {
+            pixels.insert((x, y).into(), Color::rgb(164, 163, 156));
+        }
+    }
+}
+
+fn add_colors(pixels: &mut BTreeMap<Point, Color>) {
     let mut colors = HashMap::new();
     for color in copic_colors::ALL_COLORS {
         let rgb = color.rgb;
@@ -18,12 +54,6 @@ fn main() -> pagurus::Result<()> {
             Color::rgb(rgb.r, rgb.g, rgb.b),
         );
     }
-
-    let palette_start_anchor = AnchorName::new("palette.start");
-    let palette_end_anchor = AnchorName::new("palette.end");
-    write_command(Command::Anchor(palette_start_anchor.clone())).or_fail()?;
-    write_background().or_fail()?;
-    write_command(Command::Anchor(palette_end_anchor.clone())).or_fail()?;
 
     // Reference: https://copic.too.com/blogs/educational/how-are-copic-colors-organized-and-named
     let families = [
@@ -75,12 +105,7 @@ fn main() -> pagurus::Result<()> {
         }
 
         for group in groups {
-            write_command(Command::Set(SetCommand::Cursor(
-                palette_start_anchor.clone(),
-            )))
-            .or_fail()?;
-            write_command(Command::Move((columns as i16, row as i16).into())).or_fail()?;
-
+            let mut point = Point::new(columns as i16, row as i16);
             if values
                 .into_iter()
                 .all(|value| !colors.contains_key(&(family, group, value)))
@@ -92,8 +117,9 @@ fn main() -> pagurus::Result<()> {
                 let color = colors
                     .get(&(family, group, value))
                     .copied()
-                    .unwrap_or(Color::WHITE);
-                write_color(color).or_fail()?;
+                    .unwrap_or(Color::rgb(255, 255, 255));
+                pixels.insert(point, color);
+                point.x += 1;
             }
             row += 1;
         }
@@ -106,27 +132,19 @@ fn main() -> pagurus::Result<()> {
         Family::TonerGray,
         Family::WarmGray,
     ] {
-        write_command(Command::Set(SetCommand::Cursor(
-            palette_start_anchor.clone(),
-        )))
-        .or_fail()?;
-        write_command(Command::Move((1, row as i16).into())).or_fail()?;
-
+        let mut point = Point::new(1, row as i16);
         for value in values {
             let color = colors
                 .get(&(family, Group::Undefined, value))
                 .copied()
-                .unwrap_or(Color::WHITE);
-            write_color(color).or_fail()?;
+                .unwrap_or(Color::rgb(255, 255, 255));
+            pixels.insert(point, color);
+            point.x += 1;
         }
         row += 1;
     }
 
-    write_command(Command::Set(SetCommand::Cursor(
-        palette_start_anchor.clone(),
-    )))
-    .or_fail()?;
-    write_command(Command::Move((1, row as i16).into())).or_fail()?;
+    let mut point = Point::new(1, row as i16);
     for color in [
         copic_colors::COLOR_0,
         copic_colors::COLOR_0,
@@ -142,44 +160,7 @@ fn main() -> pagurus::Result<()> {
         copic_colors::COLOR_110,
     ] {
         let color = Color::rgb(color.rgb.r, color.rgb.g, color.rgb.b);
-        write_color(color).or_fail()?;
+        pixels.insert(point, color);
+        point.x += 1;
     }
-
-    write_command(Command::Set(SetCommand::Cursor(
-        palette_start_anchor.clone(),
-    )))
-    .or_fail()?;
-    write_command(Command::Move(
-        (PALETTE_WIDTH / 2, PALETTE_HEIGHT / 2).into(),
-    ))
-    .or_fail()?;
-    write_command(Command::Set(SetCommand::Camera(CameraPosition::Pixel(
-        (0, 0).into(),
-    ))))
-    .or_fail()?;
-
-    Ok(())
-}
-
-fn write_command(command: Command) -> pagurus::Result<()> {
-    let mut stdout = std::io::stdout();
-    serde_json::to_writer(&mut stdout, &command).or_fail()?;
-    writeln!(&mut stdout).or_fail()?;
-    Ok(())
-}
-
-fn write_color(color: Color) -> pagurus::Result<()> {
-    write_command(Command::Mark(MarkKind::Line)).or_fail()?;
-    write_command(Command::Set(SetCommand::Color(color))).or_fail()?;
-    write_command(Command::Draw).or_fail()?;
-    write_command(Command::Move((1, 0).into())).or_fail()?;
-    Ok(())
-}
-
-fn write_background() -> pagurus::Result<()> {
-    write_command(Command::Mark(MarkKind::FillRectangle)).or_fail()?;
-    write_command(Command::Move((PALETTE_WIDTH, PALETTE_HEIGHT).into())).or_fail()?;
-    write_command(Command::Set(SetCommand::Color(Color::rgb(164, 163, 156)))).or_fail()?;
-    write_command(Command::Draw).or_fail()?;
-    Ok(())
 }

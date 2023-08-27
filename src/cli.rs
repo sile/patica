@@ -1,6 +1,6 @@
 use crate::{
     clock::Ticks,
-    command::Command,
+    command::{AnchorName, CenterPoint, Command, MoveDestination},
     config::Config,
     frame::Frame,
     model::Model,
@@ -70,6 +70,12 @@ impl OpenCommand {
         };
         let mut system = TuiSystem::with_options(options).or_fail()?;
         game.initialize(&mut system).or_fail()?;
+        game.model_mut()
+            .apply(&Command::Move(MoveDestination::Anchor(AnchorName {
+                anchor: "origin".to_owned(),
+            })));
+        game.model_mut()
+            .apply(&Command::Center(CenterPoint::Cursor));
 
         let mut embedded_canvases = BTreeMap::new();
         for embedded in game.model().frames().values() {
