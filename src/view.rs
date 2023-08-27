@@ -76,7 +76,7 @@ impl View {
 
     pub fn handle_event<S: System>(
         &mut self,
-        system: &mut S,
+        system: &S,
         model: &mut Model,
         event: Event,
     ) -> orfail::Result<()> {
@@ -118,7 +118,7 @@ impl Cursor {
 
     fn handle_event<S: System>(
         &mut self,
-        system: &mut S,
+        system: &S,
         _model: &mut Model,
         event: Event,
     ) -> orfail::Result<()> {
