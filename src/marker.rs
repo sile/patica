@@ -10,8 +10,8 @@ pub enum MarkKind {
     Stroke,
     Fill,
     Rectangle,
-    FillRectangle,
     Ellipse,
+    Region,
     Color,
     All,
 }
@@ -22,8 +22,8 @@ pub enum Marker {
     Stroke(StrokeMarker),
     Fill(FillMarker),
     Rectangle(RectangleMarker),
-    FillRectangle(FillRectangleMarker),
     Ellipse(EllipseMarker),
+    Region(RegionMarker),
     Color(ColorMarker),
     All(AllMarker),
 }
@@ -35,7 +35,7 @@ impl Marker {
             MarkKind::Stroke => Self::Stroke(StrokeMarker::new(model)),
             MarkKind::Fill => Self::Fill(FillMarker::new(model)),
             MarkKind::Rectangle => Self::Rectangle(RectangleMarker::new(model)),
-            MarkKind::FillRectangle => Self::FillRectangle(FillRectangleMarker::new(model)),
+            MarkKind::Region => Self::Region(RegionMarker::new(model)),
             MarkKind::Ellipse => Self::Ellipse(EllipseMarker::new(model)),
             MarkKind::Color => Self::Color(ColorMarker::new(model)),
             MarkKind::All => Self::All(AllMarker::new(model)),
@@ -48,7 +48,7 @@ impl Marker {
             Self::Stroke(m) => m.handle_mvoe(model),
             Self::Fill(m) => m.handle_move(model),
             Self::Rectangle(m) => m.handle_move(model),
-            Self::FillRectangle(m) => m.handle_move(model),
+            Self::Region(m) => m.handle_move(model),
             Self::Ellipse(m) => m.handle_move(model),
             Self::Color(m) => m.handle_move(model),
             Self::All(m) => m.handle_move(model),
@@ -61,7 +61,7 @@ impl Marker {
             Self::Stroke(m) => Box::new(m.marked_points()),
             Self::Fill(m) => Box::new(m.marked_points()),
             Self::Rectangle(m) => Box::new(m.marked_points()),
-            Self::FillRectangle(m) => Box::new(m.marked_points()),
+            Self::Region(m) => Box::new(m.marked_points()),
             Self::Ellipse(m) => Box::new(m.marked_points()),
             Self::Color(m) => Box::new(m.marked_points()),
             Self::All(m) => Box::new(m.marked_points()),
@@ -318,11 +318,11 @@ impl RectangleMarker {
 }
 
 #[derive(Debug, Clone)]
-pub struct FillRectangleMarker {
+pub struct RegionMarker {
     inner: RectangleMarker,
 }
 
-impl FillRectangleMarker {
+impl RegionMarker {
     fn new(model: &Model) -> Self {
         Self {
             inner: RectangleMarker::new(model),
