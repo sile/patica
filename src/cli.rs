@@ -187,6 +187,7 @@ impl EmbeddedCanvas {
 pub struct ApplyCommand {
     #[clap(short, long, default_value_t = 7539)]
     port: u16,
+    // TODO: path
 }
 
 impl ApplyCommand {
@@ -372,6 +373,7 @@ fn load_canvas<P: AsRef<Path>>(path: &P, tag: Option<&String>) -> orfail::Result
 
 #[derive(Debug, clap::Subcommand)]
 pub enum GetCommand {
+    // TODO: port arg
     BackgroundColor { path: PathBuf },
     Anchors { path: PathBuf },
 }
