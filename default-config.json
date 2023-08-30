@@ -17,12 +17,23 @@
 
         "p": ["pick"],
         "c": ["cut"],
+        "C": ["copy"],
+
+        "1": [{"mark": "stroke"}],
+        "2": [{"mark": "line"}],
+        "3": [{"mark": "rectangle"}],
+        "4": [{"mark": "ellipse"}],
+        "5": [{"mark": "region"}],
+        "6": [{"mark": "fill"}],
+        "7": [{"mark": "color"}],
 
         "m": [{"mark": "stroke"}],
         "n": [{"mark": "line"}],
         "Esc": ["cancel"],
         "Backspace": ["erase"],
+        "d": ["erase"],
 
+        "h": ["draw"],
         " ": ["draw", "cancel"],
         "o": [{"center": "cursor"}],
         "O": [{"move": {"anchor": "origin"}}, {"center": {"anchor": "origin"}}],
