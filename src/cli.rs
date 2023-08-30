@@ -9,6 +9,7 @@ use crate::{
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
 use pati::{CommandReader, CommandWriter, Point, VersionedCanvas};
+use std::io::Write;
 use std::{
     collections::BTreeMap,
     io::{BufReader, BufWriter},
@@ -23,6 +24,8 @@ pub enum Args {
     Include(IncludeCommand),
     Embed(EmbedCommand),
     Export(ExportCommand),
+    #[clap(subcommand)]
+    Get(GetCommand),
 }
 
 impl Args {
@@ -33,6 +36,7 @@ impl Args {
             Self::Include(cmd) => cmd.run().or_fail(),
             Self::Embed(cmd) => cmd.run().or_fail(),
             Self::Export(cmd) => cmd.run().or_fail(),
+            Self::Get(cmd) => cmd.run().or_fail(),
         }
     }
 }
@@ -345,5 +349,53 @@ fn load_canvas<P: AsRef<Path>>(path: &P, tag: Option<&String>) -> orfail::Result
             .or_fail_with(|()| format!("No such tag: {tag}"))?)
     } else {
         Ok(canvas)
+    }
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum GetCommand {
+    BackgroundColor { path: PathBuf },
+    Anchors { path: PathBuf },
+}
+
+impl GetCommand {
+    fn run(&self) -> orfail::Result<()> {
+        match self {
+            GetCommand::BackgroundColor { .. } => {
+                let model = self.load_model().or_fail()?;
+                self.output(model.background_color()).or_fail()?;
+            }
+            GetCommand::Anchors { .. } => {
+                let model = self.load_model().or_fail()?;
+                self.output(model.canvas().anchors()).or_fail()?;
+            }
+        }
+        Ok(())
+    }
+
+    fn load_model(&self) -> orfail::Result<Model> {
+        let file = std::fs::File::open(self.path()).or_fail()?;
+        let mut reader = CommandReader::new(BufReader::new(file));
+        let mut model = Model::default();
+        while let Some(command) = reader.read_command().or_fail()? {
+            model.canvas_mut().apply(&command);
+        }
+        model.initialize().or_fail()?;
+        Ok(model)
+    }
+
+    fn output(&self, value: impl serde::Serialize) -> orfail::Result<()> {
+        let stdout = std::io::stdout();
+        let mut stdout = stdout.lock();
+        serde_json::to_writer(&mut stdout, &value).or_fail()?;
+        writeln!(&mut stdout).or_fail()?;
+        Ok(())
+    }
+
+    fn path(&self) -> &PathBuf {
+        match self {
+            GetCommand::BackgroundColor { path } => path,
+            GetCommand::Anchors { path } => path,
+        }
     }
 }
