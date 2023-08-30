@@ -31,7 +31,10 @@ pub enum Args {
 impl Args {
     pub fn run(&self) -> orfail::Result<()> {
         match self {
-            Self::Open(cmd) => cmd.run().or_fail(),
+            Self::Open(cmd) => cmd.run().or_fail().map_err(|e| {
+                println!();
+                e
+            }),
             Self::Apply(cmd) => cmd.run().or_fail(),
             Self::Include(cmd) => cmd.run().or_fail(),
             Self::Embed(cmd) => cmd.run().or_fail(),
@@ -68,6 +71,21 @@ impl OpenCommand {
         while let Some(command) = reader.read_command().or_fail()? {
             game.model_mut().canvas_mut().apply(&command);
         }
+
+        fn file_println(msg: &str) {
+            let _ = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("patica.log")
+                .and_then(|mut file| writeln!(file, "{}", msg));
+        }
+
+        pagurus::io::set_println_fn(file_println).or_fail()?;
+        std::panic::set_hook(Box::new(|info| {
+            // NOTE: TODO
+            println!("{info}");
+            pagurus::println!("{info}");
+        }));
 
         let options = TuiSystemOptions {
             disable_mouse: true,
