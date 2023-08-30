@@ -13,6 +13,7 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 
 const METADATA_BACKGROUND_COLOR: &str = "patica.background_color";
 const METADATA_FRAME_PREFIX: &str = "patica.frame.";
+const METADATA_BRUSH_COLOR: &str = "patica.brush_color";
 
 #[derive(Debug, Default)]
 pub struct Model {
@@ -35,6 +36,12 @@ impl Model {
         if let Some(color_json) = self.canvas.metadata().get(METADATA_BACKGROUND_COLOR) {
             let color = serde_json::from_value(color_json.clone()).or_fail()?;
             self.background_color = color;
+        }
+
+        // Brush color.
+        if let Some(color_json) = self.canvas.metadata().get(METADATA_BRUSH_COLOR) {
+            let color = serde_json::from_value(color_json.clone()).or_fail()?;
+            self.brush_color = color;
         }
 
         // Frames.
@@ -367,13 +374,22 @@ impl Model {
     }
 
     fn handle_dip_command(&mut self, color: Color) {
+        self.set_brush_color(color);
+    }
+
+    fn set_brush_color(&mut self, color: Color) {
         self.brush_color = color;
+        let command = pati::Command::put(
+            METADATA_BRUSH_COLOR.to_owned(),
+            serde_json::to_value(color).expect("unreachable"),
+        );
+        self.canvas.apply(&command);
     }
 
     fn handle_pick_command(&mut self) {
         let cursor = self.cursor;
         if let Some(color) = self.canvas.get_pixel(cursor) {
-            self.brush_color = color;
+            self.set_brush_color(color);
         } else {
             let ticks = self.ticks;
             if let Some(color) = self
@@ -383,9 +399,9 @@ impl Model {
                 .filter(|f| f.frame.is_visible(ticks))
                 .find_map(|f| f.pixels.get(&cursor).copied())
             {
-                self.brush_color = color;
+                self.set_brush_color(color);
             }
-        }
+        };
     }
 
     fn handle_erase_command(&mut self) {
