@@ -32,6 +32,7 @@ impl Args {
     pub fn run(&self) -> orfail::Result<()> {
         match self {
             Self::Open(cmd) => cmd.run().or_fail().map_err(|e| {
+                // This is needed to leave the raw terminal mode before printing the error.
                 println!();
                 e
             }),
@@ -82,7 +83,6 @@ impl OpenCommand {
 
         pagurus::io::set_println_fn(file_println).or_fail()?;
         std::panic::set_hook(Box::new(|info| {
-            // NOTE: TODO
             println!("{info}");
             pagurus::println!("{info}");
         }));
