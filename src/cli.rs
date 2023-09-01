@@ -49,6 +49,7 @@ impl Args {
 pub struct OpenCommand {
     path: PathBuf,
 
+    // TODO: use random port and save the value to the .pati file
     #[clap(short, long, default_value_t = 7539)]
     port: u16,
 }
