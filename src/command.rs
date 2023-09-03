@@ -1,4 +1,4 @@
-use crate::{clock::Ticks, frame::Frame, marker::MarkKind};
+use crate::{clock::Ticks, frame::Frame, marker::MarkKind, query::Query};
 use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
 use std::num::NonZeroU8;
@@ -85,11 +85,24 @@ pub enum FlipDirection {
     Vertical,
 }
 
-// {"external_command": {"program": "tmux", "args": []}}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExternalCommand {
     pub program: String,
 
     #[serde(default)]
-    pub args: Vec<String>,
+    pub args: Vec<ExternalCommandArg>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ExternalCommandArg {
+    Static(String),
+    Dynamic(ExternalCommandArgDynamic),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExternalCommandArgDynamic {
+    Query(Query),
+    Env(String),
 }

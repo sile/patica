@@ -19,7 +19,11 @@
         "c": ["copy"],
         "v": ["draw"],
 
-        "e": [{"external_command": {"program": "tmux", "args":["popup"]}}],
+        "e": [{"external_command":
+               {
+                   "program": "tmux",
+                   "args":["popup", "-d", {"env": "PWD"}]
+               }}],
 
         "1": [{"mark": "ellipse"}],
         "2": [{"mark": "rectangle"}],

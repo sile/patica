@@ -8,5 +8,6 @@ pub mod frame;
 pub mod game;
 pub mod marker;
 pub mod model;
+pub mod query;
 pub mod remote;
 pub mod view;

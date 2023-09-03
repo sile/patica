@@ -1,12 +1,13 @@
 use crate::{
     clock::{Ticks, Time},
     command::{
-        CenterPoint, Checkout, Command, ExternalCommand, FlipDirection, MoveDestination,
-        PlayCommand, RemoveTarget,
+        CenterPoint, Checkout, Command, ExternalCommand, ExternalCommandArg,
+        ExternalCommandArgDynamic, FlipDirection, MoveDestination, PlayCommand, RemoveTarget,
     },
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
     marker::{MarkKind, Marker},
+    query::Query,
 };
 use orfail::OrFail;
 use pati::{Color, Point, Version};
@@ -173,10 +174,34 @@ impl Model {
         }
     }
 
+    pub fn query(&self, query: &Query) -> Option<serde_json::Value> {
+        match query {
+            Query::BackgroundColor => serde_json::to_value(&self.background_color).ok(),
+            Query::BrushColor => serde_json::to_value(&self.brush_color).ok(),
+        }
+    }
+
     fn handle_external_command(&mut self, command: &ExternalCommand) {
+        let mut args = Vec::new();
+        for arg in &command.args {
+            match arg {
+                ExternalCommandArg::Static(s) => {
+                    args.push(s.clone());
+                }
+                ExternalCommandArg::Dynamic(ExternalCommandArgDynamic::Query(q)) => {
+                    let value =
+                        serde_json::to_string(&self.query(q)).expect("TODO: error handling");
+                    args.push(value);
+                }
+                ExternalCommandArg::Dynamic(ExternalCommandArgDynamic::Env(name)) => {
+                    args.push(std::env::var(name).unwrap_or_default());
+                }
+            }
+        }
+
         // TODO: error handling
         let _ = std::process::Command::new(&command.program)
-            .args(&command.args)
+            .args(&args)
             .output();
     }
 
