@@ -1,9 +1,5 @@
 {
     "key": {
-        "Up": [{"move": [0, -1]}],
-        "Down": [{"move": [0, 1]}],
-        "Left": [{"move": [-1, 0]}],
-        "Right": [{"move": [1, 0]}],
         "Ctrl+p": [{"move": [0, -1]}],
         "Ctrl+n": [{"move": [0, 1]}],
         "Ctrl+b": [{"move": [-1, 0]}],
@@ -19,13 +15,14 @@
         "L": [{"move": [8, 0]}],
 
         "p": ["pick"],
-        "c": ["cut"],
-        "C": ["copy"],
+        "x": ["cut"],
+        "c": ["copy"],
+        "v": ["draw"],
 
-        "1": [{"mark": "stroke"}],
-        "2": [{"mark": "line"}],
-        "3": [{"mark": "rectangle"}],
-        "4": [{"mark": "ellipse"}],
+        "1": [{"mark": "ellipse"}],
+        "2": [{"mark": "rectangle"}],
+        "3": [{"mark": "stroke"}],
+        "4": [{"mark": "line"}],
         "5": [{"mark": "region"}],
         "6": [{"mark": "fill"}],
         "7": [{"mark": "color"}],
@@ -33,11 +30,10 @@
         "m": [{"mark": "stroke"}],
         "n": [{"mark": "line"}],
         "Esc": ["cancel"],
-        "Backspace": ["erase"],
         "d": ["erase"],
 
-        "h": ["draw"],
         " ": ["draw", "cancel"],
+        "u": [{"anchor": "origin"}],
         "o": [{"center": "cursor"}],
         "O": [{"move": {"anchor": "origin"}}, {"center": {"anchor": "origin"}}],
 
@@ -46,7 +42,6 @@
 
         "z": ["undo"],
         "y": ["redo"],
-        "r": [{"repeat": 2}],
 
         "t": [{"tick": 1}],
         "T": [{"tick": -1}],
