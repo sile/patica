@@ -376,6 +376,7 @@ fn load_canvas<P: AsRef<Path>>(path: &P, tag: Option<&String>) -> orfail::Result
 pub enum GetCommand {
     // TODO: port arg
     BackgroundColor { path: PathBuf },
+    BrushColor { path: PathBuf },
     Anchors { path: PathBuf },
 }
 
@@ -385,6 +386,10 @@ impl GetCommand {
             GetCommand::BackgroundColor { .. } => {
                 let model = self.load_model().or_fail()?;
                 self.output(model.background_color()).or_fail()?;
+            }
+            GetCommand::BrushColor { .. } => {
+                let model = self.load_model().or_fail()?;
+                self.output(model.brush_color()).or_fail()?;
             }
             GetCommand::Anchors { .. } => {
                 let model = self.load_model().or_fail()?;
@@ -416,6 +421,7 @@ impl GetCommand {
     fn path(&self) -> &PathBuf {
         match self {
             GetCommand::BackgroundColor { path } => path,
+            GetCommand::BrushColor { path } => path,
             GetCommand::Anchors { path } => path,
         }
     }
