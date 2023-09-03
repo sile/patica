@@ -22,8 +22,13 @@
         "e": [{"external_command":
                {
                    "program": "tmux",
-                   "args":["popup", "-d", {"env": "PWD"}]
-               }}],
+                   "args":[
+                       "popup",
+                       "-d",
+                       {"env": "PWD"},
+                       "-e",
+                       ["PATICA_PORT=", "TODO"]
+                   ]}}],
 
         "1": [{"mark": "ellipse"}],
         "2": [{"mark": "rectangle"}],
