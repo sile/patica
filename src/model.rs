@@ -25,7 +25,6 @@ pub struct Model {
     quit: bool,
     fsm: Fsm,
     scale: Scale,
-    repeat: Option<usize>,
     frames: BTreeMap<String, EmbeddedFrame>,
     ticks: Ticks,
 }
@@ -140,38 +139,35 @@ impl Model {
     }
 
     pub fn apply(&mut self, command: &Command) {
-        for _ in 0..self.repeat.take().unwrap_or(1) {
-            match command {
-                Command::Move(c) => self.handle_move_command(c),
-                Command::Mark(c) => self.handle_mark_command(*c),
-                Command::Pick => self.handle_pick_command(),
-                Command::Cut => self.handle_cut_command(),
-                Command::Copy => self.handle_copy_command(),
-                Command::Cancel => self.handle_cancel_command(),
-                Command::Erase => self.handle_erase_command(),
-                Command::Draw => self.handle_draw_command(),
-                Command::Undo => self.handle_undo_command(),
-                Command::Redo => self.handle_redo_command(),
-                Command::Quit => {
-                    self.quit = true;
-                }
-                Command::Dip(c) => self.handle_dip_command(*c),
-                Command::Scale(c) => self.handle_scale_command(*c),
-                Command::Center(c) => self.handle_center_command(c),
-                Command::Anchor(c) => self.handle_anchor_command(c),
-                Command::Tag(c) => self.handle_tag_command(c),
-                Command::BackgroundColor(c) => self.handle_background_color_command(*c),
-                Command::Repeat(c) => self.handle_repeat_command(*c),
-                Command::Checkout(c) => self.handle_checkout_command(c),
-                Command::Import(c) => self.handle_import_command(c),
-                Command::Embed(c) => self.handle_embed_command(c),
-                Command::Tick(c) => self.handle_tick_command(*c),
-                Command::Play(c) => self.handle_play_command(c),
-                Command::Remove(c) => self.handle_remove_command(c),
-                Command::Color(c) => self.handle_color_command(*c),
-                Command::Flip(c) => self.handle_flip_command(*c),
-                Command::Rotate => self.handle_rotate_command(),
+        match command {
+            Command::Move(c) => self.handle_move_command(c),
+            Command::Mark(c) => self.handle_mark_command(*c),
+            Command::Pick => self.handle_pick_command(),
+            Command::Cut => self.handle_cut_command(),
+            Command::Copy => self.handle_copy_command(),
+            Command::Cancel => self.handle_cancel_command(),
+            Command::Erase => self.handle_erase_command(),
+            Command::Draw => self.handle_draw_command(),
+            Command::Undo => self.handle_undo_command(),
+            Command::Redo => self.handle_redo_command(),
+            Command::Quit => {
+                self.quit = true;
             }
+            Command::Dip(c) => self.handle_dip_command(*c),
+            Command::Scale(c) => self.handle_scale_command(*c),
+            Command::Center(c) => self.handle_center_command(c),
+            Command::Anchor(c) => self.handle_anchor_command(c),
+            Command::Tag(c) => self.handle_tag_command(c),
+            Command::BackgroundColor(c) => self.handle_background_color_command(*c),
+            Command::Checkout(c) => self.handle_checkout_command(c),
+            Command::Import(c) => self.handle_import_command(c),
+            Command::Embed(c) => self.handle_embed_command(c),
+            Command::Tick(c) => self.handle_tick_command(*c),
+            Command::Play(c) => self.handle_play_command(c),
+            Command::Remove(c) => self.handle_remove_command(c),
+            Command::Color(c) => self.handle_color_command(*c),
+            Command::Flip(c) => self.handle_flip_command(*c),
+            Command::Rotate => self.handle_rotate_command(),
         }
     }
 
@@ -255,14 +251,6 @@ impl Model {
                     self.canvas.apply(&pati::Command::Patch(command));
                 }
             }
-        }
-    }
-
-    fn handle_repeat_command(&mut self, count: u8) {
-        if let Some(n) = self.repeat {
-            self.repeat = Some(n + count as usize);
-        } else {
-            self.repeat = Some(count as usize);
         }
     }
 

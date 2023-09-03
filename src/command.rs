@@ -23,7 +23,6 @@ pub enum Command {
     Anchor(String),
     Tag(String),
     BackgroundColor(Color),
-    Repeat(u8),
     Checkout(Checkout),
     Import(Vec<(Point, Color)>),
     Embed(Frame),
