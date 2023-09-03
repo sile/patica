@@ -1,7 +1,8 @@
 use crate::{
     clock::{Ticks, Time},
     command::{
-        CenterPoint, Checkout, Command, FlipDirection, MoveDestination, PlayCommand, RemoveTarget,
+        CenterPoint, Checkout, Command, ExternalCommand, FlipDirection, MoveDestination,
+        PlayCommand, RemoveTarget,
     },
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
@@ -168,7 +169,15 @@ impl Model {
             Command::Color(c) => self.handle_color_command(*c),
             Command::Flip(c) => self.handle_flip_command(*c),
             Command::Rotate => self.handle_rotate_command(),
+            Command::ExternalCommand(c) => self.handle_external_command(c),
         }
+    }
+
+    fn handle_external_command(&mut self, command: &ExternalCommand) {
+        // TODO: error handling
+        let _ = std::process::Command::new(&command.program)
+            .args(&command.args)
+            .output();
     }
 
     fn handle_rotate_command(&mut self) {

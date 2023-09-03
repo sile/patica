@@ -32,6 +32,7 @@ pub enum Command {
     Color(Color),
     Flip(FlipDirection),
     Rotate,
+    ExternalCommand(ExternalCommand),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -82,4 +83,13 @@ pub enum RemoveTarget {
 pub enum FlipDirection {
     Horizontal,
     Vertical,
+}
+
+// {"external_command": {"program": "tmux", "args": []}}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExternalCommand {
+    pub program: String,
+
+    #[serde(default)]
+    pub args: Vec<String>,
 }

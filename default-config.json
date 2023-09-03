@@ -19,6 +19,8 @@
         "c": ["copy"],
         "v": ["draw"],
 
+        "e": [{"external_command": {"program": "tmux", "args":["popup"]}}],
+
         "1": [{"mark": "ellipse"}],
         "2": [{"mark": "rectangle"}],
         "3": [{"mark": "stroke"}],

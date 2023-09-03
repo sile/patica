@@ -9,6 +9,7 @@ use std::{
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Patch(PatchCommand),
+    // TODO: remove
     Tag {
         name: String,
         version: Option<Version>,
