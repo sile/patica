@@ -211,15 +211,12 @@ pub struct IncludeCommand {
     #[clap(long)]
     end_anchor: Option<String>,
 
-    #[clap(long)]
-    tag: Option<String>,
-
     include_file: PathBuf,
 }
 
 impl IncludeCommand {
     fn run(&self) -> orfail::Result<()> {
-        let canvas = load_canvas(&self.include_file, self.tag.as_ref()).or_fail()?;
+        let canvas = load_canvas(&self.include_file).or_fail()?;
         let mut start = Point::new(i16::MIN, i16::MIN);
         let mut end = Point::new(i16::MAX, i16::MAX);
         if let Some(anchor) = &self.start_anchor {
@@ -322,7 +319,7 @@ impl ExportCommand {
             .output
             .clone()
             .unwrap_or_else(|| self.path.with_extension("bmp"));
-        let canvas = load_canvas(&self.path, None).or_fail()?;
+        let canvas = load_canvas(&self.path).or_fail()?;
 
         let mut start = Point::new(0, 0);
         let mut end = Point::new(0, 0);
@@ -347,29 +344,14 @@ impl ExportCommand {
     }
 }
 
-fn load_canvas<P: AsRef<Path>>(path: &P, tag: Option<&String>) -> orfail::Result<pati::Canvas> {
+fn load_canvas<P: AsRef<Path>>(path: &P) -> orfail::Result<pati::Canvas> {
     let file = std::fs::File::open(path).or_fail()?;
     let mut reader = CommandReader::new(BufReader::new(file));
     let mut canvas = pati::Canvas::new();
-    let mut tagged_canvas = None;
     while let Some(command) = reader.read_command().or_fail()? {
-        if let Some(tag) = tag {
-            if let pati::Command::Tag { name, .. } = &command {
-                if name == tag {
-                    tagged_canvas = Some(canvas.clone());
-                }
-            }
-        }
-
         canvas.apply(&command);
     }
-    if let Some(tag) = tag {
-        Ok(tagged_canvas
-            .take()
-            .or_fail_with(|()| format!("No such tag: {tag}"))?)
-    } else {
-        Ok(canvas)
-    }
+    Ok(canvas)
 }
 
 #[derive(Debug, clap::Subcommand)]

@@ -1,8 +1,8 @@
 use crate::{
     clock::{Ticks, Time},
     command::{
-        CenterPoint, Checkout, Command, ExternalCommand, FlipDirection, MoveDestination,
-        PlayCommand, RemoveTarget,
+        CenterPoint, Command, ExternalCommand, FlipDirection, MoveDestination, PlayCommand,
+        RemoveTarget,
     },
     editor::Editor,
     frame::{EmbeddedFrame, Frame},
@@ -159,9 +159,7 @@ impl Model {
             Command::Scale(c) => self.handle_scale_command(*c),
             Command::Center(c) => self.handle_center_command(c),
             Command::Anchor(c) => self.handle_anchor_command(c),
-            Command::Tag(c) => self.handle_tag_command(c),
             Command::BackgroundColor(c) => self.handle_background_color_command(*c),
-            Command::Checkout(c) => self.handle_checkout_command(c),
             Command::Import(c) => self.handle_import_command(c),
             Command::Embed(c) => self.handle_embed_command(c),
             Command::Tick(c) => self.handle_tick_command(*c),
@@ -217,9 +215,6 @@ impl Model {
 
     fn handle_remove_command(&mut self, target: &RemoveTarget) {
         match target {
-            RemoveTarget::Tag(name) => {
-                self.canvas.apply(&pati::Command::tag(name.clone(), None));
-            }
             RemoveTarget::Anchor(name) => {
                 self.canvas
                     .apply(&pati::Command::anchor(name.clone(), None));
@@ -261,22 +256,6 @@ impl Model {
         self.fsm = Fsm::Editing(Editor::new(pixels.iter().cloned().collect()));
     }
 
-    fn handle_checkout_command(&mut self, checkout: &Checkout) {
-        match checkout {
-            Checkout::Tag(name) => {
-                if let Some(command) = self
-                    .canvas
-                    .tags()
-                    .get(name)
-                    .copied()
-                    .and_then(|version| self.canvas.diff(version))
-                {
-                    self.canvas.apply(&pati::Command::Patch(command));
-                }
-            }
-        }
-    }
-
     fn handle_background_color_command(&mut self, color: Color) {
         if self.background_color != color {
             self.background_color = color;
@@ -290,12 +269,6 @@ impl Model {
 
     fn handle_anchor_command(&mut self, name: &str) {
         let command = pati::Command::anchor(name.to_owned(), Some(self.cursor));
-        self.canvas.apply(&command);
-    }
-
-    fn handle_tag_command(&mut self, name: &str) {
-        let version = self.canvas.version();
-        let command = pati::Command::tag(name.to_owned(), Some(version));
         self.canvas.apply(&command);
     }
 

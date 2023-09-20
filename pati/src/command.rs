@@ -1,4 +1,4 @@
-use crate::{Color, Point, Version};
+use crate::{Color, Point};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -9,11 +9,6 @@ use std::{
 #[serde(rename_all = "snake_case")]
 pub enum Command {
     Patch(PatchCommand),
-    // TODO: remove
-    Tag {
-        name: String,
-        version: Option<Version>,
-    },
     Anchor {
         name: String,
         point: Option<Point>,
@@ -42,10 +37,6 @@ impl Command {
                 .push(point);
         }
         Self::patch(entries.into_values().collect())
-    }
-
-    pub fn tag(name: String, version: Option<Version>) -> Self {
-        Self::Tag { name, version }
     }
 
     pub fn anchor(name: String, point: Option<Point>) -> Self {

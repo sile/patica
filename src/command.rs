@@ -22,9 +22,7 @@ pub enum Command {
     Scale(i8),
     Center(CenterPoint),
     Anchor(String),
-    Tag(String),
     BackgroundColor(Color),
-    Checkout(Checkout),
     Import(Vec<(Point, Color)>),
     Embed(Frame),
     Tick(i32),
@@ -56,12 +54,6 @@ pub enum CenterPoint {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Checkout {
-    Tag(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayCommand {
     #[serde(default)]
     pub offset: Ticks,
@@ -74,7 +66,6 @@ pub struct PlayCommand {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RemoveTarget {
-    Tag(String),
     Anchor(String),
     Frame(String),
 }
