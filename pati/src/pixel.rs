@@ -1,27 +1,32 @@
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
+/// RGBA color.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(into = "ColorLike", from = "ColorLike")]
 pub struct Color {
+    /// Red component.
     pub r: u8,
+
+    /// Green component.
     pub g: u8,
+
+    /// Blue component.
     pub b: u8,
+
+    /// Alpha component.
     pub a: u8,
 }
 
 impl Color {
+    /// Makes a [`Color`] instance with the given red, green, blue, and alpha 255.
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b, a: 255 }
     }
 
+    /// Makes a [`Color`] instance with the given red, green, blue, and alpha.
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
-    }
-
-    // TODO: delete
-    pub fn alpha(self, a: u8) -> Self {
-        Self { a, ..self }
     }
 }
 
@@ -56,17 +61,28 @@ impl From<ColorLike> for Color {
     }
 }
 
+/// A point in 2D space.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(from = "(i16, i16)", into = "(i16, i16)")]
 pub struct Point {
+    /// X coordinate.
     pub x: i16,
+
+    /// Y coordinate.
     pub y: i16,
 }
 
 impl Point {
+    /// The origin of [`Point`].
+    pub const ORIGIN: Self = Self::new(0, 0);
+
+    /// The minimum value of [`Point`].
     pub const MIN: Self = Self::new(i16::MIN, i16::MIN);
+
+    /// The maximum value of [`Point`].
     pub const MAX: Self = Self::new(i16::MAX, i16::MAX);
 
+    /// Makes a [`Point`] instance with the given x and y.
     pub const fn new(x: i16, y: i16) -> Self {
         Self { x, y }
     }

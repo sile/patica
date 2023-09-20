@@ -2,6 +2,7 @@ use crate::Canvas;
 use crate::Command;
 use serde::{Deserialize, Serialize};
 
+/// Number of applied commands.
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
 )]

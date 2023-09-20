@@ -444,12 +444,12 @@ impl Fsm {
         match self {
             Fsm::Neutral(fsm) => {
                 let command =
-                    pati::Command::patch(vec![pati::PatchEntry::color(brush_color, vec![cursor])]);
+                    pati::Command::patch(vec![pati::PatchEntry::draw(brush_color, vec![cursor])]);
                 canvas.apply(&command);
                 fsm.undo = None;
             }
             Fsm::Marking(fsm) => {
-                let command = pati::Command::patch(vec![pati::PatchEntry::color(
+                let command = pati::Command::patch(vec![pati::PatchEntry::draw(
                     brush_color,
                     fsm.marked_points().collect(),
                 )]);
@@ -460,7 +460,7 @@ impl Fsm {
                 for (point, color) in fsm.pixels() {
                     patches
                         .entry(color)
-                        .or_insert_with(|| pati::PatchEntry::color(color, Vec::new()))
+                        .or_insert_with(|| pati::PatchEntry::draw(color, Vec::new()))
                         .points
                         .push(point + cursor);
                 }

@@ -15,15 +15,15 @@ fn main() -> pagurus::Result<()> {
     add_colors(&mut pixels);
 
     write_command(Command::draw_pixels(pixels.into_iter())).or_fail()?;
-    write_command(Command::set_anchor("palette.start", Point::new(0, 0))).or_fail()?;
-    write_command(Command::set_anchor(
+    write_command(Command::anchor("palette.start", Some(Point::new(0, 0)))).or_fail()?;
+    write_command(Command::anchor(
         "palette.end",
-        Point::new(PALETTE_WIDTH - 1, PALETTE_HEIGHT - 1),
+        Some(Point::new(PALETTE_WIDTH - 1, PALETTE_HEIGHT - 1)),
     ))
     .or_fail()?;
-    write_command(Command::set_anchor(
+    write_command(Command::anchor(
         "origin",
-        Point::new(PALETTE_WIDTH / 2, PALETTE_HEIGHT / 2),
+        Some(Point::new(PALETTE_WIDTH / 2, PALETTE_HEIGHT / 2)),
     ))
     .or_fail()?;
 

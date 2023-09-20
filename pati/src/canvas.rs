@@ -5,6 +5,7 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
+/// [`Canvas`] with a log of applied [`Command`]s.
 #[derive(Debug, Default, Clone)]
 pub struct VersionedCanvas {
     canvas: Canvas,
@@ -12,18 +13,22 @@ pub struct VersionedCanvas {
 }
 
 impl VersionedCanvas {
+    /// Makes a new [`VersionedCanvas`] instance.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Gets the current version of this canvas.
     pub fn version(&self) -> Version {
         self.log.latest_canvas_version()
     }
 
+    /// Gets the color of the pixel at the given point.
     pub fn get_pixel(&self, point: Point) -> Option<Color> {
         self.canvas.get_pixel(point)
     }
 
+    /// Gets an iterator over the pixels in the given range.
     pub fn range_pixels<R>(&self, range: R) -> impl '_ + Iterator<Item = (Point, Color)>
     where
         R: RangeBounds<Point>,
@@ -31,18 +36,25 @@ impl VersionedCanvas {
         self.canvas.range_pixels(range)
     }
 
+    /// Gets the all pixels in this canvas.
     pub fn pixels(&self) -> &BTreeMap<Point, Color> {
         self.canvas.pixels()
     }
 
+    /// Gets the all anchors in this canvas.
     pub fn anchors(&self) -> &BTreeMap<String, Point> {
         self.canvas.anchors()
     }
 
+    /// Gets the all metadata in this canvas.
     pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
         self.canvas.metadata()
     }
 
+    /// Applies the given command to this canvas.
+    ///
+    /// Returns `true` if the canvas is changed, otherwise `false`.
+    /// If the command is applied, it is appended to the log.
     pub fn apply(&mut self, command: &Command) -> bool {
         let applied = self.canvas.apply(command);
         if applied {
@@ -52,17 +64,20 @@ impl VersionedCanvas {
         applied
     }
 
+    /// Gets the applied commands since the given version.
     pub fn applied_commands(&self, since: Version) -> &[Command] {
         let i = (since.0 as usize).min(self.log.commands().len());
         &self.log.commands()[i..]
     }
 
+    /// Calculates the diff between the current canvas and the canvas at the given version.
     pub fn diff(&self, version: Version) -> Option<PatchCommand> {
         let canvas = self.log.restore_canvas(version)?;
         Some(self.canvas.diff(&canvas))
     }
 }
 
+/// Raster image canvas.
 #[derive(Debug, Default, Clone)]
 pub struct Canvas {
     pixels: BTreeMap<Point, Color>,
@@ -71,14 +86,17 @@ pub struct Canvas {
 }
 
 impl Canvas {
+    /// Makes a new [`Canvas`] instance.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Gets the color of the pixel at the given point.
     pub fn get_pixel(&self, point: Point) -> Option<Color> {
         self.pixels.get(&point).copied()
     }
 
+    /// Gets an iterator over the pixels in the given range.
     pub fn range_pixels<R>(&self, range: R) -> impl '_ + Iterator<Item = (Point, Color)>
     where
         R: RangeBounds<Point>,
@@ -86,18 +104,24 @@ impl Canvas {
         RangePixels::new(self, range)
     }
 
+    /// Gets the all pixels in this canvas.
     pub fn pixels(&self) -> &BTreeMap<Point, Color> {
         &self.pixels
     }
 
+    /// Gets the all anchors in this canvas.
     pub fn anchors(&self) -> &BTreeMap<String, Point> {
         &self.anchors
     }
 
+    /// Gets the all metadata in this canvas.
     pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
         &self.metadata
     }
 
+    /// Applies the given command to this canvas.
+    ///
+    /// Returns `true` if the canvas is changed, otherwise `false`.
     pub fn apply(&mut self, command: &Command) -> bool {
         match command {
             Command::Patch(c) => self.handle_patch_command(c),
