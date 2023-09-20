@@ -54,13 +54,19 @@ impl Command {
     }
 
     /// Makes an anchor command.
-    pub const fn anchor(name: String, point: Option<Point>) -> Self {
-        Self::Anchor { name, point }
+    pub fn anchor(name: impl Into<String>, point: Option<Point>) -> Self {
+        Self::Anchor {
+            name: name.into(),
+            point,
+        }
     }
 
     /// Makes a put command.
-    pub const fn put(name: String, value: serde_json::Value) -> Self {
-        Self::Put { name, value }
+    pub fn put(name: impl Into<String>, value: serde_json::Value) -> Self {
+        Self::Put {
+            name: name.into(),
+            value,
+        }
     }
 }
 
