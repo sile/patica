@@ -10,6 +10,7 @@ pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
 
+    // TODO: pub search_path: Vec<PathBuf>,
     #[serde(default)]
     pub initial: InitialConfig,
 }
