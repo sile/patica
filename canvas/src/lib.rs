@@ -1,5 +1,6 @@
+pub mod command;
+pub mod query;
+
 mod canvas;
-mod command;
 
 pub use canvas::Canvas;
-pub use command::CanvasCommand;

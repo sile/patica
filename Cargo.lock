@@ -188,6 +188,7 @@ dependencies = [
 name = "paticanvas"
 version = "0.1.0"
 dependencies = [
+ "orfail",
  "pati",
  "serde",
  "serde_json",
