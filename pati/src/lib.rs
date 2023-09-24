@@ -1,6 +1,6 @@
-//! This crate provides [Canvas], a data structure for editing raster images.
+//! This crate provides [Image], a data structure for representing and editing raster images.
 //!
-//! The data format of a image is a sequence of [Command]s.
+//! The data format of a image is a sequence of [ImageCommand]s.
 //!
 //! # See also
 //!

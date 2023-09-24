@@ -5,5 +5,4 @@ pati
 [![Actions Status](https://github.com/sile/patica/workflows/CI/badge.svg)](https://github.com/sile/patica/actions)
 ![License](https://img.shields.io/crates/l/pati)
 
-Canvas data structure for the [Patica](https://github.com/sile/patica) editor. 
-
+The image data structure and format for the [Patica](https://github.com/sile/patica) editor.
