@@ -20,12 +20,12 @@ use std::{
 #[clap(version, about)]
 pub enum Args {
     Open(OpenCommand),
-    Apply(ApplyCommand),
+    Apply(ApplyCommand), // TODO: Rename to Command
     Include(IncludeCommand),
     Embed(EmbedCommand),
     Export(ExportCommand),
     #[clap(subcommand)]
-    Get(GetCommand),
+    Get(GetCommand), // TODO: Rename to Query
 }
 
 impl Args {

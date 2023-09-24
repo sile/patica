@@ -1,7 +1,6 @@
+use crate::command::FlipDirection;
 use pati::{Color, Point};
 use std::collections::BTreeMap;
-
-use crate::command::FlipDirection;
 
 #[derive(Debug)]
 pub struct Editor {

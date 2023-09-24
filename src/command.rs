@@ -29,7 +29,7 @@ pub enum Command {
     Play(PlayCommand),
     Remove(RemoveTarget),
     Color(Color),
-    Flip(FlipDirection),
+    Flip(FlipDirection), // TODO: Vflip and Hflip
     Rotate,
     ExternalCommand(ExternalCommand),
 }
