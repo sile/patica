@@ -44,22 +44,24 @@ impl ModelAgentServer {
         }
 
         let mut closed = Vec::new();
-        for (&addr, client) in &mut self.clients {
+        for (&addr, _client) in &mut self.clients {
             closed.push(addr);
         }
         for addr in closed {
             self.clients.remove(&addr);
         }
+        todo!()
     }
 }
 
 #[derive(Debug)]
 pub struct ModelAgentClient {
+    #[allow(dead_code)]
     stream: TcpStream,
 }
 
 impl ModelAgentClient {
-    fn open(port: u16) -> orfail::Result<Self> {
+    pub fn open(port: u16) -> orfail::Result<Self> {
         let stream = TcpStream::connect(("127.0.0.1", port)).or_fail()?;
         Ok(Self { stream })
     }
