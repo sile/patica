@@ -5,12 +5,12 @@ use std::{
     io::{BufRead, Write},
 };
 
-/// [`Canvas`][crate::Canvas] command.
+/// [`Image`][crate::Image] command.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Command {
+pub enum ImageCommand {
     /// Patch command.
-    Patch(PatchCommand),
+    Patch(PatchImageCommand),
 
     /// Anchor command.
     Anchor {
@@ -31,13 +31,13 @@ pub enum Command {
     },
 }
 
-impl Command {
+impl ImageCommand {
     /// Make a patch command from the given patch entries.
     pub const fn patch(entries: Vec<PatchEntry>) -> Self {
-        Self::Patch(PatchCommand::new(entries))
+        Self::Patch(PatchImageCommand::new(entries))
     }
 
-    /// Makes a patch command to draw the given pixels.
+    /// Makes a patch command to draw the given pi xels.
     pub fn draw_pixels(pixels: impl Iterator<Item = (Point, Color)>) -> Self {
         let mut entries = BTreeMap::new();
         for (point, color) in pixels {
@@ -72,10 +72,10 @@ impl Command {
 
 /// Patch command that is used to draw or erase pixels.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PatchCommand(Vec<PatchEntry>);
+pub struct PatchImageCommand(Vec<PatchEntry>);
 
-impl PatchCommand {
-    /// Makes a new [`PatchCommand`] instance.
+impl PatchImageCommand {
+    /// Makes a new [`PatchImageCommand`] instance.
     pub const fn new(entries: Vec<PatchEntry>) -> Self {
         Self(entries)
     }
@@ -116,20 +116,20 @@ impl PatchEntry {
     }
 }
 
-/// [`Command`] writer.
+/// [`ImageCommand`] writer.
 #[derive(Debug)]
-pub struct CommandWriter<W> {
+pub struct ImageCommandWriter<W> {
     inner: W,
 }
 
-impl<W: Write> CommandWriter<W> {
-    /// Makes a new [`CommandWriter`] instance.
+impl<W: Write> ImageCommandWriter<W> {
+    /// Makes a new [`ImageCommandWriter`] instance.
     pub const fn new(inner: W) -> Self {
         Self { inner }
     }
 
     /// Writes the given command.
-    pub fn write_command(&mut self, command: &Command) -> std::io::Result<()> {
+    pub fn write_command(&mut self, command: &ImageCommand) -> std::io::Result<()> {
         serde_json::to_writer(&mut self.inner, command)?;
         writeln!(self.inner)?;
         self.inner.flush()?;
@@ -137,15 +137,15 @@ impl<W: Write> CommandWriter<W> {
     }
 }
 
-/// [`Command`] reader.
+/// [`ImageCommand`] reader.
 #[derive(Debug)]
-pub struct CommandReader<R> {
+pub struct ImageCommandReader<R> {
     inner: R,
     line: String,
 }
 
-impl<R: BufRead> CommandReader<R> {
-    /// Makes a new [`CommandReader`] instance.
+impl<R: BufRead> ImageCommandReader<R> {
+    /// Makes a new [`ImageCommandReader`] instance.
     pub const fn new(inner: R) -> Self {
         Self {
             inner,
@@ -154,7 +154,7 @@ impl<R: BufRead> CommandReader<R> {
     }
 
     /// Reads a command.
-    pub fn read_command(&mut self) -> std::io::Result<Option<Command>> {
+    pub fn read_command(&mut self) -> std::io::Result<Option<ImageCommand>> {
         if 0 == self.inner.read_line(&mut self.line)? {
             Ok(None)
         } else if self.line.ends_with('\n') {

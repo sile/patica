@@ -1,5 +1,5 @@
-use crate::Command;
 use crate::Image;
+use crate::ImageCommand;
 use serde::{Deserialize, Serialize};
 
 /// Number of applied commands.
@@ -26,7 +26,7 @@ impl std::ops::Sub<u32> for Version {
 
 #[derive(Debug, Clone)]
 pub struct Log {
-    commands: Vec<Command>,
+    commands: Vec<ImageCommand>,
     snapshots: Vec<Snapshot>,
 }
 
@@ -35,7 +35,7 @@ impl Log {
         Version(self.commands.len() as u32)
     }
 
-    pub fn append_applied_command(&mut self, command: Command, image: &Image) {
+    pub fn append_applied_command(&mut self, command: ImageCommand, image: &Image) {
         self.commands.push(command);
         if self.commands.len() % 1000 == 0 {
             self.snapshots.push(Snapshot {
@@ -45,7 +45,7 @@ impl Log {
         }
     }
 
-    pub fn commands(&self) -> &[Command] {
+    pub fn commands(&self) -> &[ImageCommand] {
         &self.commands
     }
 
@@ -85,7 +85,7 @@ struct Snapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Color, Image, PatchCommand, PatchEntry, Point};
+    use crate::{Color, Image, PatchEntry, PatchImageCommand, Point};
 
     #[test]
     fn restore_image_works() {
@@ -98,7 +98,7 @@ mod tests {
             color: Some(color),
             points: vec![Point::new(1, 3)],
         };
-        let command = Command::Patch(PatchCommand::new(vec![entry]));
+        let command = ImageCommand::Patch(PatchImageCommand::new(vec![entry]));
         assert!(image.apply(&command));
         log.append_applied_command(command, &image);
         assert_eq!(log.latest_image_version(), Version(1));

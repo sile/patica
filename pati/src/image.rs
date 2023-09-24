@@ -1,11 +1,11 @@
-use crate::{log::Log, Color, Command, PatchCommand, PatchEntry, Point, Version};
+use crate::{log::Log, Color, ImageCommand, PatchEntry, PatchImageCommand, Point, Version};
 use std::{
     cmp::Ordering,
     collections::BTreeMap,
     ops::{Bound, RangeBounds},
 };
 
-/// [`Image`] with a log of applied [`Command`]s.
+/// [`Image`] with a log of applied [`ImageCommand`]s.
 #[derive(Debug, Default, Clone)]
 pub struct VersionedImage {
     image: Image,
@@ -55,7 +55,7 @@ impl VersionedImage {
     ///
     /// Returns `true` if the image is changed, otherwise `false`.
     /// If the command is applied, it is appended to the log.
-    pub fn apply(&mut self, command: &Command) -> bool {
+    pub fn apply(&mut self, command: &ImageCommand) -> bool {
         let applied = self.image.apply(command);
         if applied {
             self.log
@@ -65,13 +65,13 @@ impl VersionedImage {
     }
 
     /// Gets the applied commands since the given version.
-    pub fn applied_commands(&self, since: Version) -> &[Command] {
+    pub fn applied_commands(&self, since: Version) -> &[ImageCommand] {
         let i = (since.0 as usize).min(self.log.commands().len());
         &self.log.commands()[i..]
     }
 
     /// Calculates the diff between the current image and the image at the given version.
-    pub fn diff(&self, version: Version) -> Option<PatchCommand> {
+    pub fn diff(&self, version: Version) -> Option<PatchImageCommand> {
         let image = self.log.restore_image(version)?;
         Some(self.image.diff(&image))
     }
@@ -122,17 +122,17 @@ impl Image {
     /// Applies the given command to this image.
     ///
     /// Returns `true` if the image is changed, otherwise `false`.
-    pub fn apply(&mut self, command: &Command) -> bool {
+    pub fn apply(&mut self, command: &ImageCommand) -> bool {
         match command {
-            Command::Patch(c) => self.handle_patch_command(c),
-            Command::Anchor { name, point } => {
+            ImageCommand::Patch(c) => self.handle_patch_command(c),
+            ImageCommand::Anchor { name, point } => {
                 if let Some(point) = *point {
                     self.anchors.insert(name.clone(), point) != Some(point)
                 } else {
                     self.anchors.remove(name).is_some()
                 }
             }
-            Command::Put { name, value } => {
+            ImageCommand::Put { name, value } => {
                 if value.is_null() {
                     self.metadata.remove(name).is_some()
                 } else {
@@ -142,7 +142,7 @@ impl Image {
         }
     }
 
-    fn handle_patch_command(&mut self, command: &PatchCommand) -> bool {
+    fn handle_patch_command(&mut self, command: &PatchImageCommand) -> bool {
         let mut applied = false;
         for entry in command.entries() {
             for point in &entry.points {
@@ -156,7 +156,7 @@ impl Image {
         applied
     }
 
-    fn diff(&self, other: &Self) -> PatchCommand {
+    fn diff(&self, other: &Self) -> PatchImageCommand {
         let mut old_pixels = self.pixels.iter().map(|(p, c)| (*p, *c));
         let mut new_pixels = other.pixels.iter().map(|(p, c)| (*p, *c));
 
@@ -211,7 +211,7 @@ impl Image {
                 points,
             });
         }
-        PatchCommand::new(entries)
+        PatchImageCommand::new(entries)
     }
 }
 

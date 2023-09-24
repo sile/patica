@@ -1,6 +1,6 @@
 use copic_colors::{Family, Group, Value};
 use orfail::OrFail;
-use pati::{Color, Command, Point};
+use pati::{Color, ImageCommand, Point};
 use std::{
     collections::{BTreeMap, HashMap},
     io::Write,
@@ -14,14 +14,18 @@ fn main() -> pagurus::Result<()> {
     add_background(&mut pixels);
     add_colors(&mut pixels);
 
-    write_command(Command::draw_pixels(pixels.into_iter())).or_fail()?;
-    write_command(Command::anchor("palette.start", Some(Point::new(0, 0)))).or_fail()?;
-    write_command(Command::anchor(
+    write_command(ImageCommand::draw_pixels(pixels.into_iter())).or_fail()?;
+    write_command(ImageCommand::anchor(
+        "palette.start",
+        Some(Point::new(0, 0)),
+    ))
+    .or_fail()?;
+    write_command(ImageCommand::anchor(
         "palette.end",
         Some(Point::new(PALETTE_WIDTH - 1, PALETTE_HEIGHT - 1)),
     ))
     .or_fail()?;
-    write_command(Command::anchor(
+    write_command(ImageCommand::anchor(
         "origin",
         Some(Point::new(PALETTE_WIDTH / 2, PALETTE_HEIGHT / 2)),
     ))
@@ -30,7 +34,7 @@ fn main() -> pagurus::Result<()> {
     Ok(())
 }
 
-fn write_command(command: Command) -> orfail::Result<()> {
+fn write_command(command: ImageCommand) -> orfail::Result<()> {
     let mut stdout = std::io::stdout();
     serde_json::to_writer(&mut stdout, &command).or_fail()?;
     writeln!(&mut stdout).or_fail()?;

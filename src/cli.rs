@@ -8,7 +8,7 @@ use crate::{
 };
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use pati::{CommandReader, CommandWriter, Point, VersionedImage};
+use pati::{ImageCommandReader, ImageCommandWriter, Point, VersionedImage};
 use std::io::Write;
 use std::{
     collections::BTreeMap,
@@ -68,8 +68,8 @@ impl OpenCommand {
             .create(true)
             .open(&self.path)
             .or_fail()?;
-        let mut reader = CommandReader::new(BufReader::new(file.try_clone().or_fail()?));
-        let mut writer = CommandWriter::new(BufWriter::new(file));
+        let mut reader = ImageCommandReader::new(BufReader::new(file.try_clone().or_fail()?));
+        let mut writer = ImageCommandWriter::new(BufWriter::new(file));
         while let Some(command) = reader.read_command().or_fail()? {
             game.model_mut().canvas_mut().apply(&command);
         }
@@ -152,13 +152,13 @@ impl OpenCommand {
 struct EmbeddedCanvas {
     path: PathBuf,
     canvas: VersionedImage,
-    reader: CommandReader<BufReader<std::fs::File>>,
+    reader: ImageCommandReader<BufReader<std::fs::File>>,
 }
 
 impl EmbeddedCanvas {
     fn new(path: &PathBuf) -> orfail::Result<Self> {
         let file = std::fs::File::open(path).or_fail()?;
-        let reader = CommandReader::new(BufReader::new(file));
+        let reader = ImageCommandReader::new(BufReader::new(file));
         let canvas = VersionedImage::default(); // TODO: use Canvas
         Ok(Self {
             path: path.clone(),
@@ -346,7 +346,7 @@ impl ExportCommand {
 
 fn load_canvas<P: AsRef<Path>>(path: &P) -> orfail::Result<pati::Image> {
     let file = std::fs::File::open(path).or_fail()?;
-    let mut reader = CommandReader::new(BufReader::new(file));
+    let mut reader = ImageCommandReader::new(BufReader::new(file));
     let mut canvas = pati::Image::new();
     while let Some(command) = reader.read_command().or_fail()? {
         canvas.apply(&command);
@@ -383,7 +383,7 @@ impl GetCommand {
 
     fn load_model(&self) -> orfail::Result<Model> {
         let file = std::fs::File::open(self.path()).or_fail()?;
-        let mut reader = CommandReader::new(BufReader::new(file));
+        let mut reader = ImageCommandReader::new(BufReader::new(file));
         let mut model = Model::default();
         while let Some(command) = reader.read_command().or_fail()? {
             model.canvas_mut().apply(&command);

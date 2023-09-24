@@ -217,11 +217,11 @@ impl Model {
         match target {
             RemoveTarget::Anchor(name) => {
                 self.canvas
-                    .apply(&pati::Command::anchor(name.clone(), None));
+                    .apply(&pati::ImageCommand::anchor(name.clone(), None));
             }
             RemoveTarget::Frame(name) => {
                 if self.frames.remove(name).is_some() {
-                    self.canvas.apply(&pati::Command::put(
+                    self.canvas.apply(&pati::ImageCommand::put(
                         format!("{}{}", METADATA_FRAME_PREFIX, name),
                         serde_json::Value::Null,
                     ));
@@ -245,7 +245,7 @@ impl Model {
     fn handle_embed_command(&mut self, frame: &Frame) {
         let frame = EmbeddedFrame::new(frame.clone(), self.cursor);
         self.frames.insert(frame.frame.name.clone(), frame.clone());
-        let command = pati::Command::put(
+        let command = pati::ImageCommand::put(
             format!("{}{}", METADATA_FRAME_PREFIX, frame.frame.name),
             serde_json::to_value(&frame).expect("unreachable"),
         );
@@ -259,7 +259,7 @@ impl Model {
     fn handle_background_color_command(&mut self, color: Color) {
         if self.background_color != color {
             self.background_color = color;
-            let command = pati::Command::put(
+            let command = pati::ImageCommand::put(
                 METADATA_BACKGROUND_COLOR.to_owned(),
                 serde_json::to_value(color).expect("unreachable"),
             );
@@ -268,7 +268,7 @@ impl Model {
     }
 
     fn handle_anchor_command(&mut self, name: &str) {
-        let command = pati::Command::anchor(name.to_owned(), Some(self.cursor));
+        let command = pati::ImageCommand::anchor(name.to_owned(), Some(self.cursor));
         self.canvas.apply(&command);
     }
 
@@ -318,10 +318,11 @@ impl Model {
             }
         }
 
-        let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
-            color: None,
-            points,
-        }]));
+        let command =
+            pati::ImageCommand::Patch(pati::PatchImageCommand::new(vec![pati::PatchEntry {
+                color: None,
+                points,
+            }]));
         self.canvas.apply(&command);
 
         self.fsm = Fsm::Editing(Editor::new(pixels));
@@ -331,7 +332,7 @@ impl Model {
         if let Fsm::Neutral(fsm) = &mut self.fsm {
             let mut undo = fsm.undo.unwrap_or_else(|| Undo::new(self.canvas.version()));
             if let Some(command) = self.canvas.diff(undo.undo_version) {
-                self.canvas.apply(&pati::Command::Patch(command));
+                self.canvas.apply(&pati::ImageCommand::Patch(command));
                 undo.undo_version = undo.undo_version - 1;
                 fsm.undo = Some(undo);
             }
@@ -344,7 +345,7 @@ impl Model {
                 undo.undo_version = undo.undo_version + 1;
                 let version = undo.undo_version + 1;
                 if let Some(command) = self.canvas.diff(version) {
-                    self.canvas.apply(&pati::Command::Patch(command));
+                    self.canvas.apply(&pati::ImageCommand::Patch(command));
                     if version < undo.latest_version {
                         fsm.undo = Some(undo);
                     }
@@ -363,7 +364,7 @@ impl Model {
 
     fn set_brush_color(&mut self, color: Color) {
         self.brush_color = color;
-        let command = pati::Command::put(
+        let command = pati::ImageCommand::put(
             METADATA_BRUSH_COLOR.to_owned(),
             serde_json::to_value(color).expect("unreachable"),
         );
@@ -394,10 +395,11 @@ impl Model {
             Fsm::Marking(marker) => marker.marked_points().collect(),
             Fsm::Editing(_) | Fsm::Playing { .. } => Vec::new(),
         };
-        let command = pati::Command::Patch(pati::PatchCommand::new(vec![pati::PatchEntry {
-            color: None,
-            points,
-        }]));
+        let command =
+            pati::ImageCommand::Patch(pati::PatchImageCommand::new(vec![pati::PatchEntry {
+                color: None,
+                points,
+            }]));
         self.canvas.apply(&command);
         self.fsm = Fsm::Neutral(Default::default());
     }
@@ -443,13 +445,15 @@ impl Fsm {
     fn draw(&mut self, canvas: &mut pati::VersionedImage, brush_color: Color, cursor: Point) {
         match self {
             Fsm::Neutral(fsm) => {
-                let command =
-                    pati::Command::patch(vec![pati::PatchEntry::draw(brush_color, vec![cursor])]);
+                let command = pati::ImageCommand::patch(vec![pati::PatchEntry::draw(
+                    brush_color,
+                    vec![cursor],
+                )]);
                 canvas.apply(&command);
                 fsm.undo = None;
             }
             Fsm::Marking(fsm) => {
-                let command = pati::Command::patch(vec![pati::PatchEntry::draw(
+                let command = pati::ImageCommand::patch(vec![pati::PatchEntry::draw(
                     brush_color,
                     fsm.marked_points().collect(),
                 )]);
@@ -464,7 +468,7 @@ impl Fsm {
                         .points
                         .push(point + cursor);
                 }
-                let command = pati::Command::patch(patches.into_values().collect());
+                let command = pati::ImageCommand::patch(patches.into_values().collect());
                 canvas.apply(&command);
             }
             Fsm::Playing { .. } => {}

@@ -29,7 +29,7 @@ impl Game {
         self.model
             .apply(&Command::BackgroundColor(config.initial.background_color));
         for (name, point) in &config.initial.anchors {
-            let command = pati::Command::anchor(name.clone(), Some(*point));
+            let command = pati::ImageCommand::anchor(name.clone(), Some(*point));
             self.model.canvas_mut().apply(&command);
         }
     }
