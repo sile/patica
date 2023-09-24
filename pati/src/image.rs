@@ -5,27 +5,27 @@ use std::{
     ops::{Bound, RangeBounds},
 };
 
-/// [`Canvas`] with a log of applied [`Command`]s.
+/// [`Image`] with a log of applied [`Command`]s.
 #[derive(Debug, Default, Clone)]
-pub struct VersionedCanvas {
-    canvas: Canvas,
+pub struct VersionedImage {
+    image: Image,
     log: Log,
 }
 
-impl VersionedCanvas {
-    /// Makes a new [`VersionedCanvas`] instance.
+impl VersionedImage {
+    /// Makes a new [`VersionedImage`] instance.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Gets the current version of this canvas.
+    /// Gets the current version of this image.
     pub fn version(&self) -> Version {
-        self.log.latest_canvas_version()
+        self.log.latest_image_version()
     }
 
     /// Gets the color of the pixel at the given point.
     pub fn get_pixel(&self, point: Point) -> Option<Color> {
-        self.canvas.get_pixel(point)
+        self.image.get_pixel(point)
     }
 
     /// Gets an iterator over the pixels in the given range.
@@ -33,33 +33,33 @@ impl VersionedCanvas {
     where
         R: RangeBounds<Point>,
     {
-        self.canvas.range_pixels(range)
+        self.image.range_pixels(range)
     }
 
-    /// Gets the all pixels in this canvas.
+    /// Gets the all pixels in this image.
     pub fn pixels(&self) -> &BTreeMap<Point, Color> {
-        self.canvas.pixels()
+        self.image.pixels()
     }
 
-    /// Gets the all anchors in this canvas.
+    /// Gets the all anchors in this image.
     pub fn anchors(&self) -> &BTreeMap<String, Point> {
-        self.canvas.anchors()
+        self.image.anchors()
     }
 
-    /// Gets the all metadata in this canvas.
+    /// Gets the all metadata in this image.
     pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
-        self.canvas.metadata()
+        self.image.metadata()
     }
 
-    /// Applies the given command to this canvas.
+    /// Applies the given command to this image.
     ///
-    /// Returns `true` if the canvas is changed, otherwise `false`.
+    /// Returns `true` if the image is changed, otherwise `false`.
     /// If the command is applied, it is appended to the log.
     pub fn apply(&mut self, command: &Command) -> bool {
-        let applied = self.canvas.apply(command);
+        let applied = self.image.apply(command);
         if applied {
             self.log
-                .append_applied_command(command.clone(), &self.canvas);
+                .append_applied_command(command.clone(), &self.image);
         }
         applied
     }
@@ -70,23 +70,23 @@ impl VersionedCanvas {
         &self.log.commands()[i..]
     }
 
-    /// Calculates the diff between the current canvas and the canvas at the given version.
+    /// Calculates the diff between the current image and the image at the given version.
     pub fn diff(&self, version: Version) -> Option<PatchCommand> {
-        let canvas = self.log.restore_canvas(version)?;
-        Some(self.canvas.diff(&canvas))
+        let image = self.log.restore_image(version)?;
+        Some(self.image.diff(&image))
     }
 }
 
-/// Raster image canvas.
+/// Raster image.
 #[derive(Debug, Default, Clone)]
-pub struct Canvas {
+pub struct Image {
     pixels: BTreeMap<Point, Color>,
     anchors: BTreeMap<String, Point>,
     metadata: BTreeMap<String, serde_json::Value>,
 }
 
-impl Canvas {
-    /// Makes a new [`Canvas`] instance.
+impl Image {
+    /// Makes a new [`Image`] instance.
     pub fn new() -> Self {
         Self::default()
     }
@@ -104,24 +104,24 @@ impl Canvas {
         RangePixels::new(self, range)
     }
 
-    /// Gets the all pixels in this canvas.
+    /// Gets the all pixels in this image.
     pub fn pixels(&self) -> &BTreeMap<Point, Color> {
         &self.pixels
     }
 
-    /// Gets the all anchors in this canvas.
+    /// Gets the all anchors in this image.
     pub fn anchors(&self) -> &BTreeMap<String, Point> {
         &self.anchors
     }
 
-    /// Gets the all metadata in this canvas.
+    /// Gets the all metadata in this image.
     pub fn metadata(&self) -> &BTreeMap<String, serde_json::Value> {
         &self.metadata
     }
 
-    /// Applies the given command to this canvas.
+    /// Applies the given command to this image.
     ///
-    /// Returns `true` if the canvas is changed, otherwise `false`.
+    /// Returns `true` if the image is changed, otherwise `false`.
     pub fn apply(&mut self, command: &Command) -> bool {
         match command {
             Command::Patch(c) => self.handle_patch_command(c),
@@ -217,14 +217,14 @@ impl Canvas {
 
 #[derive(Debug)]
 struct RangePixels<'a> {
-    canvas: &'a Canvas,
+    image: &'a Image,
     start: Point,
     end: Point,
     row: std::collections::btree_map::Range<'a, Point, Color>,
 }
 
 impl<'a> RangePixels<'a> {
-    fn new<R>(canvas: &'a Canvas, range: R) -> Self
+    fn new<R>(image: &'a Image, range: R) -> Self
     where
         R: RangeBounds<Point>,
     {
@@ -238,9 +238,9 @@ impl<'a> RangePixels<'a> {
             Bound::Excluded(&p) => Point::new(p.x - 1, p.y - 1),
             Bound::Unbounded => Point::new(i16::MAX, i16::MAX),
         };
-        let row = canvas.pixels.range(start..=end);
+        let row = image.pixels.range(start..=end);
         Self {
-            canvas,
+            image,
             start,
             end,
             row,
@@ -261,7 +261,7 @@ impl<'a> Iterator for RangePixels<'a> {
             } else {
                 return Some((*point, *color));
             }
-            self.row = self.canvas.pixels.range(self.start..=self.end);
+            self.row = self.image.pixels.range(self.start..=self.end);
         }
     }
 }

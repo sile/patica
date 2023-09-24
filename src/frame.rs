@@ -1,6 +1,6 @@
 use crate::clock::Ticks;
 use orfail::OrFail;
-use pati::{Color, Point, Version, VersionedCanvas};
+use pati::{Color, Point, Version, VersionedImage};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::PathBuf};
 
@@ -38,7 +38,7 @@ impl EmbeddedFrame {
         }
     }
 
-    pub fn sync(&mut self, canvas: &VersionedCanvas) -> orfail::Result<()> {
+    pub fn sync(&mut self, canvas: &VersionedImage) -> orfail::Result<()> {
         let start = canvas
             .anchors()
             .get(&self.frame.top_left_anchor)

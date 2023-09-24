@@ -1,5 +1,5 @@
-use crate::Canvas;
 use crate::Command;
+use crate::Image;
 use serde::{Deserialize, Serialize};
 
 /// Number of applied commands.
@@ -31,16 +31,16 @@ pub struct Log {
 }
 
 impl Log {
-    pub fn latest_canvas_version(&self) -> Version {
+    pub fn latest_image_version(&self) -> Version {
         Version(self.commands.len() as u32)
     }
 
-    pub fn append_applied_command(&mut self, command: Command, canvas: &Canvas) {
+    pub fn append_applied_command(&mut self, command: Command, image: &Image) {
         self.commands.push(command);
         if self.commands.len() % 1000 == 0 {
             self.snapshots.push(Snapshot {
                 version: Version(self.commands.len() as u32),
-                canvas: canvas.clone(),
+                image: image.clone(),
             });
         }
     }
@@ -49,19 +49,19 @@ impl Log {
         &self.commands
     }
 
-    pub fn restore_canvas(&self, version: Version) -> Option<Canvas> {
-        if self.latest_canvas_version() < version {
+    pub fn restore_image(&self, version: Version) -> Option<Image> {
+        if self.latest_image_version() < version {
             return None;
         }
 
         match self.snapshots.binary_search_by_key(&version, |s| s.version) {
-            Ok(i) => Some(self.snapshots[i].canvas.clone()),
+            Ok(i) => Some(self.snapshots[i].image.clone()),
             Err(i) => {
                 let mut snapshot = self.snapshots[i - 1].clone();
                 for i in snapshot.version.0..version.0 {
-                    snapshot.canvas.apply(&self.commands[i as usize]);
+                    snapshot.image.apply(&self.commands[i as usize]);
                 }
-                Some(snapshot.canvas)
+                Some(snapshot.image)
             }
         }
     }
@@ -79,19 +79,19 @@ impl Default for Log {
 #[derive(Debug, Default, Clone)]
 struct Snapshot {
     version: Version,
-    canvas: Canvas,
+    image: Image,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Canvas, Color, PatchCommand, PatchEntry, Point};
+    use crate::{Color, Image, PatchCommand, PatchEntry, Point};
 
     #[test]
-    fn restore_canvas_works() {
-        let mut canvas = Canvas::new();
+    fn restore_image_works() {
+        let mut image = Image::new();
         let mut log = Log::default();
-        assert_eq!(log.latest_canvas_version(), Version(0));
+        assert_eq!(log.latest_image_version(), Version(0));
 
         let color = Color::rgb(100, 0, 0);
         let entry = PatchEntry {
@@ -99,11 +99,11 @@ mod tests {
             points: vec![Point::new(1, 3)],
         };
         let command = Command::Patch(PatchCommand::new(vec![entry]));
-        assert!(canvas.apply(&command));
-        log.append_applied_command(command, &canvas);
-        assert_eq!(log.latest_canvas_version(), Version(1));
+        assert!(image.apply(&command));
+        log.append_applied_command(command, &image);
+        assert_eq!(log.latest_image_version(), Version(1));
 
-        let old_canvas = log.restore_canvas(Version(0)).unwrap();
-        assert_ne!(old_canvas.pixels().len(), canvas.pixels().len());
+        let old_image = log.restore_image(Version(0)).unwrap();
+        assert_ne!(old_image.pixels().len(), image.pixels().len());
     }
 }

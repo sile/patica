@@ -6,12 +6,12 @@
 //!
 //! - [patica](https://github.com/sile/patica): Terminal based pixel art editor using this crate.
 #![warn(missing_docs)]
-mod canvas;
 mod command;
+mod image;
 mod log;
 mod pixel;
 
-pub use self::canvas::{Canvas, VersionedCanvas};
 pub use self::command::{Command, CommandReader, CommandWriter, PatchCommand, PatchEntry};
+pub use self::image::{Image, VersionedImage};
 pub use self::log::Version;
 pub use self::pixel::{Color, Point};

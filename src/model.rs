@@ -19,7 +19,7 @@ const METADATA_BRUSH_COLOR: &str = "patica.brush_color";
 
 #[derive(Debug, Default)]
 pub struct Model {
-    canvas: pati::VersionedCanvas,
+    canvas: pati::VersionedImage,
     cursor: Point,
     camera: Point,
     brush_color: Color,
@@ -132,11 +132,11 @@ impl Model {
         }
     }
 
-    pub fn canvas(&self) -> &pati::VersionedCanvas {
+    pub fn canvas(&self) -> &pati::VersionedImage {
         &self.canvas
     }
 
-    pub fn canvas_mut(&mut self) -> &mut pati::VersionedCanvas {
+    pub fn canvas_mut(&mut self) -> &mut pati::VersionedImage {
         &mut self.canvas
     }
 
@@ -440,7 +440,7 @@ enum Fsm {
 }
 
 impl Fsm {
-    fn draw(&mut self, canvas: &mut pati::VersionedCanvas, brush_color: Color, cursor: Point) {
+    fn draw(&mut self, canvas: &mut pati::VersionedImage, brush_color: Color, cursor: Point) {
         match self {
             Fsm::Neutral(fsm) => {
                 let command =

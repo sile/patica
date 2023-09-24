@@ -8,7 +8,7 @@ use crate::{
 };
 use pagurus::{failure::OrFail, Game};
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
-use pati::{CommandReader, CommandWriter, Point, VersionedCanvas};
+use pati::{CommandReader, CommandWriter, Point, VersionedImage};
 use std::io::Write;
 use std::{
     collections::BTreeMap,
@@ -151,7 +151,7 @@ impl OpenCommand {
 #[derive(Debug)]
 struct EmbeddedCanvas {
     path: PathBuf,
-    canvas: VersionedCanvas,
+    canvas: VersionedImage,
     reader: CommandReader<BufReader<std::fs::File>>,
 }
 
@@ -159,7 +159,7 @@ impl EmbeddedCanvas {
     fn new(path: &PathBuf) -> orfail::Result<Self> {
         let file = std::fs::File::open(path).or_fail()?;
         let reader = CommandReader::new(BufReader::new(file));
-        let canvas = VersionedCanvas::default(); // TODO: use Canvas
+        let canvas = VersionedImage::default(); // TODO: use Canvas
         Ok(Self {
             path: path.clone(),
             canvas,
@@ -344,10 +344,10 @@ impl ExportCommand {
     }
 }
 
-fn load_canvas<P: AsRef<Path>>(path: &P) -> orfail::Result<pati::Canvas> {
+fn load_canvas<P: AsRef<Path>>(path: &P) -> orfail::Result<pati::Image> {
     let file = std::fs::File::open(path).or_fail()?;
     let mut reader = CommandReader::new(BufReader::new(file));
-    let mut canvas = pati::Canvas::new();
+    let mut canvas = pati::Image::new();
     while let Some(command) = reader.read_command().or_fail()? {
         canvas.apply(&command);
     }
