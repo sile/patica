@@ -1,6 +1,6 @@
 use crate::{command::CanvasCommand, Canvas};
 use orfail::OrFail;
-use pati::{ImageCommandReader, ImageCommandWriter};
+use pati::{ImageCommandReader, ImageCommandWriter, Version};
 use std::{
     fs::File,
     io::{BufReader, BufWriter},
@@ -12,6 +12,7 @@ pub struct CanvasFile {
     canvas: Canvas,
     reader: ImageCommandReader<BufReader<File>>,
     writer: ImageCommandWriter<BufWriter<File>>,
+    last_written_version: Version,
 }
 
 impl CanvasFile {
@@ -26,6 +27,7 @@ impl CanvasFile {
             canvas: Canvas::new(),
             reader: ImageCommandReader::new(BufReader::new(file.try_clone().or_fail()?)),
             writer: ImageCommandWriter::new(BufWriter::new(file)),
+            last_written_version: Version::default(),
         };
         this.sync().or_fail()?;
         Ok(this)
@@ -41,6 +43,21 @@ impl CanvasFile {
                 .command(&CanvasCommand::Image(command))
                 .or_fail()?;
         }
+        self.last_written_version = self.canvas.image().version();
+        Ok(())
+    }
+
+    pub fn command(&mut self, command: &CanvasCommand) -> orfail::Result<()> {
+        self.sync().or_fail()?;
+        self.canvas.command(command).or_fail()?;
+        for command in self
+            .canvas
+            .image()
+            .applied_commands(self.last_written_version)
+        {
+            self.writer.write_command(command).or_fail()?;
+        }
+        self.last_written_version = self.canvas.image().version();
         Ok(())
     }
 }

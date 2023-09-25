@@ -3,6 +3,7 @@ use crate::ImageCommand;
 use serde::{Deserialize, Serialize};
 
 /// Number of applied commands.
+// TODO: s/Version/ImageVersion/
 #[derive(
     Debug, Default, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
 )]
