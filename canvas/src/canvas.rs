@@ -3,11 +3,11 @@ use crate::{
     query::{CanvasQuery, CanvasQueryValue},
 };
 use orfail::OrFail;
-use pati::{Color, Image, Point};
+use pati::{Color, Point, VersionedImage};
 
 #[derive(Debug, Default)]
 pub struct Canvas {
-    image: Image,
+    image: VersionedImage,
     cursor: Point,
     camera: Point,
     brush_color: Color,
@@ -19,7 +19,7 @@ impl Canvas {
         Self::default()
     }
 
-    pub fn image(&self) -> &Image {
+    pub fn image(&self) -> &VersionedImage {
         &self.image
     }
 
