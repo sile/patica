@@ -3,7 +3,7 @@ use crate::{
     query::{CanvasQuery, CanvasQueryValue},
 };
 use orfail::OrFail;
-use pati::{Color, Point, VersionedImage};
+use pati::{Color, ImageCommand, Point, VersionedImage};
 
 #[derive(Debug, Default)]
 pub struct Canvas {
@@ -53,12 +53,21 @@ impl Canvas {
     pub fn command(&mut self, command: &CanvasCommand) -> orfail::Result<()> {
         match command {
             CanvasCommand::Move(c) => self.handle_move(*c).or_fail()?,
+            CanvasCommand::Image(c) => self.handle_image_command(c).or_fail()?,
         }
         Ok(())
     }
 
     fn handle_move(&mut self, delta: Point) -> orfail::Result<()> {
         self.cursor = self.cursor + delta;
+        Ok(())
+    }
+
+    fn handle_image_command(&mut self, command: &ImageCommand) -> orfail::Result<()> {
+        self.image.apply(command);
+        if let ImageCommand::Put { .. } = command {
+            // TODO
+        }
         Ok(())
     }
 }
