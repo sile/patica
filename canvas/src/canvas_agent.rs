@@ -51,7 +51,7 @@ impl CanvasAgentServer {
             match client.poll() {
                 Ok(Some(request)) => return Ok(Some((addr, request))),
                 Ok(None) => {}
-                Err(_) => closed.push(addr),
+                Err(()) => closed.push(addr),
             }
         }
         for addr in closed {
