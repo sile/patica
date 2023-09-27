@@ -180,6 +180,7 @@ dependencies = [
  "pagurus",
  "pagurus_tui",
  "pati",
+ "paticanvas",
  "serde",
  "serde_json",
 ]

@@ -7,8 +7,7 @@ pub mod editor;
 pub mod frame;
 pub mod game;
 pub mod marker;
-pub mod model;
-pub mod model_agent;
+pub mod model; // TODO: delete
 pub mod query;
 pub mod remote;
 pub mod view;
