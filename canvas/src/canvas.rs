@@ -14,6 +14,7 @@ pub struct Canvas {
     brush_color: Color,
     background_color: Color,
     scale: Scale,
+    // TODO: fsm, frames, ticks
     quit: bool,
 }
 
@@ -67,6 +68,7 @@ impl Canvas {
             CanvasCommand::Move(c) => self.handle_move(*c).or_fail()?,
             CanvasCommand::Image(c) => self.handle_image_command(c).or_fail()?,
             CanvasCommand::Scale(c) => self.handle_scale(*c).or_fail()?,
+            CanvasCommand::Quit => self.quit = true,
         }
         Ok(())
     }

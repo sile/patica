@@ -6,5 +6,6 @@ use serde::{Deserialize, Serialize};
 pub enum CanvasCommand {
     Move(Point),
     Scale(i8),
+    Quit,
     Image(ImageCommand),
 }
