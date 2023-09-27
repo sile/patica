@@ -1,5 +1,6 @@
 use pati::{Color, Point};
 use serde::{Deserialize, Serialize};
+use std::num::NonZeroU8;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -8,6 +9,7 @@ pub enum CanvasQuery {
     Camera,
     BrushColor,
     BackgroundColor,
+    Scale,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,4 +19,5 @@ pub enum CanvasQueryValue {
     Camera(Point),
     BrushColor(Color),
     BackgroundColor(Color),
+    Scale(NonZeroU8),
 }

@@ -5,5 +5,6 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum CanvasCommand {
     Move(Point),
+    Scale(i8),
     Image(ImageCommand),
 }
