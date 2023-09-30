@@ -1,6 +1,11 @@
+use crate::game::Game;
 use orfail::OrFail;
-use paticanvas::{CanvasAgentServer, CanvasFile};
+use pagurus::Game as _;
+use pagurus_tui::{TuiSystem, TuiSystemOptions};
+use paticanvas::{CanvasAgentRequest, CanvasAgentServer, CanvasFile};
 use std::path::PathBuf;
+
+const ENV_PATICA_PORT: &str = "PATICA_PORT";
 
 // use crate::{
 //     clock::Ticks,
@@ -57,100 +62,47 @@ pub struct OpenCommand {
 
 impl OpenCommand {
     fn run(&self) -> orfail::Result<()> {
-        let mut canvas_file = CanvasFile::open(&self.path, true).or_fail()?;
-        canvas_file.sync().or_fail()?;
+        let canvas_file = CanvasFile::open(&self.path, true).or_fail()?;
+        let mut game = Game::new(canvas_file);
 
         let mut agent_server = CanvasAgentServer::start().or_fail()?;
-        agent_server.poll_request().or_fail()?; // TODO
+        std::env::set_var(ENV_PATICA_PORT, agent_server.port().to_string());
 
-        // let server = RemoteCommandServer::start(self.port).or_fail()?;
-        // let config = Config::load_config_file().or_fail()?.unwrap_or_default();
+        let options = TuiSystemOptions {
+            disable_mouse: true,
+        };
+        let mut system = TuiSystem::with_options(options).or_fail()?;
+        game.initialize(&mut system).or_fail()?;
 
-        // let mut game = crate::game::Game::default();
-        // game.set_config(config);
+        while let Ok(event) = system.next_event() {
+            if !game.handle_event(&mut system, event).or_fail()? {
+                break;
+            }
+            self.poll_and_handle_request(&mut game, &mut agent_server)
+                .or_fail()?;
+        }
 
-        // let file = std::fs::OpenOptions::new()
-        //     .read(true)
-        //     .write(true)
-        //     .create(true)
-        //     .open(&self.path)
-        //     .or_fail()?;
-        // let mut reader = ImageCommandReader::new(BufReader::new(file.try_clone().or_fail()?));
-        // let mut writer = ImageCommandWriter::new(BufWriter::new(file));
-        // while let Some(command) = reader.read_command().or_fail()? {
-        //     game.model_mut().canvas_mut().apply(&command);
-        // }
+        Ok(())
+    }
 
-        // fn file_println(msg: &str) {
-        //     let _ = std::fs::OpenOptions::new()
-        //         .create(true)
-        //         .append(true)
-        //         .open("patica.log")
-        //         .and_then(|mut file| writeln!(file, "{}", msg));
-        // }
-
-        // pagurus::io::set_println_fn(file_println).or_fail()?;
-        // std::panic::set_hook(Box::new(|info| {
-        //     println!("{info}");
-        //     pagurus::println!("{info}");
-        // }));
-
-        // let options = TuiSystemOptions {
-        //     disable_mouse: true,
-        // };
-        // let mut system = TuiSystem::with_options(options).or_fail()?;
-        // game.initialize(&mut system).or_fail()?;
-        // game.model_mut()
-        //     .apply(&Command::Move(MoveDestination::Anchor(AnchorName {
-        //         anchor: "origin".to_owned(),
-        //     })));
-        // game.model_mut()
-        //     .apply(&Command::Center(CenterPoint::Cursor));
-
-        // let mut embedded_canvases = BTreeMap::new();
-        // for embedded in game.model().frames().values() {
-        //     let canvas = EmbeddedCanvas::new(&embedded.frame.path).or_fail()?;
-        //     embedded_canvases.insert(embedded.frame.path.clone(), canvas);
-        // }
-        // for embedded_canvas in embedded_canvases.values_mut() {
-        //     embedded_canvas.sync(game.model_mut()).or_fail()?;
-        // }
-
-        // while let Ok(event) = system.next_event() {
-        //     let version = game.model().canvas().version();
-
-        //     if let Some(patica_command) = server.poll_command().or_fail()? {
-        //         game.model_mut().apply(&patica_command);
-        //     }
-
-        //     if !game.handle_event(&mut system, event).or_fail()? {
-        //         break;
-        //     }
-
-        //     for pati_command in game.model().canvas().applied_commands(version) {
-        //         writer.write_command(pati_command).or_fail()?;
-        //     }
-
-        //     // TODO: optimize
-        //     for embedded in game.model().frames().values() {
-        //         if embedded_canvases.contains_key(&embedded.frame.path) {
-        //             continue;
-        //         }
-        //         let canvas = EmbeddedCanvas::new(&embedded.frame.path).or_fail()?;
-        //         embedded_canvases.insert(embedded.frame.path.clone(), canvas);
-        //     }
-
-        //     let mut removed = Vec::new();
-        //     for embedded_canvas in embedded_canvases.values_mut() {
-        //         if !embedded_canvas.sync(game.model_mut()).or_fail()? {
-        //             removed.push(embedded_canvas.path.clone());
-        //         }
-        //     }
-        //     for path in removed {
-        //         embedded_canvases.remove(&path);
-        //     }
-        // }
-
+    fn poll_and_handle_request(
+        &self,
+        game: &mut Game,
+        server: &mut CanvasAgentServer,
+    ) -> orfail::Result<()> {
+        let Some((from, request)) = server.poll_request().or_fail()? else {
+            return Ok(());
+        };
+        match request {
+            CanvasAgentRequest::Command(command) => {
+                game.model_mut().command(&command).or_fail()?;
+                server.send_response(from, ()).or_fail()?;
+            }
+            CanvasAgentRequest::Query(query) => {
+                let value = game.model().canvas().query(&query);
+                server.send_response(from, value).or_fail()?;
+            }
+        }
         Ok(())
     }
 }

@@ -1,7 +1,25 @@
+use orfail::OrFail;
 use pagurus::{event::Event, System};
+use paticanvas::CanvasFile;
 
-#[derive(Debug, Default)]
-pub struct Game {}
+#[derive(Debug)]
+pub struct Game {
+    model: CanvasFile,
+}
+
+impl Game {
+    pub fn new(model: CanvasFile) -> Self {
+        Self { model }
+    }
+
+    pub fn model(&self) -> &CanvasFile {
+        &self.model
+    }
+
+    pub fn model_mut(&mut self) -> &mut CanvasFile {
+        &mut self.model
+    }
+}
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> pagurus::Result<()> {
@@ -9,6 +27,7 @@ impl<S: System> pagurus::Game<S> for Game {
     }
 
     fn handle_event(&mut self, system: &mut S, event: Event) -> pagurus::Result<bool> {
+        self.model.sync().or_fail()?;
         todo!()
     }
 }
