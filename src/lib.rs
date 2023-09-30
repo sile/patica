@@ -2,7 +2,7 @@
 pub mod cli;
 // pub mod clock; // TODO: rename module
 // pub mod command;
-// pub mod config;
+pub mod config;
 // pub mod editor;
 // pub mod frame;
 pub mod game;

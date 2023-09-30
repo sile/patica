@@ -1,43 +1,44 @@
-use crate::command::Command;
-use orfail::OrFail;
-use pagurus::event::KeyEvent;
-use pati::{Color, Point};
+use orfail::{Failure, OrFail};
+use pagurus::event::{self, KeyEvent};
+use paticanvas::CanvasCommand;
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, path::Path};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub key: KeyConfig,
 
-    // TODO: pub search_path: Vec<PathBuf>,
     #[serde(default)]
-    pub initial: InitialConfig,
+    pub on_create: Option<CanvasCommand>,
+
+    #[serde(default)]
+    pub on_open: Option<CanvasCommand>,
 }
 
-impl Config {
-    pub fn load_config_file() -> orfail::Result<Option<Self>> {
-        let Ok(home_dir) = std::env::var("HOME") else {
-            return Ok(None);
-        };
+// impl Config {
+//     pub fn load_config_file() -> orfail::Result<Option<Self>> {
+//         let Ok(home_dir) = std::env::var("HOME") else {
+//             return Ok(None);
+//         };
 
-        let path = Path::new(&home_dir).join(".config").join("patica.json");
-        if !path.exists() {
-            return Ok(None);
-        }
+//         let path = Path::new(&home_dir).join(".config").join("patica.json");
+//         if !path.exists() {
+//             return Ok(None);
+//         }
 
-        let json = std::fs::read_to_string(&path)
-            .or_fail_with(|e| format!("Failed to read config file {}: {e}", path.display()))?;
-        serde_json::from_str(&json)
-            .or_fail_with(|e| {
-                format!(
-                    "Failed to parse config file: path={}, reason={e}",
-                    path.display()
-                )
-            })
-            .map(Some)
-    }
-}
+//         let json = std::fs::read_to_string(&path)
+//             .or_fail_with(|e| format!("Failed to read config file {}: {e}", path.display()))?;
+//         serde_json::from_str(&json)
+//             .or_fail_with(|e| {
+//                 format!(
+//                     "Failed to parse config file: path={}, reason={e}",
+//                     path.display()
+//                 )
+//             })
+//             .map(Some)
+//     }
+// }
 
 impl Default for Config {
     fn default() -> Self {
@@ -46,24 +47,11 @@ impl Default for Config {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InitialConfig {
-    pub background_color: Color,
-    pub anchors: BTreeMap<String, Point>,
-}
-
-impl Default for InitialConfig {
-    fn default() -> Self {
-        Config::default().initial
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KeyConfig(BTreeMap<Key, Vec<Command>>);
+pub struct KeyConfig(BTreeMap<Key, CanvasCommand>);
 
 impl KeyConfig {
-    pub fn get_commands(&self, key: KeyEvent) -> impl Iterator<Item = &Command> {
-        let key = Key(key);
-        self.0.get(&key).into_iter().flatten()
+    pub fn get_command(&self, key: KeyEvent) -> Option<&CanvasCommand> {
+        self.0.get(&Key(key))
     }
 }
 
@@ -98,17 +86,17 @@ impl std::fmt::Display for Key {
             write!(f, "Alt+")?;
         }
         match self.0.key {
-            pagurus::event::Key::Return => write!(f, "Enter"),
-            pagurus::event::Key::Left => write!(f, "Left"),
-            pagurus::event::Key::Right => write!(f, "Right"),
-            pagurus::event::Key::Up => write!(f, "Up"),
-            pagurus::event::Key::Down => write!(f, "Down"),
-            pagurus::event::Key::Backspace => write!(f, "Backspace"),
-            pagurus::event::Key::Delete => write!(f, "Delete"),
-            pagurus::event::Key::Tab => write!(f, "Tab"),
-            pagurus::event::Key::BackTab => write!(f, "BackTab"),
-            pagurus::event::Key::Esc => write!(f, "Esc"),
-            pagurus::event::Key::Char(c) => write!(f, "{}", c),
+            event::Key::Return => write!(f, "Enter"),
+            event::Key::Left => write!(f, "Left"),
+            event::Key::Right => write!(f, "Right"),
+            event::Key::Up => write!(f, "Up"),
+            event::Key::Down => write!(f, "Down"),
+            event::Key::Backspace => write!(f, "Backspace"),
+            event::Key::Delete => write!(f, "Delete"),
+            event::Key::Tab => write!(f, "Tab"),
+            event::Key::BackTab => write!(f, "BackTab"),
+            event::Key::Esc => write!(f, "Esc"),
+            event::Key::Char(c) => write!(f, "{}", c),
             _ => unreachable!(),
         }
     }
@@ -121,32 +109,36 @@ impl From<Key> for String {
 }
 
 impl TryFrom<String> for Key {
-    type Error = orfail::Failure;
+    type Error = Failure;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let mut ctrl = false;
         let mut alt = false;
-        let mut tokens = if s == "+" {
-            // TODO
-            vec!["+"]
-        } else {
-            s.split('+').collect::<Vec<_>>()
-        };
+        let mut i = 0;
+        loop {
+            if s[i..].starts_with("Ctrl+") {
+                ctrl = true;
+                i += 5;
+            } else if s[i..].starts_with("Alt+") {
+                alt = true;
+                i += 4;
+            } else {
+                break;
+            }
+        }
 
-        let last = tokens
-            .pop()
-            .or_fail_with(|()| "Empty key string".to_owned())?;
+        let last = &s[i..];
         let key = match last {
-            "Enter" => pagurus::event::Key::Return,
-            "Left" => pagurus::event::Key::Left,
-            "Right" => pagurus::event::Key::Right,
-            "Up" => pagurus::event::Key::Up,
-            "Down" => pagurus::event::Key::Down,
-            "Backspace" => pagurus::event::Key::Backspace,
-            "Delete" => pagurus::event::Key::Delete,
-            "Tab" => pagurus::event::Key::Tab,
-            "BackTab" => pagurus::event::Key::BackTab,
-            "Esc" => pagurus::event::Key::Esc,
+            "Enter" => event::Key::Return,
+            "Left" => event::Key::Left,
+            "Right" => event::Key::Right,
+            "Up" => event::Key::Up,
+            "Down" => event::Key::Down,
+            "Backspace" => event::Key::Backspace,
+            "Delete" => event::Key::Delete,
+            "Tab" => event::Key::Tab,
+            "BackTab" => event::Key::BackTab,
+            "Esc" => event::Key::Esc,
             _ if last.chars().count() == 1 => match last.chars().next().or_fail()? {
                 c @ ('a'..='z'
                 | 'A'..='Z'
@@ -181,22 +173,11 @@ impl TryFrom<String> for Key {
                 | '"'
                 | '\''
                 | '`'
-                | '~') => pagurus::event::Key::Char(c),
-                _ => return Err(orfail::Failure::new(format!("Unknown key: {last:?}"))),
+                | '~') => event::Key::Char(c),
+                _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
             },
-            _ => return Err(orfail::Failure::new(format!("Unknown key: {last:?}"))),
+            _ => return Err(Failure::new(format!("Unknown key: {last:?}"))),
         };
-        for token in tokens {
-            match token {
-                "Ctrl" => ctrl = true,
-                "Alt" => alt = true,
-                _ => {
-                    return Err(orfail::Failure::new(format!(
-                        "Unknown key modifier: {token:?}"
-                    )))
-                }
-            }
-        }
 
         Ok(Self(KeyEvent { key, ctrl, alt }))
     }
