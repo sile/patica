@@ -1,4 +1,4 @@
-use crate::game::Game;
+use crate::{game::Game, model::Model};
 use orfail::OrFail;
 use pagurus::Game as _;
 use pagurus_tui::{TuiSystem, TuiSystemOptions};
@@ -63,7 +63,7 @@ pub struct OpenCommand {
 impl OpenCommand {
     fn run(&self) -> orfail::Result<()> {
         let canvas_file = CanvasFile::open(&self.path, true).or_fail()?;
-        let mut game = Game::new(canvas_file);
+        let mut game = Game::new(Model::new(canvas_file));
 
         let mut agent_server = CanvasAgentServer::start().or_fail()?;
         std::env::set_var(ENV_PATICA_PORT, agent_server.port().to_string());
@@ -99,7 +99,7 @@ impl OpenCommand {
                 server.send_response(from, ()).or_fail()?;
             }
             CanvasAgentRequest::Query(query) => {
-                let value = game.model().canvas().query(&query);
+                let value = game.model().query(&query);
                 server.send_response(from, value).or_fail()?;
             }
         }

@@ -7,7 +7,8 @@ pub mod cli;
 // pub mod frame;
 pub mod game;
 // pub mod marker;
-// pub mod model; // TODO: delete
+pub mod model;
 // pub mod query;
 // pub mod remote;
+pub mod screen;
 pub mod view;

@@ -1,5 +1,30 @@
+use crate::{model::Model, screen::Screen};
+use pagurus::{event::Event, System};
+
 #[derive(Debug, Default)]
 pub struct View {}
+
+impl View {
+    pub fn render(&self, model: &Model, screen: &mut Screen) {}
+
+    pub fn handle_event<S: System>(
+        &mut self,
+        system: &S,
+        model: &mut Model,
+        event: Event,
+    ) -> orfail::Result<()> {
+        //         self.cursor.handle_event(system, model, event).or_fail()?;
+
+        //         let Event::Key(key) = event else {
+        //             return Ok(());
+        //         };
+        //         for command in self.key_config.get_commands(key) {
+        //             model.apply(command);
+        //         }
+
+        Ok(())
+    }
+}
 
 // use crate::{config::KeyConfig, model::Model};
 // use orfail::OrFail;
@@ -77,23 +102,6 @@ pub struct View {}
 //             .fill_color(pagurus::image::Color::rgba(c.r, c.g, c.b, c.a));
 //     }
 
-//     pub fn handle_event<S: System>(
-//         &mut self,
-//         system: &S,
-//         model: &mut Model,
-//         event: Event,
-//     ) -> orfail::Result<()> {
-//         self.cursor.handle_event(system, model, event).or_fail()?;
-
-//         let Event::Key(key) = event else {
-//             return Ok(());
-//         };
-//         for command in self.key_config.get_commands(key) {
-//             model.apply(command);
-//         }
-
-//         Ok(())
-//     }
 // }
 
 // // TODO: rename

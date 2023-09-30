@@ -1,24 +1,24 @@
-use crate::view::View;
+use crate::{model::Model, screen::Screen, view::View};
 use orfail::OrFail;
 use pagurus::{
     event::{Event, TimeoutTag},
+    image::Canvas,
     video::VideoFrame,
     System,
 };
-use paticanvas::CanvasFile;
 use std::time::Duration;
 
 const TICK_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
 
 #[derive(Debug)]
 pub struct Game {
-    model: CanvasFile,
+    model: Model,
     view: View,
     video_frame: VideoFrame,
 }
 
 impl Game {
-    pub fn new(model: CanvasFile) -> Self {
+    pub fn new(model: Model) -> Self {
         Self {
             model,
             view: View::default(),
@@ -26,20 +26,28 @@ impl Game {
         }
     }
 
-    pub fn model(&self) -> &CanvasFile {
+    pub fn model(&self) -> &Model {
         &self.model
     }
 
-    pub fn model_mut(&mut self) -> &mut CanvasFile {
+    pub fn model_mut(&mut self) -> &mut Model {
         &mut self.model
     }
 
     fn set_tick_timeout<S: System>(&mut self, system: &mut S, tick_time: Duration) {
-        let fps = self.model().canvas().fps();
+        let fps = self.model().fps();
         let elapsed = system.clock_game_time() - tick_time;
         let timeout = Duration::from_secs(1) / u32::from(fps.get());
         let timeout = timeout.saturating_sub(elapsed);
         system.clock_set_timeout(TICK_TIMEOUT_TAG, timeout);
+    }
+
+    fn render<S: System>(&mut self, system: &mut S) {
+        let size = self.video_frame.spec().resolution;
+        let canvas = Canvas::new(&mut self.video_frame);
+        let mut screen = Screen::new(canvas, size);
+        self.view.render(&self.model, &mut screen);
+        system.video_draw(self.video_frame.as_ref());
     }
 }
 
@@ -62,17 +70,17 @@ impl<S: System> pagurus::Game<S> for Game {
                 Some(now)
             }
             _ => {
-                // self.view
-                //     .handle_event(system, &mut self.model, event)
-                //     .or_fail()?;
+                self.view
+                    .handle_event(system, &mut self.model, event)
+                    .or_fail()?;
                 None
             }
         };
         if let Some(tick_time) = ticked {
-            // self.render(system);
+            self.render(system);
             self.set_tick_timeout(system, tick_time);
         }
-        Ok(!self.model.canvas().quit())
+        Ok(!self.model.quit())
     }
 }
 
@@ -100,13 +108,6 @@ impl<S: System> pagurus::Game<S> for Game {
 
 //     pub fn model_mut(&mut self) -> &mut Model {
 //         &mut self.model
-//     }
-
-//     fn render<S: System>(&mut self, system: &mut S) {
-//         let size = self.video_frame.spec().resolution;
-//         let mut canvas = WindowCanvas::new(Canvas::new(&mut self.video_frame), size);
-//         self.view.render(&self.model, &mut canvas);
-//         system.video_draw(self.video_frame.as_ref());
 //     }
 
 //     }
