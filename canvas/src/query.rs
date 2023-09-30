@@ -10,6 +10,7 @@ pub enum CanvasQuery {
     BrushColor,
     BackgroundColor,
     Scale,
+    Fps,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,4 +21,5 @@ pub enum CanvasQueryValue {
     BrushColor(Color),
     BackgroundColor(Color),
     Scale(NonZeroU8),
+    Fps(NonZeroU8),
 }

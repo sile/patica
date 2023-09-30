@@ -1,15 +1,29 @@
+use crate::view::View;
 use orfail::OrFail;
-use pagurus::{event::Event, System};
+use pagurus::{
+    event::{Event, TimeoutTag},
+    video::VideoFrame,
+    System,
+};
 use paticanvas::CanvasFile;
+use std::time::Duration;
+
+const TICK_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
 
 #[derive(Debug)]
 pub struct Game {
     model: CanvasFile,
+    view: View,
+    video_frame: VideoFrame,
 }
 
 impl Game {
     pub fn new(model: CanvasFile) -> Self {
-        Self { model }
+        Self {
+            model,
+            view: View::default(),
+            video_frame: VideoFrame::default(),
+        }
     }
 
     pub fn model(&self) -> &CanvasFile {
@@ -19,39 +33,51 @@ impl Game {
     pub fn model_mut(&mut self) -> &mut CanvasFile {
         &mut self.model
     }
+
+    fn set_tick_timeout<S: System>(&mut self, system: &mut S, tick_time: Duration) {
+        let fps = self.model().canvas().fps();
+        let elapsed = system.clock_game_time() - tick_time;
+        let timeout = Duration::from_secs(1) / u32::from(fps.get());
+        let timeout = timeout.saturating_sub(elapsed);
+        system.clock_set_timeout(TICK_TIMEOUT_TAG, timeout);
+    }
 }
 
 impl<S: System> pagurus::Game<S> for Game {
     fn initialize(&mut self, system: &mut S) -> pagurus::Result<()> {
-        todo!()
+        self.set_tick_timeout(system, system.clock_game_time());
+        Ok(())
     }
 
     fn handle_event(&mut self, system: &mut S, event: Event) -> pagurus::Result<bool> {
-        self.model.sync().or_fail()?;
-        todo!()
+        let ticked = match event {
+            Event::WindowResized(size) => {
+                self.video_frame = VideoFrame::new(system.video_init(size));
+                None
+            }
+            Event::Timeout(TICK_TIMEOUT_TAG) => {
+                let now = system.clock_game_time();
+                self.model.sync().or_fail()?;
+                // TODO: self.model.tick();
+                Some(now)
+            }
+            _ => {
+                // self.view
+                //     .handle_event(system, &mut self.model, event)
+                //     .or_fail()?;
+                None
+            }
+        };
+        if let Some(tick_time) = ticked {
+            // self.render(system);
+            self.set_tick_timeout(system, tick_time);
+        }
+        Ok(!self.model.canvas().quit())
     }
 }
 
-// use crate::{
-//     command::Command,
-//     config::Config,
-//     model::Model,
-//     view::{View, WindowCanvas},
-// };
-// use pagurus::{
-//     event::{Event, TimeoutTag},
-//     failure::OrFail,
-//     image::Canvas,
-//     video::VideoFrame,
-//     Result, System,
-// };
-// use std::time::Duration;
-
-// const TICK_TIMEOUT_TAG: TimeoutTag = TimeoutTag::new(0);
-
 // #[derive(Debug, Default)]
 // pub struct Game {
-//     video_frame: VideoFrame,
 //     view: View,
 //     model: Model,
 // }
@@ -83,8 +109,6 @@ impl<S: System> pagurus::Game<S> for Game {
 //         system.video_draw(self.video_frame.as_ref());
 //     }
 
-//     fn set_tick_timeout<S: System>(&mut self, system: &mut S) {
-//         system.clock_set_timeout(TICK_TIMEOUT_TAG, Duration::from_secs(1) / self.model.fps());
 //     }
 // }
 
@@ -96,24 +120,5 @@ impl<S: System> pagurus::Game<S> for Game {
 //     }
 
 //     fn handle_event(&mut self, system: &mut S, event: Event) -> Result<bool> {
-//         let mut set_timeout = false;
-//         match event {
-//             Event::WindowResized(size) => {
-//                 self.video_frame = VideoFrame::new(system.video_init(size));
-//             }
-//             Event::Timeout(TICK_TIMEOUT_TAG) => {
-//                 self.model.tick();
-//                 set_timeout = true;
-//             }
-//             _ => {}
-//         }
-//         self.view
-//             .handle_event(system, &mut self.model, event)
-//             .or_fail()?;
-//         self.render(system);
-//         if set_timeout {
-//             self.set_tick_timeout(system);
-//         }
-//         Ok(!self.model.quit())
 //     }
 // }

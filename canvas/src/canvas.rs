@@ -14,7 +14,8 @@ pub struct Canvas {
     brush_color: Color,
     background_color: Color,
     scale: Scale,
-    // TODO: fsm, frames, ticks
+    fps: Fps,
+    // TODO: fsm(or mode), frames, ticks
     quit: bool,
 }
 
@@ -47,6 +48,10 @@ impl Canvas {
         self.scale.0
     }
 
+    pub fn fps(&self) -> NonZeroU8 {
+        self.fps.0
+    }
+
     pub fn quit(&self) -> bool {
         self.quit
     }
@@ -60,6 +65,7 @@ impl Canvas {
                 CanvasQueryValue::BackgroundColor(self.background_color)
             }
             CanvasQuery::Scale => CanvasQueryValue::Scale(self.scale.0),
+            CanvasQuery::Fps => CanvasQueryValue::Fps(self.fps.0),
         }
     }
 
@@ -99,5 +105,14 @@ struct Scale(NonZeroU8);
 impl Default for Scale {
     fn default() -> Self {
         Self(NonZeroU8::new(1).expect("unreachable"))
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Fps(NonZeroU8);
+
+impl Default for Fps {
+    fn default() -> Self {
+        Self(NonZeroU8::new(30).expect("unreachable"))
     }
 }

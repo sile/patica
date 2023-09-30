@@ -10,4 +10,4 @@ pub mod game;
 // pub mod model; // TODO: delete
 // pub mod query;
 // pub mod remote;
-// pub mod view;
+pub mod view;
