@@ -40,10 +40,9 @@ pub enum Args {
 impl Args {
     pub fn run(&self) -> orfail::Result<()> {
         match self {
-            Self::Open(cmd) => cmd.run().or_fail().map_err(|e| {
+            Self::Open(cmd) => cmd.run().or_fail().inspect_err(|_| {
                 // This is needed to leave the raw terminal mode before printing the error.
                 println!();
-                e
             }),
             // Self::Apply(cmd) => cmd.run().or_fail(),
             // Self::Include(cmd) => cmd.run().or_fail(),
@@ -70,6 +69,7 @@ impl OpenCommand {
 
         let options = TuiSystemOptions {
             disable_mouse: true,
+            disable_alternate_screen: false,
         };
         let mut system = TuiSystem::with_options(options).or_fail()?;
         game.initialize(&mut system).or_fail()?;

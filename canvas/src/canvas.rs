@@ -85,7 +85,7 @@ impl Canvas {
     }
 
     fn handle_scale(&mut self, delta: i8) -> orfail::Result<()> {
-        let scale = (self.scale.0.get() as i8 + delta).max(1).min(100);
+        let scale = (self.scale.0.get() as i8 + delta).clamp(1, 100);
         self.scale = Scale(NonZeroU8::new(scale as u8).expect("unreachable"));
         Ok(())
     }

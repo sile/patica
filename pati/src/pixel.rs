@@ -114,7 +114,7 @@ impl std::ops::Mul<i16> for Point {
 
 impl PartialOrd for Point {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some((self.y, self.x).cmp(&(other.y, other.x)))
+        Some(self.cmp(other))
     }
 }
 

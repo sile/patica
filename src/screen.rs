@@ -1,6 +1,7 @@
 use pagurus::{image::Canvas, spatial::Size};
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Screen<'a> {
     canvas: Canvas<'a>,
     screen_size: Size,

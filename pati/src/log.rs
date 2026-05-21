@@ -38,7 +38,7 @@ impl Log {
 
     pub fn append_applied_command(&mut self, command: ImageCommand, image: &Image) {
         self.commands.push(command);
-        if self.commands.len() % 1000 == 0 {
+        if self.commands.len().is_multiple_of(1000) {
             self.snapshots.push(Snapshot {
                 version: Version(self.commands.len() as u32),
                 image: image.clone(),

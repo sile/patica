@@ -5,13 +5,13 @@ use pagurus::{event::Event, System};
 pub struct View {}
 
 impl View {
-    pub fn render(&self, model: &Model, screen: &mut Screen) {}
+    pub fn render(&self, _model: &Model, _screen: &mut Screen) {}
 
     pub fn handle_event<S: System>(
         &mut self,
-        system: &S,
-        model: &mut Model,
-        event: Event,
+        _system: &S,
+        _model: &mut Model,
+        _event: Event,
     ) -> orfail::Result<()> {
         //         self.cursor.handle_event(system, model, event).or_fail()?;
 
